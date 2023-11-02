@@ -13,6 +13,7 @@
     - [desktop](#desktop)
     - [service](#service)
     - [fonts-install](#fonts-install)
+    - [delete-github-workflows-run](delete-github-workflows-run)
 
 ## 脚本列表
 
@@ -129,4 +130,13 @@ curl -SL https://jihulab.com/jetsung/sh-files/-/raw/main/sh/service.sh | bash -s
 # 进入字体目录，执行
 # 首先将 fonts-install.sh 添加到 PATH 目录下（比如: /usr/local/bin ）
 sudo fonts-install.sh
+```
+
+### [delete-github-workflows-run](delete-github-workflows-run.sh)
+
+删除 GitHub Workflows 的运行记录
+
+```bash
+# 首先安装 gh 工具，并且登录和授权。
+delete-github-workflows-run.sh ORG_NAME REPO_NAME
 ```
