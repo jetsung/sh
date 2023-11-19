@@ -2,7 +2,7 @@
 
 - [一键脚本](#一键脚本)
   - [脚本列表](#脚本列表)
-    - [ubuntu-remove-kernel](#ubuntu-remove-kernel)
+    - [dpkg-remove-kernel](#dpkg-remove-kernel)
     - [gitlab-runner](#gitlab-runner)
     - [m3u8-dl](#m3u8-dl)
     - [c2mp4](#c2mp4)
@@ -14,7 +14,7 @@
 
 ## 脚本列表
 
-### [ubuntu-remove-kernel](ubuntu-remove-kernel.sh)
+### [dpkg-remove-kernel](dpkg-remove-kernel.sh)
 
 > 一键删除多余的 Ubuntu 内核
 
@@ -37,7 +37,7 @@
 
 ### [linux-upgrade-kernel](linux-upgrade-kernel.sh)
 
-> 一键升级 Linux Kernel
+> 一键升级 Linux Kernel  
 > **目前仅在 `Deepin V23` 下测试成功**
 
 ### [desktop](desktop.sh)
@@ -45,45 +45,23 @@
 > Linux 桌面快捷方式创建
 
 ```bash
-curl -SL https://framagit.org/jetsung/scripts/-/raw/main/shell/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
+curl -SL https://jihulab.com/jetsung/scripts/-/raw/main/shell/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
 ```
 
 ```bash
-curl -SL https://jihulab.com/jetsung/scripts/-/raw/main/shell/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
+curl -SL https://framagit.org/jetsung/scripts/-/raw/main/shell/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
 ```
 
 ### [service](service.sh)
 
+> Linux 服务启动项创建（`systemd`）
+
 ```bash
-service.sh -h
-```
-
-```
-Set systemd service
-
-USAGE:
-    service.sh [OPTIONS] <SUBCOMMANDS>
-
-OPTIONS:
-    -h, --help
-                Print help information.
-
-    -d, --desc
-                Application description
-
-    -e, --exec
-                Application exec script
-
-    -n, --name
-                Application name
+curl -SL https://jihulab.com/jetsung/scripts/-/raw/main/shell/service.sh | bash -s -- --name 'myservice' --exec "/usr/local/bin/myservice" --desc "This is my service"
 ```
 
 ```bash
 curl -SL https://framagit.org/jetsung/scripts/-/raw/main/shell/service.sh | bash -s -- --name 'myservice' --exec "/usr/local/bin/myservice" --desc "This is my service"
-```
-
-```bash
-curl -SL https://jihulab.com/jetsung/scripts/-/raw/main/shell/service.sh | bash -s -- --name 'myservice' --exec "/usr/local/bin/myservice" --desc "This is my service"
 ```
 
 ### [fonts-install](fonts-install.sh)
