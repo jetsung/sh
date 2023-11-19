@@ -1,5 +1,10 @@
 # My Scripts
 
+我的脚本文件。
+
+- https://jihulab.com/jetsung/scripts
+- https://framagit.org/jetsung/scripts
+
 ## Folders
 
 ```bash
