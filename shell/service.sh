@@ -60,13 +60,16 @@ show_help_message() {
     \e[1;32m-e, --exec\e[m
                 Application exec script           
 
-    \e[1;32m-n, --name\e[m
-                Application name       
+    \e[1;32m-s, --service\e[m
+                Application service name       
+
+    \e[1;32m-w, --workdir\e[m
+                Application working directory   
 
     \e[1;32m-r, --restart\e[m
                 Restart time  
 
-    \e[1;32m-w, --net\e[m
+    \e[1;32m-n, --net\e[m
                 Network         
 \n" "${script_name##*/}"
     exit
@@ -77,6 +80,7 @@ DESCRIPTION=""
 EXEC_START=""
 NETWORK=""
 RESTART=""
+WORKING_DIR=""
 
 for ARG in "$@"; do
     case "${ARG}" in
@@ -98,7 +102,7 @@ for ARG in "$@"; do
         fi
         ;;
 
-    -n | --name)
+    -s | --service)
         shift
         if [ $# -ge 1 ] && [[ "${1}" != -* ]]; then
             SERVICE_NAME=$(echo "${1}" | tr '[:upper:]' '[:lower:]')
@@ -112,9 +116,16 @@ for ARG in "$@"; do
         fi
         ;;
 
-    -w | --net)
+    -n | --net)
         shift
         NETWORK="Yes"
+        ;;
+
+    -w | --workdir)
+        shift
+        if [ $# -ge 1 ] && [[ "${1}" != -* ]]; then
+            WORKING_DIR="${1}"
+        fi
         ;;
 
     *)
@@ -145,6 +156,15 @@ tee -a "$SERVICE_PATH" >/dev/null <<-EOF
 
 [Service]
 Type = simple
+EOF
+
+if [[ -n "$WORKING_DIR" ]]; then
+    tee -a "$SERVICE_PATH" >/dev/null <<-EOF
+WorkingDirectory = $WORKING_DIR
+EOF
+fi
+
+tee -a "$SERVICE_PATH" >/dev/null <<-EOF
 ExecStart = $EXEC_START
 EOF
 
