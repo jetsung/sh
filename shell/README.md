@@ -4,16 +4,13 @@
   - [脚本列表](#脚本列表)
     - [ubuntu-remove-kernel](#ubuntu-remove-kernel)
     - [gitlab-runner](#gitlab-runner)
-    - [docker-compose](#docker-compose)
-    - [docker-buildx](#docker-buildx)
     - [m3u8-dl](#m3u8-dl)
     - [c2mp4](#c2mp4)
-    - [acme-domain](#acme-domain)
     - [linux-upgrade-kernel](#linux-upgrade-kernel)
     - [desktop](#desktop)
     - [service](#service)
     - [fonts-install](#fonts-install)
-    - [delete-github-workflows-run](delete-github-workflows-run)
+    - [delete-github-workflows-run](#delete-github-workflows-run)
 
 ## 脚本列表
 
@@ -25,33 +22,6 @@
 
 > 一键安装 `gitlab-runner`  
 > `bash gitlab-runner.sh`
-
-### [docker-compose](docker-compose.sh)
-
-> 一键安装 `docker compose v2`  
-> `curl -SL xxxxxx | bash -s -- 2.2.2 https://ghproxy.com/`  
-> `./docker-compose.sh 2.2.2 https://ghproxy.com`
-
-```bash
-curl -SL https://github.com/jetsung/sh-files/raw/main/sh/docker-compose.sh | bash
-```
-
-```bash
-curl -SL https://jihulab.com/jetsung/sh-files/-/raw/main/sh/docker-compose.sh | bash
-```
-
-### [docker-buildx](docker-buildx.sh)
-
-> 一键安装 `docker buildx`  
-> `./docker-builex.sh 0.7.1 https://ghproxy.com`
-
-```bash
-curl -SL https://github.com/jetsung/sh-files/raw/main/sh/docker-buildx.sh | bash
-```
-
-```bash
-curl -SL https://jihulab.com/jetsung/sh-files/-/raw/main/sh/docker-buildx.sh | bash
-```
 
 ### [m3u8-dl](m3u8-dl.sh)
 
@@ -65,12 +35,6 @@ curl -SL https://jihulab.com/jetsung/sh-files/-/raw/main/sh/docker-buildx.sh | b
 
 > 依赖：`ffmpeg`
 
-### [acme-domain](acme-domain.sh)
-
-一键创建域名 SSL 证书
-
-> 依赖：`acme` (默认为 `docker: neilpang/acme.sh`)，`DNS` 方式
-
 ### [linux-upgrade-kernel](linux-upgrade-kernel.sh)
 
 > 一键升级 Linux Kernel
@@ -81,11 +45,11 @@ curl -SL https://jihulab.com/jetsung/sh-files/-/raw/main/sh/docker-buildx.sh | b
 > Linux 桌面快捷方式创建
 
 ```bash
-curl -SL https://github.com/jetsung/sh-files/raw/main/sh/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
+curl -SL https://framagit.org/jetsung/scripts/-/raw/main/shell/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
 ```
 
 ```bash
-curl -SL https://jihulab.com/jetsung/sh-files/-/raw/main/sh/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
+curl -SL https://jihulab.com/jetsung/scripts/-/raw/main/shell/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
 ```
 
 ### [service](service.sh)
@@ -115,11 +79,11 @@ OPTIONS:
 ```
 
 ```bash
-curl -SL https://github.com/jetsung/sh-files/raw/main/sh/service.sh | bash -s -- --name 'myservice' --exec "/usr/local/bin/myservice" --desc "This is my service"
+curl -SL https://framagit.org/jetsung/scripts/-/raw/main/shell/service.sh | bash -s -- --name 'myservice' --exec "/usr/local/bin/myservice" --desc "This is my service"
 ```
 
 ```bash
-curl -SL https://jihulab.com/jetsung/sh-files/-/raw/main/sh/service.sh | bash -s -- --name 'myservice' --exec "/usr/local/bin/myservice" --desc "This is my service"
+curl -SL https://jihulab.com/jetsung/scripts/-/raw/main/shell/service.sh | bash -s -- --name 'myservice' --exec "/usr/local/bin/myservice" --desc "This is my service"
 ```
 
 ### [fonts-install](fonts-install.sh)
