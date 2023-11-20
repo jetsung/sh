@@ -140,7 +140,13 @@ main() {
 	install_deps || exit 1
 
 	CURRENT_KERNEL=$(uname -r)
-	TARGET_KERNEL="$VERSION-${CURRENT_KERNEL##*-}"
+
+
+	# 提取当前内核的后缀
+	CURRENT_SUFFIX="${CURRENT_KERNEL#*-}"
+	
+	# 构建目标内核，只保留-amd64-desktop-hwe
+	TARGET_KERNEL="${VERSION}-${CURRENT_SUFFIX}"
 	printf "\nCurrent: \e[1;33m%s\e[0m ==> Target: \e[1;33m%s\e[0m\n\n" "$CURRENT_KERNEL" "$TARGET_KERNEL"
 
 	do_upgrade "$@" 2>&1 | tee ./kernel.log
