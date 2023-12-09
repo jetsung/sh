@@ -45,7 +45,7 @@ say() {
 
 # show help message
 show_help_message() {
-  printf "Set systemd service
+  printf "Set software desktop
 
 \e[1;33mUSAGE:\e[m
     \e[1;32m%s\e[m [OPTIONS] <SUBCOMMANDS>

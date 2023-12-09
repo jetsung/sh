@@ -1,6 +1,6 @@
-## 脚本与源
+# 脚本与源
 
-### Script Origin URL
+## Script Origin URL
 
 - [DOTNET](dotnet-install.sh)
 
