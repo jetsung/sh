@@ -5,7 +5,7 @@
 ### 从远程文件升级本文件夹下的所有脚本
 ###
 ### 1. 每个需要更新的文件中添加源地址
-### # ORIGIN1: https://myfiles.com/origin-sh.sh
+### # ORIGIN: https://myfiles.com/origin-file.sh
 ###
 ### 2. 执行本脚本：bash __upgrade.sh
 ###
