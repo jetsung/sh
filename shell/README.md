@@ -1,14 +1,32 @@
 # 一键脚本
 
-- [脚本列表](#脚本列表)
-  - [dpkg-remove-kernel](#dpkg-remove-kernel)
-  - [gitlab-runner](#gitlab-runner)
-  - [dl-m3u8](#dl-m3u8)
-  - [video2mp4](#video2mp4)
-  - [upgrade-linux-kernel](#upgrade-linux-kernel)
-  - [desktop](#desktop)
-  - [fonts-install](#fonts-install)
-  - [delete-github-workflows-run](#delete-github-workflows-run)
+## 远程更新脚本
+
+- **从远程文件下载最新文件**
+
+```bash
+bash __upgrade.sh
+```
+
+- **设置更新源**
+
+在每个需要更新的文件中，添加如下关于源的内容
+
+```bash
+# ORIGIN: https://myfiles.com/origin-sh.sh
+```
+
+## 脚本列表索引
+
+- [dpkg-remove-kernel](#dpkg-remove-kernel)
+- [gitlab-runner](#gitlab-runner)
+- [dl-m3u8](#dl-m3u8)
+- [video2mp4](#video2mp4)
+- [upgrade-linux-kernel](#upgrade-linux-kernel)
+- [desktop](#desktop)
+- [fonts-install](#fonts-install)
+- [delete-github-workflows-run](#delete-github-workflows-run)
+- [code-mirror](#code-mirror)
 
 ## 脚本列表
 
@@ -22,8 +40,11 @@
 
 ### [gitlab-runner](gitlab-runner.sh)
 
-> 一键安装 `gitlab-runner`  
-> `bash gitlab-runner.sh`
+一键安装 `gitlab-runner`
+
+```bash
+bash gitlab-runner.sh
+```
 
 ---
 
@@ -99,3 +120,11 @@ sudo fonts-install.sh
 # 首先安装 gh 工具，并且登录和授权。
 delete-github-workflows-run.sh ORG_NAME REPO_NAME
 ```
+
+---
+
+### [code-mirror](code-mirror.sh)
+
+Git 代码迁移到新托管平台
+
+---
