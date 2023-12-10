@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# ORIGIN: https://framagit.org/-/snippets/7151/raw/main/kernel.sh
+
 ###
 #
 # Upgrade Linux Kernel
@@ -10,7 +12,8 @@
 ###
 
 ##
-# 最新代码位于：https://jihulab.com/-/snippets/2310
+# (4 次 Tab 键) -> Load(回车) -> OK(回车) -> (1 次 Tab 键) -> Exit(回车) -> Yes(回车)
+# 最新代码位于：https://framagit.org/-/snippets/7151
 ##
 
 check_apt() {
