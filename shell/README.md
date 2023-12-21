@@ -27,6 +27,7 @@ bash __upgrade.sh
 - [fonts-install](#fonts-install)
 - [delete-github-workflows-run](#delete-github-workflows-run)
 - [code-mirror](#code-mirror)
+- [pusher](#pusher)
 
 ## 脚本列表
 
@@ -128,3 +129,7 @@ delete-github-workflows-run.sh ORG_NAME REPO_NAME
 Git 代码迁移到新托管平台
 
 ---
+
+### [pusher](pusher.sh)
+
+推送消息通知到钉钉、飞书、Lark
