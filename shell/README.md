@@ -28,6 +28,7 @@ bash __upgrade.sh
 - [delete-github-workflows-run](#delete-github-workflows-run)
 - [code-mirror](#code-mirror)
 - [pusher](#pusher)
+- [debfetch](#debfetch)
 
 ## 脚本列表
 
@@ -133,3 +134,10 @@ Git 代码迁移到新托管平台
 ### [pusher](pusher.sh)
 
 推送消息通知到钉钉、飞书、Lark
+
+---
+
+### [debfetch](debfetch.sh)
+
+下载 deb 到自建的 apt 仓库，并更新仓库信息。  
+参考：[https://apt.ppwq.de](https://apt.ppwq.de)
