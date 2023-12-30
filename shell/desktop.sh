@@ -74,8 +74,9 @@ main() {
   _APP_SHARE_PATH="$HOME/.local/share/applications"
   [[ -d "$_APP_SHARE_PATH" ]] || mkdir -p "$_APP_SHARE_PATH"
 
-  DESKTOP_NAME=$(echo "${NAME,,}" | awk '{print $1}')
-  _DESKTOP_PATH="$HOME/.local/share/applications/$DESKTOP_NAME.desktop"
+  DESKTOP_NAME=$(echo "$NAME" | awk '{print $1}')
+  _DESKTOP_NAME="${DESKTOP_NAME,,}"
+  _DESKTOP_PATH="$HOME/.local/share/applications/$_DESKTOP_NAME.desktop"
 
   {
     echo "[Desktop Entry]"
