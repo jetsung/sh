@@ -167,11 +167,15 @@ main() {
   APT_ROOT_PATH="${APTPATH:-/root/downloads}"
   DEB_POOL_PATH="${DEBPATH:-$APT_ROOT_PATH/pool/main}"
   APT_CONF_PATH="${APTCONF:-/etc/apt-ftparchive.conf}"
+  
+  ORGNAME="${ORGNAME:-idev}"
   GPG_KEY="${GPGKEY:-best@idev.top}"
+  
   echo "APT_ROOT_PATH: $APT_ROOT_PATH"
   echo "DEB_POOL_PATH: $DEB_POOL_PATH"
   echo "APT_CONF_PATH: $APT_CONF_PATH"
   echo "GPG_KEY: $GPG_KEY"
+  echo "ORG NAME: $ORGNAME"
   echo
 
   [[ -d "$DEB_POOL_PATH" ]] || mkdir -p "$DEB_POOL_PATH"
@@ -180,8 +184,8 @@ main() {
     fetch_deb "$URL" "${NAME:-}"
   fi
 
-  HEADER_ORIGIN="ppwq"
-  HEADER_LABEL="ppwq"
+  HEADER_ORIGIN="$ORGNAME"
+  HEADER_LABEL="$ORGNAME"
 
   set_archconf
   update_pool
