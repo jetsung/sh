@@ -10,5 +10,6 @@ cd "${TMP_PATH}" || exit
 unzip protoc.zip
 
 cp bin/protoc /usr/local/bin/
+cp -r include/google /usr/include/
 
 protoc --version
