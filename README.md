@@ -9,12 +9,19 @@
 ├── init.d  # 软件启动文件
 ├── install # 软件安装脚本
 ├── origin  # 脚本源
-├── sh      # 安装文件
 └── shell   # Shell 脚本
 ```
 
-- [Softwares Configuration Files](conf)
-- [Softwares Install Script](install)
+## 安装脚本
+```bash
+git clone https://framagit.org/jetsung/sh.git
+cd sh/install
+```
+
+- 1. **NGINX**
+```bash
+bash nginx.sh
+```
 
 ## 仓库镜像
 
