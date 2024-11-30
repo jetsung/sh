@@ -2,7 +2,7 @@
 
 我的脚本文件
 
-## Folders
+## 目录列表
 
 ```bash
 ├── conf    # 软件配置文件
@@ -13,14 +13,27 @@
 ```
 
 ## 安装脚本
+1. 安装前置脚本
+```bash
+sudo apt install -y jq
+```
+
 ```bash
 git clone https://framagit.org/jetsung/sh.git
 cd sh/install
 ```
 
-- 1. **NGINX**
+**1. nginx**
 ```bash
 bash nginx.sh
+```
+
+**2. protoc**
+```bash
+bash protoc.sh
+
+# 或者
+curl -s https://framagit.org/jetsung/sh/-/raw/main/install/protoc.sh | bash
 ```
 
 ## 仓库镜像
