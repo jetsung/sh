@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/protocolbuffers/protobuf/releases/latest" | jq '.tag_name, .assets[].browser_download_url' | grep linux-x86_64)
+DOWNLOAD_URL=$(curl -s "https://api.github.com/repos/protocolbuffers/protobuf/releases/latest" | jq -r '.tag_name, .assets[].browser_download_url' | grep linux-x86_64)
 
 TMP_PATH=$(mktemp -d)
 
