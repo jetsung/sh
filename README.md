@@ -13,11 +13,13 @@
 ```
 
 ## 安装脚本
-1. 安装前置脚本
+
+安装前置依赖
 ```bash
 sudo apt install -y jq
 ```
 
+拉取源代码
 ```bash
 git clone https://framagit.org/jetsung/sh.git
 cd sh/install
@@ -40,4 +42,5 @@ curl -s https://framagit.org/jetsung/sh/-/raw/main/install/protoc.sh | bash
 
 - https://git.jetsung.com/jetsung/sh
 - https://framagit.org/jetsung/sh
-- https://codeup.aliyun.com/jetsung/sh
+- https://gitcode.com/jetsung/sh
+
