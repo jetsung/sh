@@ -11,6 +11,7 @@ judgment_parameters() {
       HELP='1'
       break
       ;;
+
     -n | --name)
       if [[ -z "${2:?error: Please specify the correct name.}" ]]; then
         exit 1
@@ -26,6 +27,11 @@ judgment_parameters() {
       URL="$2"
       shift
       ;;
+
+    -s | --skip)
+      SKIP='1'
+      ;;
+
     *)
       echo "$0: unknown option -- -"
       exit 1
@@ -52,7 +58,7 @@ fetch_deb() {
   GITHUB="${GITHUB:-https://github.com}"
   url=${1/https:\/\/github.com/"$GITHUB"/}
 
-  name="${2:-$(mktemp)}"
+  name="${2:-$(mktemp -t DEB.APT_XXXX)}"
 
   if file "$name" | grep -v 'Debian binary package'; then
     rm -rf "$name"
@@ -60,7 +66,7 @@ fetch_deb() {
 
   if [[ ! -f "$name" ]]; then
     echo "Save to '$name' from $url"
-    curl -fSL -o "$name" "$url"
+    curl -fsSL -o "$name" "$url"
     echo
   fi
 
@@ -128,7 +134,7 @@ Description: $Description
 EOF
 }
 
-update_pool() {
+upgrade_index() {
   pushd "$APT_ROOT_PATH" >/dev/null 2>&1 || {
     echo "Failed to enter $APT_ROOT_PATH"
     exit 1
@@ -187,8 +193,10 @@ main() {
   HEADER_ORIGIN="$ORGNAME"
   HEADER_LABEL="$ORGNAME"
 
-  set_archconf
-  update_pool
+  if [[ -z "${SKIP:-}" ]]; then
+    set_archconf
+    upgrade_index
+  fi
 }
 
 main "$@"
