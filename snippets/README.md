@@ -2,6 +2,8 @@
 
 ## 下载地址和版本号提取
 
+- [**`GitHub`**](github.md)
+
 - [**`Sublime Text`**](sublime.md)
 
 - [**`nginx`** stable](nginx.md)
