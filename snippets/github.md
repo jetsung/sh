@@ -20,48 +20,48 @@ echo 'msojocs/wechat-web-devtools-linux' | xargs -I {} curl -s "https://api.gith
 
 ### 批量提取链接
 - 文件 `repo.list`。注意，最后必须空一行。
-  ```bash
-  msojocs/wechat-web-devtools-linux
-  lyswhut/lx-music-desktop
-  BurntSushi/ripgrep 
-  
-  ```
+```bash
+msojocs/wechat-web-devtools-linux
+lyswhut/lx-music-desktop
+BurntSushi/ripgrep 
+localsend/localsend
+
+```
 
 - 执行文件。
-  ```bash
-    #!/usr/bin/env bash
+```bash
+#!/usr/bin/env bash
 
-    set -euo pipefail
+set -euo pipefail
 
-    while IFS= read -r repo; do
-        echo "$repo" | xargs -I {} curl -s "https://api.github.com/repos/{}/releases/latest" | grep browser_download_url | awk -F '"' '{print $4}' | grep -E 'amd|deb' | head -n 1
-    done < repo.list  
-  ```
+while IFS= read -r repo; do
+    echo "$repo" | xargs -I {} curl -s "https://api.github.com/repos/{}/releases/latest" | grep browser_download_url | awk -F '"' '{print $4}' | grep -E 'amd|deb' | head -n 1
+done < repo.list  
+```
 
 ### 配合 `debfetch`
-  ```bash
-    #!/usr/bin/env bash
+```bash
+#!/usr/bin/env bash
 
-    set -euo pipefail
+set -euo pipefail
 
-    APT_ROOT_PATH="${APTPATH:-/root/downloads}"
-    DEB_POOL_PATH="${DEBPATH:-$APT_ROOT_PATH/pool/main}"
+APT_ROOT_PATH="${APTPATH:-/root/downloads}"
+DEB_POOL_PATH="${DEBPATH:-$APT_ROOT_PATH/pool/main}"
 
-    while IFS= read -r repo; do
-        echo "REPO: $repo"
-        soft_url=$(echo "$repo" | xargs -I {} curl -s "https://api.github.com/repos/{}/releases/latest" | grep browser_download_url | awk -F '"' '{print $4}' | grep -E 'amd|deb' | head -n 1)
-        soft_name=$(basename "$soft_url")
+while IFS= read -r repo; do
+  soft_url=$(echo "$repo" | tr -d ' ' | xargs -I {} curl -s "https://api.github.com/repos/{}/releases/latest" | grep browser_download_url | awk -F '"' '{print $4}' | grep -E '(x86[-_]?64|amd64).*\.deb$' | head -n 1)
+  soft_name=$(basename "$soft_url")
 
-        deb_file_path="${DEB_POOL_PATH}/${soft_name}"
-        if [ ! -f "${deb_file_path}" ]; then
-            debfetch -s -u "$soft_url"
-        else
-            echo "File already exists: ${deb_file_path}"
-        fi
-        echo
-    done < repo.list
+  deb_file_path="${DEB_POOL_PATH}/${soft_name}"
+  if [ ! -f "${deb_file_path}" ]; then
+      debfetch -s -u "$soft_url"
+  else
+      echo "File already exists: ${deb_file_path}"
+  fi
+  echo
+done < repo.list
 
-    echo
+echo
 
-    debfetch
-  ```
+debfetch
+```
