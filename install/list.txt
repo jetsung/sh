@@ -1,0 +1,9 @@
+.
+├── list.txt
+├── nginx.sh
+├── php-8.sh
+├── protoc.sh
+├── README.md
+└── redis.sh
+
+1 directory, 6 files

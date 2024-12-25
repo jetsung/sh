@@ -5,7 +5,7 @@
 - **从远程文件下载最新文件**
 
 ```bash
-bash __upgrade.sh
+./.upgrade.sh
 ```
 
 - **设置更新源**
@@ -18,17 +18,23 @@ bash __upgrade.sh
 
 ## 脚本列表索引
 
-- [dpkg-remove-kernel](#dpkg-remove-kernel)
-- [gitlab-runner](#gitlab-runner)
-- [dl-m3u8](#dl-m3u8)
-- [video2mp4](#video2mp4)
-- [upgrade-linux-kernel](#upgrade-linux-kernel)
-- [desktop](#desktop)
-- [fonts-install](#fonts-install)
-- [delete-github-workflows-run](#delete-github-workflows-run)
-- [code-mirror](#code-mirror)
-- [pusher](#pusher)
-- [debfetch](#debfetch)
+- [一键脚本](#一键脚本)
+  - [远程更新脚本](#远程更新脚本)
+  - [脚本列表索引](#脚本列表索引)
+  - [脚本列表](#脚本列表)
+    - [dpkg-remove-kernel](#dpkg-remove-kernel)
+    - [gitlab-runner](#gitlab-runner)
+    - [dl-m3u8](#dl-m3u8)
+    - [video2mp4](#video2mp4)
+    - [upgrade-linux-kernel](#upgrade-linux-kernel)
+    - [desktop](#desktop)
+    - [service](#service)
+    - [fonts-install](#fonts-install)
+    - [delete-github-workflows-run](#delete-github-workflows-run)
+    - [code-mirror](#code-mirror)
+    - [pusher](#pusher)
+    - [debfetch](#debfetch)
+    - [debgetsh](#debgetsh)
 
 ## 脚本列表
 
@@ -80,10 +86,10 @@ Linux 桌面快捷方式创建
 
 ```bash
 # show help
-curl -fsL https://framagit.org/jetsung/scripts/-/raw/main/shell/desktop.sh | bash -s -- --help
+curl -fsL https://framagit.org/jetsung/sh/-/raw/main/shell/desktop.sh | bash -s -- --help
 
 # install software desktop
-curl -fsL https://framagit.org/jetsung/scripts/-/raw/main/shell/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
+curl -fsL https://framagit.org/jetsung/sh/-/raw/main/shell/desktop.sh | bash -s -- --name 'application' --exec ~/myapp --icon ~/myicon.png
 ```
 
 ---
@@ -94,10 +100,10 @@ Linux 服务启动项创建（`systemd`）
 
 ```bash
 # show help
-curl -fsL https://framagit.org/jetsung/scripts/-/raw/main/shell/service.sh | bash -s -- --help
+curl -fsL https://framagit.org/jetsung/sh/-/raw/main/shell/service.sh | bash -s -- --help
 
 # install service
-curl -fsL https://framagit.org/jetsung/scripts/-/raw/main/shell/service.sh | bash -s -- --service 'service_name' --exec "/usr/local/bin/myservice" --workdir "/opt/myservice" --desc "This is my service"
+curl -fsL https://framagit.org/jetsung/sh/-/raw/main/shell/service.sh | bash -s -- --service 'service_name' --exec "/usr/local/bin/myservice" --workdir "/opt/myservice" --desc "This is my service"
 ```
 
 ---
@@ -139,5 +145,11 @@ Git 代码迁移到新托管平台
 
 ### [debfetch](debfetch.sh)
 
-下载 deb 到自建的 apt 仓库，并更新仓库信息。  
-参考：[https://apt.ppwq.de](https://apt.ppwq.de)
+下载 deb 到自建的 APT 仓库，并更新仓库信息。  
+参考：[https://apt.skiy.net](https://apt.skiy.net)
+
+---
+
+### [debgetsh](debgetsh.sh)
+
+安装 APT 仓库 GPG 公钥
