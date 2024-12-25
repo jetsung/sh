@@ -169,7 +169,7 @@ main() {
   APT_CONF_PATH="${APTCONF:-/etc/apt-ftparchive.conf}"
   
   ORGNAME="${ORGNAME:-idev}"
-  GPG_KEY="${GPGKEY:-best@idev.top}"
+  GPG_KEY="${GPGKEY:-example@example.com}"
   
   echo "APT_ROOT_PATH: $APT_ROOT_PATH"
   echo "DEB_POOL_PATH: $DEB_POOL_PATH"

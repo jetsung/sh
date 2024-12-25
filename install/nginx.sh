@@ -12,10 +12,12 @@ wwwlogs_dir=/data/wwwlogs
 
 install_dir=$(pwd)
 
-download() {
+get_stable_version() {
     #NGINX_VER="1.26.2"
     NGINX_VER=$(curl https://nginx.org/en/download.html | grep -oP '<table[^>]*>\K.*?(?=</table>)' | head -n 2 | grep -oP '(?<=nginx-)\d+\.\d+\.\d+' | tail -n 1)
+}
 
+download() {
     TMP_PATH=$(mktemp -d /tmp/nginx.XXX)
     cd "$TMP_PATH" || exit
 
@@ -59,7 +61,7 @@ install() {
     make install
 }
 
-set_conf() {
+setting() {
     cd "${install_dir}" || exit
 
     if ! grep -q '^export PATH=' /etc/profile; then
@@ -135,10 +137,16 @@ print_message() {
     fi
 }
 
+NGINX_VER="${1:-stable}"
+
+if [ "${NGINX_VER}" = "stable" ]; then
+    get_stable_version
+fi
+
 download
 
 install
 
-set_conf
+setting
 
 print_message

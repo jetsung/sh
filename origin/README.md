@@ -1,4 +1,4 @@
-# 脚本与源
+# 脚本案例
 
 ## Script Origin URL
 
