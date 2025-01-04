@@ -7,7 +7,7 @@
 ### 1. 每个需要更新的文件中添加源地址
 ### # ORIGIN: https://myfiles.com/origin-file.sh
 ###
-### 2. 执行本脚本：bash __upgrade.sh
+### 2. 执行本脚本：bash ./.upgrade.sh
 ###
 ####
 
@@ -32,7 +32,7 @@ download_and_replace() {
   fi
 }
 
-find . -type f -name "*.sh" -not -wholename "./__upgrade.sh" -exec awk '/^# ORIGIN:/ {print FILENAME, $3}' {} \; |
+find . -type f -name "*.sh" -not -wholename "./.upgrade.sh" -exec awk '/^# ORIGIN:/ {print FILENAME, $3}' {} \; |
   while read -r filename url; do
     download_and_replace "$url" "$filename"
   done

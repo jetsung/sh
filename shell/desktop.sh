@@ -37,12 +37,14 @@ judgment_parameters() {
       shift
       ;;
     *)
-      echo "$0: unknown option -- -"
+      echo "$0: unknown option -- $1"
       exit 1
       ;;
     esac
     shift
   done
+
+  [[ "${HELP:-}" -eq '1' ]] && show_help
 }
 
 show_help() {
@@ -56,8 +58,6 @@ show_help() {
 
 main() {
   judgment_parameters "$@"
-
-  [[ "${HELP:-}" -eq '1' ]] && show_help
 
   NAME="${NAME:-}"
   if [[ -z "$NAME" ]]; then
