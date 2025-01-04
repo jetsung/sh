@@ -10,7 +10,7 @@
 ├── install  # 软件安装脚本
 ├── origin   # 脚本源
 ├── shell    # 自己编写的脚本
-└── snippets # 自己写的脚本片段 
+└── snippets # 自己编写的脚本片段 
 ```
 
 ## 安装脚本
