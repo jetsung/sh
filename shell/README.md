@@ -35,6 +35,7 @@
     - [pusher](#pusher)
     - [debfetch](#debfetch)
     - [debgetsh](#debgetsh)
+    - [dockerpull](#dockerpull)
 
 ## 脚本列表
 
@@ -153,3 +154,9 @@ Git 代码迁移到新托管平台
 ### [debgetsh](debgetsh.sh)
 
 安装 APT 仓库 GPG 公钥
+
+---
+
+### [dockerpull](dockerpull.sh)
+
+Docker 从加速站拉取镜像
