@@ -13,11 +13,19 @@ judgment_parameters() {
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
 
-        '-u' | '--url')
-            if [[ -z "${2:?error: 请输入 Git 仓库地址}" ]]; then
+        '-t' | '--target')
+            if [ -z "${2:?error: 请输入目标 Git 仓库地址}" ]; then
                 exit 1
             fi
-            GIT_REPO_URL="${2}"
+            TARGET_REPO_URL="$2"
+            shift
+            ;;
+
+        '-o' | '--origin')
+            if [ -z "${2:?error: 请输入源 Git 仓库地址}" ]; then
+                exit 1
+            fi
+            ORIGIN_REPO_URL="$2"
             shift
             ;;
 
@@ -40,7 +48,7 @@ judgment_parameters() {
         shift
     done
 
-    if [ -n "${HELP}" ]; then
+    if [ -n "$HELP" ]; then
         show_help
     fi
 }
@@ -48,9 +56,10 @@ judgment_parameters() {
 # 打印帮助信息
 show_help() {
     echo "usage: $0 [ options ]"
-    echo '  -u, --url    [GIT_REPO_URL]   仓库地址       示例: git@framagit.org:jetsung/sh.git'
-    echo '  -c, --config                  是否配置用户信息'
-    echo '  -h, --help                    打印帮助'
+    echo '  -t, --target    [TARGET_URL]   源仓库地址     示例: git@github.com:jetsung/sh.git'
+    echo '  -o, --origin    [ORIGIN_URL]   目标仓库地址   示例: git@framagit.org:jetsung/sh.git'
+    echo '  -c, --config                   是否配置用户信息'
+    echo '  -h, --help                     打印帮助'
     exit 0
 }
 
@@ -79,7 +88,8 @@ init_remote() {
 }
 
 init_params() {
-  GIT_REPO_URL=""
+  ORIGIN_REPO_URL=""
+  TARGET_REPO_URL=""
   IS_CONFIG=""
 
   # SSH KEY
@@ -97,20 +107,17 @@ main() {
 
   judgment_parameters "$@"
 
-  REMOTE_URL="${GIT_REPO_URL:-}"
-
-  if [ -n "${REMOTE_URL}" ]; then
-    FOLDER_PRE="${REMOTE_URL##*/}"
+  if [ -n "$ORIGIN_REPO_URL" ]; then
+    FOLDER_PRE="${ORIGIN_REPO_URL##*/}"
     FOLDER_DIR="${FOLDER_PRE%.*}"
-    if [ ! -d "${FOLDER_DIR}" ]; then
-      mkdir "${FOLDER_DIR}"
+    if [ ! -d "$FOLDER_DIR" ]; then
+      mkdir "$FOLDER_DIR"
     fi
-    cd "${FOLDER_DIR}"
+    cd "$FOLDER_DIR"
 
     init_remote
 
-    git remote add origin "${REMOTE_URL}"
-    #git remote set-url origin "${REMOTE_URL}"
+    git remote add origin "$ORIGIN_REPO_URL"
   else
     init_remote
   fi
@@ -122,6 +129,10 @@ main() {
     git checkout "$(git branch -a | awk -F '/' '{print $NF}' | head -n 1)"
 
     printf "\n\033[93mcd %s \033[0m\n" "$FOLDER_DIR"
+  fi
+
+  if [ -n "$TARGET_REPO_URL" ]; then
+    git remote set-url origin "$TARGET_REPO_URL"
   fi
 }
 
