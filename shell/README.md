@@ -36,6 +36,7 @@
     - [debfetch](#debfetch)
     - [debgetsh](#debgetsh)
     - [dockerpull](#dockerpull)
+    - [gitflydo](#gitflydo)
 
 ## 脚本列表
 
@@ -160,3 +161,11 @@ Git 代码迁移到新托管平台
 ### [dockerpull](dockerpull.sh)
 
 Docker 从加速站拉取镜像
+
+---
+
+### [gitflydo](gitflydo.sh)
+
+一台电脑上使用同一代码托管平台的多个 Git 账户
+
+---
