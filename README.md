@@ -41,7 +41,7 @@ curl -s https://framagit.org/jetsung/sh/-/raw/main/install/protoc.sh | bash
 
 ## 仓库镜像
 
-- https://git.jetsung.com/jetsung/sh
-- https://framagit.org/jetsung/sh
-- https://gitcode.com/jetsung/sh
-
+- https://git.jetsung.com/idev/sh
+- https://framagit.org/idev/sh
+- https://gitcode.com/idev/sh
+- https://github.com/idevsig/sh
