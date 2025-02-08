@@ -2,34 +2,58 @@
 
 # ORIGIN: https://framagit.org/-/snippets/7181/raw/main/debfetch.sh
 
+# Description: 下载 deb 包
+#
+# UpdatedAt: 2025-02-08
+
 set -euo pipefail
+
+APT_ROOT_PATH="${APTPATH:-/root/downloads}"
+DEB_POOL_PATH="${DEBPATH:-$APT_ROOT_PATH/pool/main}"
+APT_CONF_PATH="${APTCONF:-/etc/apt-ftparchive.conf}"
+
+ORGNAME="${ORGNAME:-idev}"
+GPG_KEY="${GPGKEY:-example@example.com}"
+
+HELP=""
+SKIP=""
+
+NAME=""
+URL=""
 
 judgment_parameters() {
   while [[ "$#" -gt '0' ]]; do
     case "$1" in
     '-h' | '--help')
-      HELP='1'
+    # 帮助
+      HELP=1
       break
       ;;
 
     -n | --name)
-      if [[ -z "${2:?error: Please specify the correct name.}" ]]; then
+    # 软件名
+      shift
+      if [ -z "${1:?error: Please specify the correct name.}" ]; then
         exit 1
       fi
-      NAME="$2"
+      NAME="$1"
       shift
       ;;
 
     -u | --url)
-      if [[ -z "${2:?error: Please specify the correct url.}" ]]; then
+    # 软件下载地址
+      shift
+      if [ -z "${1:?error: Please specify the correct url.}" ]; then
         exit 1
       fi
-      URL="$2"
+      URL="$1"
       shift
       ;;
 
     -s | --skip)
-      SKIP='1'
+    # 跳过更新索引
+      shift
+      SKIP=1
       ;;
 
     *)
@@ -37,7 +61,6 @@ judgment_parameters() {
       exit 1
       ;;
     esac
-    shift
   done
 }
 
@@ -58,44 +81,54 @@ fetch_deb() {
   GITHUB="${GITHUB:-https://github.com}"
   url=${1/https:\/\/github.com/"$GITHUB"/}
 
-  name="${2:-$(mktemp -t DEB.APT_XXXX)}"
+  origin_name="${2:-}"
 
-  if file "$name" | grep -v 'Debian binary package'; then
-    rm -rf "$name"
+  if [ -z "$origin_name" ]; then
+    origin_name="${url##*/}"
   fi
 
-  if [[ ! -f "$name" ]]; then
-    echo "Save to '$name' from $url"
-    curl -fsSL -o "$name" "$url"
+  # 删除旧包
+  if [ -f "$origin_name" ]; then
+    # 非 deb 包，则删除
+    if file "$origin_name" | grep -v 'Debian binary package'; then
+      rm -rf "$origin_name"
+    fi
+  fi
+
+  if [ ! -f "$origin_name" ]; then
+    echo "Save to '$origin_name' from $url"
+    curl -fsSL -o "$origin_name" "$url"
     echo
   fi
 
-  if file "$name" | grep -v 'Debian binary package'; then
-    echo -e "The file is not a deb package:\n$name\n"
+  if file "$origin_name" | grep -v 'Debian binary package'; then
+    echo -e "The file is not a deb package:\n$origin_name\n"
     exit 1
   fi
 
-  move_deb "$name"
+  move_deb "$origin_name"
 }
 
 move_deb() {
   DEB_FULL_PATH="${1:-}"
-  PACKAGE_INFO=$(dpkg-deb --info "$DEB_FULL_PATH" | awk '/Package:|Architecture:|Version:|Maintainer:/ {print}')
+  # PACKAGE_INFO=$(dpkg-deb --info "$DEB_FULL_PATH" | awk '/Package:|Architecture:|Version:|Maintainer:/ {print}')
 
-  # 从提取的信息中获取软件包名称、版本和维护者
-  PACKAGE_NAME=$(echo "$PACKAGE_INFO" | awk -F ': ' '/Package:/ {print $2}')
-  PACKAGE_ARCH=$(echo "$PACKAGE_INFO" | awk -F ': ' '/Architecture:/ {print $2}')
-  PACKAGE_VERSION=$(echo "$PACKAGE_INFO" | awk -F ': ' '/Version:/ {print $2}')
-  MAINTAINER=$(echo "$PACKAGE_INFO" | awk -F ': ' '/Maintainer:/ {print $2}')
+  # # 从提取的信息中获取软件包名称、版本和维护者
+  # PACKAGE_NAME=$(echo "$PACKAGE_INFO" | awk -F ': ' '/Package:/ {print $2}')
+  # PACKAGE_ARCH=$(echo "$PACKAGE_INFO" | awk -F ': ' '/Architecture:/ {print $2}')
+  # PACKAGE_VERSION=$(echo "$PACKAGE_INFO" | awk -F ': ' '/Version:/ {print $2}')
+  # MAINTAINER=$(echo "$PACKAGE_INFO" | awk -F ': ' '/Maintainer:/ {print $2}')
 
-  # 输出提取的信息
-  echo
-  echo "Package Name: $PACKAGE_NAME"
-  echo "Architecture: $PACKAGE_ARCH"
-  echo "Version: $PACKAGE_VERSION"
-  echo "Maintainer: $MAINTAINER"
+  # # 输出提取的信息
+  # echo
+  # echo "Package Name: $PACKAGE_NAME"
+  # echo "Architecture: $PACKAGE_ARCH"
+  # echo "Version: $PACKAGE_VERSION"
+  # echo "Maintainer: $MAINTAINER"
 
-  DEB_TARGET_PATH="${DEB_POOL_PATH}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"
+  # DEB_TARGET_PATH="${DEB_POOL_PATH}/${PACKAGE_NAME}_${PACKAGE_VERSION}_${PACKAGE_ARCH}.deb"
+  
+  DEB_TARGET_PATH="${DEB_POOL_PATH}/${origin_name}"
   echo
   echo "Target deb path: ${DEB_TARGET_PATH}"
 
@@ -163,19 +196,14 @@ upgrade_index() {
 main() {
   judgment_parameters "$@"
 
-  [[ "${HELP:-}" -eq '1' ]] && show_help
+  if [ -n "${HELP:-}" ]; then
+    show_help
+  fi
 
   if ! which dpkg-buildpackage >/dev/null 2>&1; then
     echo "dpkg-dev is not installed."
     exit 1
   fi
-
-  APT_ROOT_PATH="${APTPATH:-/root/downloads}"
-  DEB_POOL_PATH="${DEBPATH:-$APT_ROOT_PATH/pool/main}"
-  APT_CONF_PATH="${APTCONF:-/etc/apt-ftparchive.conf}"
-  
-  ORGNAME="${ORGNAME:-idev}"
-  GPG_KEY="${GPGKEY:-example@example.com}"
   
   echo "APT_ROOT_PATH: $APT_ROOT_PATH"
   echo "DEB_POOL_PATH: $DEB_POOL_PATH"
@@ -184,16 +212,18 @@ main() {
   echo "ORG NAME: $ORGNAME"
   echo
 
-  [[ -d "$DEB_POOL_PATH" ]] || mkdir -p "$DEB_POOL_PATH"
+  if [ ! -d "$DEB_POOL_PATH" ]; then
+    mkdir -p "$DEB_POOL_PATH"
+  fi
 
-  if [[ -n "${URL:-}" ]]; then
+  if [ -n "${URL:-}" ]; then
     fetch_deb "$URL" "${NAME:-}"
   fi
 
   HEADER_ORIGIN="$ORGNAME"
   HEADER_LABEL="$ORGNAME"
 
-  if [[ -z "${SKIP:-}" ]]; then
+  if [ -z "${SKIP:-}" ]; then
     set_archconf
     upgrade_index
   fi
