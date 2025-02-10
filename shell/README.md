@@ -105,7 +105,14 @@ Linux 服务启动项创建（`systemd`）
 curl -fsL https://framagit.org/jetsung/sh/-/raw/main/shell/service.sh | bash -s -- --help
 
 # install service
-curl -fsL https://framagit.org/jetsung/sh/-/raw/main/shell/service.sh | bash -s -- --service 'service_name' --exec "/usr/local/bin/myservice" --workdir "/opt/myservice" --desc "This is my service"
+curl -fsL https://framagit.org/jetsung/sh/-/raw/main/shell/service.sh | bash -s -- \
+  --service 'service_name' \
+  --exec "/usr/local/bin/myservice" \
+  --workdir "/opt/myservice" \
+  --desc "This is my service" \
+  --restart 5 \
+  --net \
+  --environment "A=a1;B=b1"
 ```
 
 ---
