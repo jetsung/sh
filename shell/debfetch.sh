@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ORIGIN: https://framagit.org/-/snippets/7181/raw/main/debfetch.sh
-
+#
 # Description: 下载 deb 包
 #
 # UpdatedAt: 2025-02-08

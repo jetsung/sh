@@ -1,188 +1,122 @@
 #!/usr/bin/env bash
 
-######
-##
-## create systemd service
-##
-######
-
-set -e
-set -u
-set -o pipefail
+#
+# Description: 设置 systemd 服务
+#
+# UpdatedAt: 2025-02-10
+set -euo pipefail
 
 exec 3>&1
 
 script_name=$(basename "$0")
 
-if [ -t 1 ] && command -v tput >/dev/null; then
+# 设置颜色（如果终端支持）
+if [ -t 1 ] && command -v tput &>/dev/null; then
     ncolors=$(tput colors || echo 0)
-    if [ -n "$ncolors" ] && [ "$ncolors" -ge 8 ]; then
-        bold="$(tput bold || echo)"
-        normal="$(tput sgr0 || echo)"
-        black="$(tput setaf 0 || echo)"
-        red="$(tput setaf 1 || echo)"
-        green="$(tput setaf 2 || echo)"
-        yellow="$(tput setaf 3 || echo)"
-        blue="$(tput setaf 4 || echo)"
-        magenta="$(tput setaf 5 || echo)"
-        cyan="$(tput setaf 6 || echo)"
-        white="$(tput setaf 7 || echo)"
+    if [ "$ncolors" -ge 8 ]; then
+        bold="$(tput bold)"
+        normal="$(tput sgr0)"
+        red="$(tput setaf 1)"
+        yellow="$(tput setaf 3)"
+        cyan="$(tput setaf 6)"
     fi
 fi
 
-say_warning() {
-    printf "%b\n" "${yellow:-}${script_name}: Warning: $1${normal:-}" >&3
-}
-
-say_err() {
-    printf "%b\n" "${red:-}${script_name}: Error: $1${normal:-}" >&2
-    exit 1
-}
-
-say() {
-    printf "%b\n" "${cyan:-}${script_name}:${normal:-} $1" >&3
-}
-
-# show help message
-show_help_message() {
-    printf "Set systemd service
-
-\e[1;33mUSAGE:\e[m
-    \e[1;32m%s\e[m [OPTIONS] <SUBCOMMANDS>
-
-\e[1;33mOPTIONS:\e[m
-    \e[1;32m-h, --help\e[m
-                Print help information.
-
-    \e[1;32m-d, --desc\e[m
-                Application description  
-
-    \e[1;32m-e, --exec\e[m
-                Application exec script           
-
-    \e[1;32m-s, --service\e[m
-                Application service name       
-
-    \e[1;32m-w, --workdir\e[m
-                Application working directory   
-
-    \e[1;32m-r, --restart\e[m
-                Restart time  
-
-    \e[1;32m-n, --net\e[m
-                Network         
-\n" "${script_name##*/}"
-    exit
-}
-
+# 初始化变量
 SERVICE_NAME=""
 DESCRIPTION=""
 EXEC_START=""
 NETWORK=""
 RESTART=""
 WORKING_DIR=""
+ENV_VARS=""
 
-for ARG in "$@"; do
-    case "${ARG}" in
-    -h | --help)
-        show_help_message
-        ;;
+# 输出函数
+say() { printf "%b\n" "${cyan:-}${script_name}:${normal:-} $1" >&3; }
+say_warning() { printf "%b\n" "${yellow:-}${script_name}: Warning: $1${normal:-}" >&3; }
+say_err() { printf "%b\n" "${red:-}${script_name}: Error: $1${normal:-}" >&2; exit 1; }
 
-    -d | --desc)
-        shift
-        if [ $# -ge 1 ] && [[ "${1}" != -* ]]; then
-            DESCRIPTION="${1}"
-        fi
-        ;;
+# 显示帮助信息
+show_help() {
+    cat <<EOF
+Set up a systemd service.
 
-    -e | --exec)
-        shift
-        if [ $# -ge 1 ] && [[ "${1}" != -* ]]; then
-            EXEC_START="${1}"
-        fi
-        ;;
+${bold}USAGE:${normal}
+    ${script_name} [OPTIONS]
 
-    -s | --service)
-        shift
-        if [ $# -ge 1 ] && [[ "${1}" != -* ]]; then
-            SERVICE_NAME=$(echo "${1}" | tr '[:upper:]' '[:lower:]')
-        fi
-        ;;
-
-    -r | --restart)
-        shift
-        if [ $# -ge 1 ] && [[ "${1}" != -* ]]; then
-            RESTART="${1}"
-        fi
-        ;;
-
-    -n | --net)
-        shift
-        NETWORK="Yes"
-        ;;
-
-    -w | --workdir)
-        shift
-        if [ $# -ge 1 ] && [[ "${1}" != -* ]]; then
-            WORKING_DIR="${1}"
-        fi
-        ;;
-
-    *)
-        shift
-        ;;
-    esac
-done
-
-if [ -z "$SERVICE_NAME" ] || [ -z "$EXEC_START" ] || [ -z "$DESCRIPTION" ]; then
-    say_err "miss params"
-fi
-
-SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME.service"
-
-tee "$SERVICE_PATH" >/dev/null <<-EOF
-[Unit]
-Description = $DESCRIPTION
+${bold}OPTIONS:${normal}
+    -h, --help          Show this help message
+    -d, --desc          Application description
+    -x, --exec          Application exec script
+    -s, --service       Application service name
+    -w, --workdir       Application working directory
+    -r, --restart       Restart delay time
+    -n, --net           Enable network dependency
+    -e, --environment   Set environment variables (format: "A=a1;B=b1")
 EOF
+    exit
+}
 
-if [[ -n "$NETWORK" ]]; then
-    tee -a "$SERVICE_PATH" >/dev/null <<-EOF
-After = network.target syslog.target
-Wants = network.target
-EOF
-fi
+# 解析参数
+judgment_parameters() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help) show_help ;;
+            -d|--desc) shift; [[ $# -gt 0 ]] && DESCRIPTION="$1" ;;
+            -x|--exec) shift; [[ $# -gt 0 ]] && EXEC_START="$1" ;;
+            -s|--service) shift; [[ $# -gt 0 ]] && SERVICE_NAME="${1,,}" ;; # 转小写
+            -r|--restart) shift; [[ $# -gt 0 ]] && RESTART="$1" ;;
+            -n|--net) NETWORK="Yes" ;;
+            -w|--workdir) shift; [[ $# -gt 0 ]] && WORKING_DIR="$1" ;;
+            -e|--environment) shift; [[ $# -gt 0 ]] && ENV_VARS="$1" ;; # 解析环境变量
+            *) shift ;; # 忽略未知参数
+        esac
+        shift
+    done
+}
 
-tee -a "$SERVICE_PATH" >/dev/null <<-EOF
+# 解析环境变量格式 A=a1;B=b1 转换为 systemd 格式 Environment="A=a1" Environment="B=b1"
+parse_environment_vars() {
+    [[ -z "$ENV_VARS" ]] && return
+    IFS=';' read -ra VAR_PAIRS <<< "$ENV_VARS"
+    for VAR in "${VAR_PAIRS[@]}"; do
+        echo "Environment=\"$VAR\""
+    done
+}
 
-[Service]
-Type = simple
-EOF
+# 主逻辑
+main() {
+    # 解析参数
+    judgment_parameters "$@"
 
-if [[ -n "$WORKING_DIR" ]]; then
-    tee -a "$SERVICE_PATH" >/dev/null <<-EOF
-WorkingDirectory = $WORKING_DIR
-EOF
-fi
+    # 参数检查
+    [[ -z "$SERVICE_NAME" || -z "$EXEC_START" || -z "$DESCRIPTION" ]] && say_err "Missing required parameters."
 
-tee -a "$SERVICE_PATH" >/dev/null <<-EOF
-ExecStart = $EXEC_START
-EOF
+    SERVICE_PATH="/etc/systemd/system/${SERVICE_NAME}.service"
 
-if [[ -n "$RESTART" ]]; then
-    tee -a "$SERVICE_PATH" >/dev/null <<-EOF
-Restart = always
-RestartSec = $RESTART
-EOF
-fi
+    # 生成 systemd 服务文件
+    {
+        echo "[Unit]"
+        echo "Description=$DESCRIPTION"
+        [[ -n "$NETWORK" ]] && echo -e "After=network.target syslog.target\nWants=network.target"
 
-tee -a "$SERVICE_PATH" <<-EOF
+        echo -e "\n[Service]"
+        echo "Type=simple"
+        [[ -n "$WORKING_DIR" ]] && echo "WorkingDirectory=$WORKING_DIR"
+        echo "ExecStart=$EXEC_START"
+        [[ -n "$RESTART" ]] && echo -e "Restart=always\nRestartSec=$RESTART"
+        parse_environment_vars
 
-[Install]
-WantedBy = multi-user.target
-EOF
+        echo -e "\n[Install]"
+        echo "WantedBy=multi-user.target"
+    } | tee "$SERVICE_PATH" >/dev/null
 
-systemctl daemon-reload
+    # 重新加载 systemd 并启用服务
+    systemctl daemon-reload
+    systemctl enable --now "$SERVICE_NAME"
 
-systemctl start "$SERVICE_NAME"
+    say "Service '$SERVICE_NAME' has been installed and started successfully."
+}
 
-systemctl enable "$SERVICE_NAME"
+# 执行主逻辑
+main "$@"
