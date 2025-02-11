@@ -1,4 +1,5 @@
 .
+├── frp.sh
 ├── list.txt
 ├── nginx.sh
 ├── php-8.sh
@@ -7,4 +8,4 @@
 ├── redis.sh
 └── ttyd.sh
 
-1 directory, 7 files
+1 directory, 8 files
