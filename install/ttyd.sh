@@ -55,7 +55,7 @@ install_deps_alpine() {
     sudo_exec apk add --no-cache build-base cmake jq git json-c-dev libwebsockets-dev
 }
 
-detect_and_install() {
+os_detect() {
     if [ -f /etc/os-release ]; then
         OS_ID=$(grep -E "^ID=" /etc/os-release | cut -d= -f2 | tr -d '"')
     elif [ -f /etc/redhat-release ]; then
@@ -64,7 +64,9 @@ detect_and_install() {
         echo "Cannot detect OS type!" >&2
         exit 1
     fi
+}
 
+detect_and_install() {
     case "$OS_ID" in
         debian|ubuntu|linuxmint|popos)
             install_deps_debian
@@ -185,6 +187,13 @@ main() {
     if ! check_installed ttyd; then
         if [ -z "$IN_CHINA" ]; then
             check_in_china
+        fi
+    
+        os_detect
+        
+        if ! is_installed "$OS_ID" jq; then
+            echo "Installing jq..."
+            sudo_exec DEBIAN_FRONTEND=noninteractive apt install -y jq >/dev/null
         fi
 
         if [ $# -eq 0 ]; then
