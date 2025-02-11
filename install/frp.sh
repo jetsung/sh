@@ -1,9 +1,9 @@
 #!/usr/bin/env sh
 
 #============================================================
-# 文件名: ttyd.sh
-# 描述: 安装 ttyd
-# URL: https://github.com/tsl0922/ttyd
+# 文件名: frp.sh
+# 描述: 安装 frp
+# URL: https://github.com/fatedier/frp
 # 作者: Jetsung Chan <i@jetsung.com>
 # 版本: 1.0
 # 创建日期: 2025-02-11
@@ -15,7 +15,7 @@ set -eux
 IN_CHINA="${CHINA:-}"
 CDN_URL="${CDN:-https://c.kkgo.cc/}"
 
-REPO="tsl0922/ttyd"
+REPO="fatedier/frp"
 
 sudo_exec() {
     if [ "$(id -u)" -ne 0 ]; then
@@ -61,7 +61,7 @@ detect_os() {
     case "$OS_ID" in
         debian|ubuntu|linuxmint|popos)
             PKG_INSTALL_CMD="apt install -y -q"
-            UPDATE_CMD="apt update -q"
+            UPDATE_CMD="apt update -q -y"
             ;;
         rhel|centos|fedora|rocky|almalinux)
             PKG_INSTALL_CMD="dnf install -y -q"
@@ -121,6 +121,14 @@ check_in_china() {
     fi
 }
 
+sudo_exec() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+    else
+        sudo -E "$@"
+    fi
+}
+
 get_download_url() {
     download_url="https://api.github.com/repos/$REPO/releases/latest"
 
@@ -128,89 +136,74 @@ get_download_url() {
         download_url=$(echo "$download_url" | sed "s#https://#${CDN_URL}#")
     fi
 
+    OS="$(get_os)"
+    ARCH="$(get_arch)"
+    if [ "$ARCH" = "x86_64" ]; then
+        ARCH="amd64"
+    elif [ "$ARCH" = "aarch64" ]; then
+        ARCH="arm64"
+    fi
+
+    file_name="${OS}_${ARCH}"
     if ! curl -fsSL "$download_url" | \
         jq -r '.assets[].browser_download_url' | \
-        grep "$(get_arch)" | \
+        grep "$file_name" | \
         head -n 1; then
 
-        printf "\033[31mFailed to get ttyd download url\033[0m\n"
+        printf "\033[31mFailed to get %s download url\033[0m\n" "$REPO"
         exit 1
     fi
 }
 
 download() {
-    if [ ! -f ttyd ]; then
-        download_url=$(get_download_url)
+    download_url=$(get_download_url)
 
-        if [ -n "$IN_CHINA" ]; then
-            download_url=$(echo "$download_url" | sed "s#https://#${CDN_URL}#")
-        fi    
+    pkg_name=$(basename "$download_url")
 
-        if ! curl -fsSL "$download_url" -o ttyd; then
-            printf "\033[31mFailed to download ttyd\033[0m\n"
-            exit 1
-        fi
+    if [ -n "$IN_CHINA" ]; then
+        download_url=$(echo "$download_url" | sed "s#https://#${CDN_URL}#")
+    fi    
+
+    if ! curl -fsSL "$download_url" -o "$pkg_name"; then
+        printf "\033[31mFailed to download %s\033[0m\n" "$REPO"
+        exit 1
     fi
-    
-    if [ -f ttyd ]; then
-        chmod +x ttyd
+
+    if [ -f "$pkg_name" ]; then
+        tar -zxf "$pkg_name"
+
+        mv "${pkg_name%%.tar.gz}" "frp"
 
         move_to_bin
+
+        rm -rf "frp" "$pkg_name"
     fi
 }
 
 move_to_bin() {
-    if ! sudo_exec mv ttyd /usr/local/bin/; then
-        printf "\033[31mFailed to move ttyd to /usr/local/bin\033[0m\n"
-        exit 1
-    fi
-}
+    files="frpc frps"
 
-makeinstall() {
-    case "$OS_ID" in
-        debian|ubuntu|linuxmint|popos)
-            REQUIRED_PACKAGES="build-essential cmake git libjson-c-dev libwebsockets-dev"
-            ;;
-        # rhel|centos|fedora|rocky|almalinux)
-        #     REQUIRED_PACKAGES=""
-        #     ;;
-        # alpine)
-        #     REQUIRED_PACKAGES=""
-        #     ;;
-        # arch|manjaro)
-        #     REQUIRED_PACKAGES=""
-        #     ;;
-        *)
-            echo "Unsupported distribution: $OS_ID" >&2
+    # 移动文件
+    for file in $files; do
+        if ! sudo_exec mv "frp/$file" /usr/local/bin/; then
+            printf "\033[31mFailed to move %s to /usr/local/bin\033[0m\n" "$file"
             exit 1
-            ;;
-    esac
+        fi
+    done
 
-    # 执行安装
-    install_packages "$REQUIRED_PACKAGES"    
+    files="frpc frps"
 
-    # current_dir=$(pwd)
-    code_dir=$(mktemp -d -t ttyd.XXXXXX)
-
-    git clone https://github.com/tsl0922/ttyd.git "$code_dir"
-    
-    cd "$code_dir" || {
-        printf "\033[31mFailed to clone %s\033[0m\n" "$code_dir"
-        exit 1
-    }
-
-    mkdir build
-    cd build
-    cmake ..
-    make
-    sudo_exec make install
-
-    cd ..
-    rm -rf "$code_dir"
+    # 移动文件
+    for file in $files; do
+        if ! sudo_exec mv "frp/${file}.toml" /etc/; then
+            printf "\033[31mFailed to move %s to /etc/\033[0m\n" "${file}.toml"
+            exit 1
+        fi
+    done       
 }
 
 main() {
-    if ! check_installed ttyd; then
+    if ! check_installed frpc; then
         if [ -z "$IN_CHINA" ]; then
             check_in_china
         fi
@@ -223,13 +216,11 @@ main() {
 
         if [ $# -eq 0 ]; then
             download
-        else
-            makeinstall
         fi
     fi
 
-    if ! check_installed ttyd; then
-        printf "\033[31mFailed to install %s\033[0m\n" "$REPO"
+    if ! check_installed frpc; then
+        printf "\033[31mFailed to install frp\033[0m\n"
         exit 1
     fi
 }
