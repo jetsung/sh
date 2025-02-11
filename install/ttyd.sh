@@ -36,11 +36,11 @@ is_installed() {
 install_deps_debian() {
     sudo_exec apt update
 
-    pkg_list="build-essential cmake jq git libjson-c-dev libwebsockets-dev"
+    pkg_list="build-essential cmake git libjson-c-dev libwebsockets-dev"
     for pkg in $pkg_list; do
         if ! is_installed "$OS_ID" "$pkg"; then
             echo "Installing $pkg..."
-            sudo_exec DEBIAN_FRONTEND=noninteractive apt install -y "$pkg" >/dev/null
+            sudo_exec apt install -y "$pkg" >/dev/null
         else
             echo "$pkg is already installed. Skipping..."
         fi
@@ -48,11 +48,11 @@ install_deps_debian() {
 }
 
 install_deps_redhat() {
-    sudo_exec dnf install -y @development-tools cmake jq git json-c-devel libwebsockets-devel
+    sudo_exec dnf install -y @development-tools cmake git json-c-devel libwebsockets-devel
 }
 
 install_deps_alpine() {
-    sudo_exec apk add --no-cache build-base cmake jq git json-c-dev libwebsockets-dev
+    sudo_exec apk add --no-cache build-base cmake git json-c-dev libwebsockets-dev
 }
 
 os_detect() {
@@ -190,10 +190,10 @@ main() {
         fi
     
         os_detect
-        
+
         if ! is_installed "$OS_ID" jq; then
             echo "Installing jq..."
-            sudo_exec DEBIAN_FRONTEND=noninteractive apt install -y jq >/dev/null
+            sudo_exec apt install -y -q jq
         fi
 
         if [ $# -eq 0 ]; then
