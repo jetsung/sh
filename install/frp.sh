@@ -10,7 +10,7 @@
 # 更新日期: 2025-02-11
 #============================================================
 
-set -eux
+set -eu
 
 IN_CHINA="${CHINA:-}"
 CDN_URL="${CDN:-https://c.kkgo.cc/}"
@@ -118,14 +118,6 @@ check_installed() {
 check_in_china() {
     if [ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" != "200" ]; then
         IN_CHINA=1
-    fi
-}
-
-sudo_exec() {
-    if [ "$(id -u)" -eq 0 ]; then
-        "$@"
-    else
-        sudo -E "$@"
     fi
 }
 
