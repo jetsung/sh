@@ -4,29 +4,38 @@
 ## Ubuntu 移除多余内核
 ###
 
-get_versions() {
-	OLD_VERSION=$(uname -r)
-	VERSIONS=$(dpkg --get-selections | grep linux-image-5. | awk '{print $1}' | cut -d - -f 3,4,5)
+get_current_version() {
+	uname -r | cut -d '-' -f 1,2
 }
 
-remove_kernel() {
-	for VER in "$@"; do
-		if [ "${OLD_VERSION}" != "${VER}" ]; then
-			printf "\n\nRemove Kernel: %s\n" "${VER}"
-
-			# 删除内核
-			dpkg --get-selections | grep "${VER}" | awk '{print $1}' | xargs apt remove -y
-
-			# 移除 deinstall 标识的信息
-			dpkg --get-selections | grep linux | grep deinstall | awk '{print $1}' | xargs dpkg -P
+remove_otherk_kernel() {
+	while read -r line; do
+		package=$(echo "$line" | awk '{print $1}')
+		kernel_version=$(echo "$package" | cut -d '-' -f 3,4)
+		if [ -z "$kernel_version" ]; then
+			continue
 		fi
-	done
+
+		if [[ "$kernel_version" != "$current_version"* ]]; then
+			# echo "Remove Kernel: $package"
+			sudo apt remove -y "$package"
+		fi
+	done <<< "$(dpkg --get-selections | grep -E 'linux-headers-[0-9]|linux-image-[0-9]|linux-modules-[0-9]|linux-tools-[0-9]')"
+	
+	sudo apt autoremove -y
+}
+
+# 移除 deinstall 标识的信息
+remove_deinstall_flag() {
+	dpkg --get-selections | grep deinstall | awk '{print $1}' | xargs sudo dpkg -P	
 }
 
 main() {
-	get_versions
+	current_version=$(get_current_version)
+	echo "Current version: $current_version"
 
-	remove_kernel "$VERSIONS"
+	remove_otherk_kernel "$current_version"
+	remove_deinstall_flag
 }
 
 main "$@" || exit 1
