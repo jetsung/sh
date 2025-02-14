@@ -1,53 +1,18 @@
-#!/bin/sh
+#!/usr/bin/env sh
 # shellcheck shell=dash
 
-# This is just a little script that can be downloaded from the internet to
-# install rustup. It just does platform detection, downloads the installer
-# and runs it.
+#
+# SPDX-FileCopyrightText: 2020 Stalwart Labs Ltd <hello@stalw.art>
+#
+# SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-SEL
+#
 
-# It runs on Unix shells like {a,ba,da,k,z}sh. It uses the common `local`
-# extension. Note: Most shells limit `local` to 1 var per line, contra bash.
+# Stalwart Mail Server install script -- based on the rustup installation script.
 
-if [ "$KSH_VERSION" = 'Version JM 93t+ 2010-03-05' ]; then
-    # The version of ksh93 that ships with many illumos systems does not
-    # support the "local" extension.  Print a message rather than fail in
-    # subtle ways later on:
-    echo 'rustup does not work with this ksh93 version; please try bash!' >&2
-    exit 1
-fi
-
-
+set -e
 set -u
 
-# If RUSTUP_UPDATE_ROOT is unset or empty, default it.
-RUSTUP_UPDATE_ROOT="${RUSTUP_UPDATE_ROOT:-https://static.rust-lang.org/rustup}"
-
-#XXX: If you change anything here, please make the same changes in setup_mode.rs
-usage() {
-    cat 1>&2 <<EOF
-rustup-init 1.24.3 (c1c769109 2021-05-31)
-The installer for rustup
-
-USAGE:
-    rustup-init [FLAGS] [OPTIONS]
-
-FLAGS:
-    -v, --verbose           Enable verbose output
-    -q, --quiet             Disable progress output
-    -y                      Disable confirmation prompt.
-        --no-modify-path    Don't configure the PATH environment variable
-    -h, --help              Prints help information
-    -V, --version           Prints version information
-
-OPTIONS:
-        --default-host <default-host>              Choose a default host triple
-        --default-toolchain <default-toolchain>    Choose a default toolchain to install
-        --default-toolchain none                   Do not install any toolchains
-        --profile [minimal|default|complete]       Choose a profile
-    -c, --component <components>...                Component name to also install
-    -t, --target <targets>...                      Target name to also install
-EOF
-}
+readonly BASE_URL="https://github.com/stalwartlabs/mail-server/releases/latest/download"
 
 main() {
     downloader --check
@@ -57,146 +22,180 @@ main() {
     need_cmd mkdir
     need_cmd rm
     need_cmd rmdir
+    need_cmd tar
 
-    get_architecture || return 1
-    local _arch="$RETVAL"
-    assert_nz "$_arch" "arch"
-
-    local _ext=""
-    case "$_arch" in
-        *windows*)
-            _ext=".exe"
-            ;;
-    esac
-
-    local _url="${RUSTUP_UPDATE_ROOT}/dist/${_arch}/rustup-init${_ext}"
-
-    local _dir
-    _dir="$(ensure mktemp -d)"
-    local _file="${_dir}/rustup-init${_ext}"
-
-    local _ansi_escapes_are_valid=false
-    if [ -t 2 ]; then
-        if [ "${TERM+set}" = 'set' ]; then
-            case "$TERM" in
-                xterm*|rxvt*|urxvt*|linux*|vt*)
-                    _ansi_escapes_are_valid=true
-                ;;
-            esac
-        fi
+    # Make sure we are running as root
+    if [ "$(id -u)" -ne 0 ] ; then
+        err "❌ Install failed: This program needs to run as root."
     fi
 
-    # check if we have to use /dev/tty to prompt the user
-    local need_tty=yes
+    # Detect OS
+    local _os="unknown"
+    local _uname="$(uname)"
+    _account="stalwart-mail"
+    if [ "${_uname}" = "Linux" ]; then
+        _os="linux"
+    elif [ "${_uname}" = "Darwin" ]; then
+        _os="macos"
+        _account="_stalwart-mail"
+    fi
+
+    # Read arguments
+    local _dir="/opt/stalwart-mail"
+
+    # Default component setting
+    local _component="stalwart-mail"
+
+    # Loop through the arguments
     for arg in "$@"; do
         case "$arg" in
-            -h|--help)
-                usage
-                exit 0
-                ;;
-            -y)
-                # user wants to skip the prompt -- we don't need /dev/tty
-                need_tty=no
+            --fdb)
+                _component="stalwart-mail-foundationdb"
                 ;;
             *)
+                if [ -n "$arg" ]; then
+                    _dir=$arg
+                fi
                 ;;
         esac
     done
 
-    if $_ansi_escapes_are_valid; then
-        printf "\33[1minfo:\33[0m downloading installer\n" 1>&2
-    else
-        printf '%s\n' 'info: downloading installer' 1>&2
-    fi
+    # Detect platform architecture
+    get_architecture || return 1
+    local _arch="$RETVAL"
+    assert_nz "$_arch" "arch"
 
+    # Create directories
+    ensure mkdir -p "$_dir" "$_dir/bin" "$_dir/etc" "$_dir/logs"
+
+    # Download latest binary
+    say "⏳ Downloading ${_component} for ${_arch}..."
+    local _file="${_dir}/bin/stalwart-mail.tar.gz"
+    local _url="${BASE_URL}/${_component}-${_arch}.tar.gz"
     ensure mkdir -p "$_dir"
     ensure downloader "$_url" "$_file" "$_arch"
-    ensure chmod u+x "$_file"
-    if [ ! -x "$_file" ]; then
-        printf '%s\n' "Cannot execute $_file (likely because of mounting /tmp as noexec)." 1>&2
-        printf '%s\n' "Please copy the file to a location where you can execute binaries and run ./rustup-init${_ext}." 1>&2
-        exit 1
+    ensure tar zxvf "$_file" -C "$_dir/bin"
+    if [ "$_component" = "stalwart-mail-foundationdb" ]; then
+        ignore mv "$_dir/bin/stalwart-mail-foundationdb" "$_dir/bin/stalwart-mail"
     fi
-
-    if [ "$need_tty" = "yes" ]; then
-        # The installer is going to want to ask for confirmation by
-        # reading stdin.  This script was piped into `sh` though and
-        # doesn't have stdin to pass to its children. Instead we're going
-        # to explicitly connect /dev/tty to the installer's stdin.
-        if [ ! -t 1 ]; then
-            err "Unable to run interactively. Run with -y to accept defaults, --help for additional options"
-        fi
-
-        ignore "$_file" "$@" < /dev/tty
-    else
-        ignore "$_file" "$@"
-    fi
-
-    local _retval=$?
-
+    ignore chmod +x "$_dir/bin/stalwart-mail"
     ignore rm "$_file"
-    ignore rmdir "$_dir"
 
-    return "$_retval"
-}
+    # Create system account
+    if ! id -u ${_account} > /dev/null 2>&1; then
+        say "🖥️  Creating '${_account}' account..."
+        if [ "${_os}" = "macos" ]; then
+            local _last_uid="$(dscacheutil -q user | grep uid | awk '{print $2}' | sort -n | tail -n 1)"
+            local _last_gid="$(dscacheutil -q group | grep gid | awk '{print $2}' | sort -n | tail -n 1)"
+            local _uid="$((_last_uid+1))"
+            local _gid="$((_last_gid+1))"
 
-check_proc() {
-    # Check for /proc by looking for the /proc/self/exe link
-    # This is only run on Linux
-    if ! test -L /proc/self/exe ; then
-        err "fatal: Unable to find /proc/self/exe.  Is /proc mounted?  Installation cannot proceed without /proc."
+            ensure dscl /Local/Default -create Groups/_stalwart-mail
+            ensure dscl /Local/Default -create Groups/_stalwart-mail Password \*
+            ensure dscl /Local/Default -create Groups/_stalwart-mail PrimaryGroupID $_gid
+            ensure dscl /Local/Default -create Groups/_stalwart-mail RealName "Stalwart Mail service"
+            ensure dscl /Local/Default -create Groups/_stalwart-mail RecordName _stalwart-mail stalwart-mail
+
+            ensure dscl /Local/Default -create Users/_stalwart-mail
+            ensure dscl /Local/Default -create Users/_stalwart-mail NFSHomeDirectory /Users/_stalwart-mail
+            ensure dscl /Local/Default -create Users/_stalwart-mail Password \*
+            ensure dscl /Local/Default -create Users/_stalwart-mail PrimaryGroupID $_gid
+            ensure dscl /Local/Default -create Users/_stalwart-mail RealName "Stalwart Mail service"
+            ensure dscl /Local/Default -create Users/_stalwart-mail RecordName _stalwart-mail stalwart-mail
+            ensure dscl /Local/Default -create Users/_stalwart-mail UniqueID $_uid
+            ensure dscl /Local/Default -create Users/_stalwart-mail UserShell /bin/bash
+
+            ensure dscl /Local/Default -delete /Users/_stalwart-mail AuthenticationAuthority
+            ensure dscl /Local/Default -delete /Users/_stalwart-mail PasswordPolicyOptions
+        else
+            ensure useradd ${_account} -s /usr/sbin/nologin -M -r -U
+        fi
     fi
-}
 
-get_bitness() {
-    need_cmd head
-    # Architecture detection without dependencies beyond coreutils.
-    # ELF files start out "\x7fELF", and the following byte is
-    #   0x01 for 32-bit and
-    #   0x02 for 64-bit.
-    # The printf builtin on some shells like dash only supports octal
-    # escape sequences, so we use those.
-    local _current_exe_head
-    _current_exe_head=$(head -c 5 /proc/self/exe )
-    if [ "$_current_exe_head" = "$(printf '\177ELF\001')" ]; then
-        echo 32
-    elif [ "$_current_exe_head" = "$(printf '\177ELF\002')" ]; then
-        echo 64
-    else
-        err "unknown platform bitness"
+    # Run init
+    ignore $_dir/bin/stalwart-mail --init "$_dir"
+
+    # Set permissions
+    say "🔐 Setting permissions..."
+    ensure chown -R ${_account}:${_account} "$_dir"
+    ensure chmod -R 755 "$_dir"
+    ensure chmod 700 "$_dir/etc/config.toml"
+
+    # Create service file
+    say "🚀 Starting service..."
+    if [ "${_os}" = "linux" ]; then
+        create_service_linux "$_dir"
+    elif [ "${_os}" = "macos" ]; then
+        create_service_macos "$_dir"
     fi
+
+    # Installation complete
+    local _host=$(hostname -f)
+    say "🎉 Installation complete! Continue the setup at http://$_host:8080/login"
+
+    return 0
 }
 
-is_host_amd64_elf() {
-    need_cmd head
-    need_cmd tail
-    # ELF e_machine detection without dependencies beyond coreutils.
-    # Two-byte field at offset 0x12 indicates the CPU,
-    # but we're interested in it being 0x3E to indicate amd64, or not that.
-    local _current_exe_machine
-    _current_exe_machine=$(head -c 19 /proc/self/exe | tail -c 1)
-    [ "$_current_exe_machine" = "$(printf '\076')" ]
+# Functions to create service files
+create_service_linux() {
+    local _dir="$1"
+    cat <<EOF | sed "s|__PATH__|$_dir|g" > /etc/systemd/system/stalwart-mail.service
+[Unit]
+Description=Stalwart Mail Server
+Conflicts=postfix.service sendmail.service exim4.service
+ConditionPathExists=__PATH__/etc/config.toml
+After=network-online.target
+
+[Service]
+Type=simple
+LimitNOFILE=65536
+KillMode=process
+KillSignal=SIGINT
+Restart=on-failure
+RestartSec=5
+ExecStart=__PATH__/bin/stalwart-mail --config=__PATH__/etc/config.toml
+SyslogIdentifier=stalwart-mail
+User=stalwart-mail
+Group=stalwart-mail
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable stalwart-mail.service
+    systemctl restart stalwart-mail.service
 }
 
-get_endianness() {
-    local cputype=$1
-    local suffix_eb=$2
-    local suffix_el=$3
-
-    # detect endianness without od/hexdump, like get_bitness() does.
-    need_cmd head
-    need_cmd tail
-
-    local _current_exe_endianness
-    _current_exe_endianness="$(head -c 6 /proc/self/exe | tail -c 1)"
-    if [ "$_current_exe_endianness" = "$(printf '\001')" ]; then
-        echo "${cputype}${suffix_el}"
-    elif [ "$_current_exe_endianness" = "$(printf '\002')" ]; then
-        echo "${cputype}${suffix_eb}"
-    else
-        err "unknown platform endianness"
-    fi
+create_service_macos() {
+    local _dir="$1"
+    cat <<EOF | sed "s|__PATH__|$_dir|g" > /Library/LaunchAgents/stalwart.mail.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>stalwart.mail</string>
+        <key>ServiceDescription</key>
+        <string>Stalwart Mail Server</string>
+        <key>ProgramArguments</key>
+        <array>
+            <string>__PATH__/bin/stalwart-mail</string>
+            <string>--config=__PATH__/etc/config.toml</string>
+        </array>
+        <key>RunAtLoad</key>
+        <true/>
+        <key>KeepAlive</key>
+        <true/>
+    </dict>
+</plist>
+EOF
+    launchctl load /Library/LaunchAgents/stalwart.mail.plist
+    launchctl enable system/stalwart.mail
+    launchctl start system/stalwart.mail
 }
+
 
 get_architecture() {
     local _ostype _cputype _bitness _arch _clibtype
@@ -270,7 +269,7 @@ get_architecture() {
             _ostype=unknown-illumos
             ;;
 
-        MINGW* | MSYS* | CYGWIN*)
+        MINGW* | MSYS* | CYGWIN* | Windows_NT)
             _ostype=pc-windows-gnu
             ;;
 
@@ -412,8 +411,66 @@ get_architecture() {
     RETVAL="$_arch"
 }
 
+check_proc() {
+    # Check for /proc by looking for the /proc/self/exe link
+    # This is only run on Linux
+    if ! test -L /proc/self/exe ; then
+        err "fatal: Unable to find /proc/self/exe.  Is /proc mounted?  Installation cannot proceed without /proc."
+    fi
+}
+
+get_bitness() {
+    need_cmd head
+    # Architecture detection without dependencies beyond coreutils.
+    # ELF files start out "\x7fELF", and the following byte is
+    #   0x01 for 32-bit and
+    #   0x02 for 64-bit.
+    # The printf builtin on some shells like dash only supports octal
+    # escape sequences, so we use those.
+    local _current_exe_head
+    _current_exe_head=$(head -c 5 /proc/self/exe )
+    if [ "$_current_exe_head" = "$(printf '\177ELF\001')" ]; then
+        echo 32
+    elif [ "$_current_exe_head" = "$(printf '\177ELF\002')" ]; then
+        echo 64
+    else
+        err "unknown platform bitness"
+    fi
+}
+
+is_host_amd64_elf() {
+    need_cmd head
+    need_cmd tail
+    # ELF e_machine detection without dependencies beyond coreutils.
+    # Two-byte field at offset 0x12 indicates the CPU,
+    # but we're interested in it being 0x3E to indicate amd64, or not that.
+    local _current_exe_machine
+    _current_exe_machine=$(head -c 19 /proc/self/exe | tail -c 1)
+    [ "$_current_exe_machine" = "$(printf '\076')" ]
+}
+
+get_endianness() {
+    local cputype=$1
+    local suffix_eb=$2
+    local suffix_el=$3
+
+    # detect endianness without od/hexdump, like get_bitness() does.
+    need_cmd head
+    need_cmd tail
+
+    local _current_exe_endianness
+    _current_exe_endianness="$(head -c 6 /proc/self/exe | tail -c 1)"
+    if [ "$_current_exe_endianness" = "$(printf '\001')" ]; then
+        echo "${cputype}${suffix_el}"
+    elif [ "$_current_exe_endianness" = "$(printf '\002')" ]; then
+        echo "${cputype}${suffix_eb}"
+    else
+        err "unknown platform endianness"
+    fi
+}
+
 say() {
-    printf 'rustup: %s\n' "$1"
+    printf '%s\n' "$1"
 }
 
 err() {
@@ -442,13 +499,6 @@ ensure() {
     if ! "$@"; then err "command failed: $*"; fi
 }
 
-# This is just for indicating that commands' results are being
-# intentionally ignored. Usually, because it's being executed
-# as part of error handling.
-ignore() {
-    "$@"
-}
-
 # This wraps curl or wget. Try curl first, if not installed,
 # use wget instead.
 downloader() {
@@ -456,6 +506,7 @@ downloader() {
     local _ciphersuites
     local _err
     local _status
+    local _retry
     if check_cmd curl; then
         _dld=curl
     elif check_cmd wget; then
@@ -467,56 +518,78 @@ downloader() {
     if [ "$1" = --check ]; then
         need_cmd "$_dld"
     elif [ "$_dld" = curl ]; then
+        check_curl_for_retry_support
+        _retry="$RETVAL"
         get_ciphersuites_for_curl
         _ciphersuites="$RETVAL"
         if [ -n "$_ciphersuites" ]; then
-            _err=$(curl --proto '=https' --tlsv1.2 --ciphers "$_ciphersuites" --silent --show-error --fail --location "$1" --output "$2" 2>&1)
+            _err=$(curl $_retry --proto '=https' --tlsv1.2 --ciphers "$_ciphersuites" --silent --show-error --fail --location "$1" --output "$2" 2>&1)
             _status=$?
         else
             echo "Warning: Not enforcing strong cipher suites for TLS, this is potentially less secure"
             if ! check_help_for "$3" curl --proto --tlsv1.2; then
                 echo "Warning: Not enforcing TLS v1.2, this is potentially less secure"
-                _err=$(curl --silent --show-error --fail --location "$1" --output "$2" 2>&1)
+                _err=$(curl $_retry --silent --show-error --fail --location "$1" --output "$2" 2>&1)
                 _status=$?
             else
-                _err=$(curl --proto '=https' --tlsv1.2 --silent --show-error --fail --location "$1" --output "$2" 2>&1)
+                _err=$(curl $_retry --proto '=https' --tlsv1.2 --silent --show-error --fail --location "$1" --output "$2" 2>&1)
                 _status=$?
             fi
         fi
         if [ -n "$_err" ]; then
-            echo "$_err" >&2
-            if echo "$_err" | grep -q 404$; then
-                err "installer for platform '$3' not found, this may be unsupported"
+            if echo "$_err" | grep -q 404; then
+                err "❌  Binary for platform '$3' not found, this platform may be unsupported."
+            else
+                echo "$_err" >&2
             fi
         fi
         return $_status
     elif [ "$_dld" = wget ]; then
-        get_ciphersuites_for_wget
-        _ciphersuites="$RETVAL"
-        if [ -n "$_ciphersuites" ]; then
-            _err=$(wget --https-only --secure-protocol=TLSv1_2 --ciphers "$_ciphersuites" "$1" -O "$2" 2>&1)
+        if [ "$(wget -V 2>&1|head -2|tail -1|cut -f1 -d" ")" = "BusyBox" ]; then
+            echo "Warning: using the BusyBox version of wget.  Not enforcing strong cipher suites for TLS or TLS v1.2, this is potentially less secure"
+            _err=$(wget "$1" -O "$2" 2>&1)
             _status=$?
         else
-            echo "Warning: Not enforcing strong cipher suites for TLS, this is potentially less secure"
-            if ! check_help_for "$3" wget --https-only --secure-protocol; then
-                echo "Warning: Not enforcing TLS v1.2, this is potentially less secure"
-                _err=$(wget "$1" -O "$2" 2>&1)
+            get_ciphersuites_for_wget
+            _ciphersuites="$RETVAL"
+            if [ -n "$_ciphersuites" ]; then
+                _err=$(wget --https-only --secure-protocol=TLSv1_2 --ciphers "$_ciphersuites" "$1" -O "$2" 2>&1)
                 _status=$?
             else
-                _err=$(wget --https-only --secure-protocol=TLSv1_2 "$1" -O "$2" 2>&1)
-                _status=$?
+                echo "Warning: Not enforcing strong cipher suites for TLS, this is potentially less secure"
+                if ! check_help_for "$3" wget --https-only --secure-protocol; then
+                    echo "Warning: Not enforcing TLS v1.2, this is potentially less secure"
+                    _err=$(wget "$1" -O "$2" 2>&1)
+                    _status=$?
+                else
+                    _err=$(wget --https-only --secure-protocol=TLSv1_2 "$1" -O "$2" 2>&1)
+                    _status=$?
+                fi
             fi
         fi
         if [ -n "$_err" ]; then
-            echo "$_err" >&2
-            if echo "$_err" | grep -q ' 404 Not Found$'; then
-                err "installer for platform '$3' not found, this may be unsupported"
+            if echo "$_err" | grep -q ' 404 Not Found'; then
+                err "❌  Binary for platform '$3' not found, this platform may be unsupported."
+            else
+                echo "$_err" >&2
             fi
         fi
         return $_status
     else
         err "Unknown downloader"   # should not reach here
     fi
+}
+
+# Check if curl supports the --retry flag, then pass it to the curl invocation.
+check_curl_for_retry_support() {
+  local _retry_supported=""
+  # "unspecified" is for arch, allows for possibility old OS using macports, homebrew, etc.
+  if check_help_for "notspecified" "curl" "--retry"; then
+    _retry_supported="--retry 3"
+  fi
+
+  RETVAL="$_retry_supported"
+
 }
 
 check_help_for() {
@@ -573,7 +646,7 @@ check_help_for() {
 }
 
 # Return cipher suite string specified by user, otherwise return strong TLS 1.2-1.3 cipher suites
-# if support by local tools is detected. Detection currently supports these curl backends: 
+# if support by local tools is detected. Detection currently supports these curl backends:
 # GnuTLS and OpenSSL (possibly also LibreSSL and BoringSSL). Return value can be empty.
 get_ciphersuites_for_curl() {
     if [ -n "${RUSTUP_TLS_CIPHERSUITES-}" ]; then
@@ -618,7 +691,7 @@ get_ciphersuites_for_curl() {
 }
 
 # Return cipher suite string specified by user, otherwise return strong TLS 1.2-1.3 cipher suites
-# if support by local tools is detected. Detection currently supports these wget backends: 
+# if support by local tools is detected. Detection currently supports these wget backends:
 # GnuTLS and OpenSSL (possibly also LibreSSL and BoringSSL). Return value can be empty.
 get_ciphersuites_for_wget() {
     if [ -n "${RUSTUP_TLS_CIPHERSUITES-}" ]; then
@@ -643,10 +716,10 @@ get_ciphersuites_for_wget() {
     RETVAL="$_cs"
 }
 
-# Return strong TLS 1.2-1.3 cipher suites in OpenSSL or GnuTLS syntax. TLS 1.2 
-# excludes non-ECDHE and non-AEAD cipher suites. DHE is excluded due to bad 
+# Return strong TLS 1.2-1.3 cipher suites in OpenSSL or GnuTLS syntax. TLS 1.2
+# excludes non-ECDHE and non-AEAD cipher suites. DHE is excluded due to bad
 # DH params often found on servers (see RFC 7919). Sequence matches or is
-# similar to Firefox 68 ESR with weak cipher suites disabled via about:config.  
+# similar to Firefox 68 ESR with weak cipher suites disabled via about:config.
 # $1 must be openssl or gnutls.
 get_strong_ciphersuites_for() {
     if [ "$1" = "openssl" ]; then
@@ -656,7 +729,14 @@ get_strong_ciphersuites_for() {
         # GnuTLS isn't forgiving of unknown values, so this may require a GnuTLS version that supports TLS 1.3 even if wget doesn't.
         # Begin with SECURE128 (and higher) then remove/add to build cipher suites. Produces same 9 cipher suites as OpenSSL but in slightly different order.
         echo "SECURE128:-VERS-SSL3.0:-VERS-TLS1.0:-VERS-TLS1.1:-VERS-DTLS-ALL:-CIPHER-ALL:-MAC-ALL:-KX-ALL:+AEAD:+ECDHE-ECDSA:+ECDHE-RSA:+AES-128-GCM:+CHACHA20-POLY1305:+AES-256-GCM"
-    fi 
+    fi
+}
+
+# This is just for indicating that commands' results are being
+# intentionally ignored. Usually, because it's being executed
+# as part of error handling.
+ignore() {
+    "$@"
 }
 
 main "$@" || exit 1
