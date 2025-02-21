@@ -4,12 +4,12 @@
 
 # Description: Docker 通过加速站拉取镜像
 #
-# UpdatedAt: 2025-01-04
+# UpdatedAt: 2025-02-22
 
 set -euo pipefail
 
 # 默认镜像域名
-DEFAULT_MIRROR_DOMAIN="dockerproxy.net"
+DEFAULT_MIRROR_DOMAIN="${MIRROR:-dockerproxy.net}"
 
 # 镜像名
 IMAGE_NAME=""
@@ -81,8 +81,8 @@ select_registry() {
 
     'h' | 'ghcr')
         IMAGE_URL="ghcr.io/${IMAGE_NAME}"
-        #IMAGE_MIRROR_URL="ghcr.${DEFAULT_MIRROR_DOMAIN}/${IMAGE_NAME}"
-        IMAGE_MIRROR_URL="ghcr.nju.edu.cn/${IMAGE_NAME}"
+        IMAGE_MIRROR_URL="ghcr.${DEFAULT_MIRROR_DOMAIN}/${IMAGE_NAME}"
+        # IMAGE_MIRROR_URL="ghcr.nju.edu.cn/${IMAGE_NAME}"
         ;;
 
     'k' | 'k8s')
