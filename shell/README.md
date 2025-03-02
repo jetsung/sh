@@ -37,6 +37,7 @@
     - [debgetsh](#debgetsh)
     - [dockerpull](#dockerpull)
     - [gitflydo](#gitflydo)
+    - [gitqcloud](#gitqcloud)
 
 ## 脚本列表
 
@@ -155,7 +156,7 @@ Git 代码迁移到新托管平台
 ### [debfetch](debfetch.sh)
 
 下载 deb 到自建的 APT 仓库，并更新仓库信息。  
-参考：[https://apt.skiy.net](https://apt.skiy.net)
+参考：[https://apt.asfd.cn](https://apt.asfd.cn)
 
 ---
 
@@ -174,5 +175,11 @@ Docker 从加速站拉取镜像
 ### [gitflydo](gitflydo.sh)
 
 一台电脑上使用同一代码托管平台的多个 Git 账户
+
+---
+
+### [gitqcloud](gitqcloud.sh)
+
+腾讯工峰 Git 操作命令行
 
 ---
