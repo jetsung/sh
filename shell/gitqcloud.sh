@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# 腾讯工峰 命令行工具
+# 腾讯工峰 命令行工具 (未完成)
 # 基于 https://code.tencent.com/help/api/prepare
 # 包含：
 ##  项目组(group)
@@ -8,7 +8,7 @@
 ##  用户(user)
 ##  标签(labels)
 ##  Tag 相关（tag）
-##  提交相关（commit）
+##  提交相关（commit）TODO
 ##  项目相关（projects）
 ##  复刻（TODO）
 # 未包含：缺陷单(issue)
@@ -20,8 +20,8 @@
 # 作者: Jetsung Chan
 #
 
-# set -euo pipefail
-set -eux
+set -euo pipefail
+# set -eux
 
 API_BASE="https://git.code.tencent.com"
 API_URL="${API_BASE}/api/v3"
@@ -30,6 +30,10 @@ API_URL="${API_BASE}/api/v3"
 error_exit() {
     echo -e "\033[31merror: $1\033[0m" >&2
     exit 1
+}
+
+warn() {
+    echo -e "\033[33m$1\033[0m"
 }
 
 # 通用请求函数
@@ -58,7 +62,7 @@ api_group_create() {
     API_REQ="${API_URL}/groups"
     METHOD="POST"
 
-    UPDATE_DATA=$(jq -n --arg name "$NAME" --arg path "$GPATH" --arg description "${DESCRIPTION:-}" '{name: $name, path: $path, description: $description}')
+    UPDATE_DATA=$(jq -n --arg name "${NAME:-$GPATH}" --arg path "$GPATH" --arg description "${DESCRIPTION:-}" '{name: $name, path: $path, description: $description}')
 
     do_request | jq -r '.'
 }
@@ -89,32 +93,21 @@ api_group_delete() {
 ## page	int	页码
 ## per_page	int	每页数量
 api_group_list() {
-    API_REQ="${API_URL}/groups"
+    API_REQ="${API_URL}/groups/?search=${SEARCH:-}"
     METHOD="GET"
-    UPDATE_DATA=$(jq -n --arg page "$PAGE" --arg per_page "$PER_PAGE" '{page: $page, per_page: $per_page}')
-
-    do_request | jq -r '.'
-}
-
-# 搜索项目组
-## page	integer（可选）	分页 (默认值:1)
-## per_page	integer（可选）	默认页面大小 (默认值 20，最大值： 100)
-api_group_search() {
-    API_REQ="${API_URL}/groups/?search=${SEARCH}"
-    METHOD="GET"
-    UPDATE_DATA=$(jq -n --arg page "$PAGE" --arg per_page "$PER_PAGE" '{page: $page, per_page: $per_page}')
+    UPDATE_DATA=$(jq -n --arg page "${PAGE:-1}" --arg per_page "${PER_PAGE:-20}" '{page: $page, per_page: $per_page}')
 
     do_request | jq -r '.'
 }
 
 # 获取项目组成员列表
-## id	integer	id = 项目组唯一标识或路径
+## id	integer	项目组唯一标识或路径
 ## page	integer（可选）	分页 (默认:1)
 ## per_page	integer（可选）	默认页面大小 (默认 20，最大： 100)
 api_group_members_list() {
     API_REQ="${API_URL}/groups/$ID/members"
     METHOD="GET"
-    UPDATE_DATA=$(jq -n --arg page "$PAGE" --arg per_page "$PER_PAGE" '{page: $page, per_page: $per_page}')
+    UPDATE_DATA=$(jq -n --arg page "${PAGE:-1}" --arg per_page "${PER_PAGE:-20}" '{page: $page, per_page: $per_page}')
 
     do_request | jq -r '.'
 }
@@ -123,7 +116,7 @@ api_group_members_list() {
 ## id	integer	项目组的 ID
 ## user_id	integer	用户的 ID
 ## access_level	integer	用户的访问级别
-api_group_member_create() {
+api_group_members_add() {
     API_REQ="${API_URL}/groups/$ID/members"
     METHOD="POST"
 
@@ -170,7 +163,7 @@ api_group_projects() {
 api_namespaces_list() {
     API_REQ="${API_URL}/namespaces?search=${SEARCH:-}"
     METHOD="GET"
-    UPDATE_DATA=$(jq -n --arg page "$PAGE" --arg per_page "$PER_PAGE" '{page: $page, per_page: $per_page}')
+    UPDATE_DATA=$(jq -n --arg page "${PAGE:-1}" --arg per_page "${PER_PAGE:-20}" '{page: $page, per_page: $per_page}')
 
     do_request | jq -r '.'
 }
@@ -181,7 +174,7 @@ api_namespaces_list() {
 api_users_list() {
     API_REQ="${API_URL}/users"
     METHOD="GET"
-    UPDATE_DATA=$(jq -n --arg page "$PAGE" --arg per_page "$PER_PAGE" '{page: $page, per_page: $per_page}')
+    UPDATE_DATA=$(jq -n --arg page "${PAGE:-1}" --arg per_page "${PER_PAGE:-20}" '{page: $page, per_page: $per_page}')
 
     do_request | jq -r '.'
 }
@@ -263,10 +256,8 @@ api_user_emails_add() {
 # 通过邮箱获取用户信息
 ## email	string	邮箱地址
 api_user_emails_user() {
-    API_REQ="${API_URL}/user"
+    API_REQ="${API_URL}/user/email?email=$EMAIL"
     METHOD="GET"
-
-    UPDATE_DATA=$(jq -n --arg email "$EMAIL" '{email: $email}')
 
     do_request | jq -r '.'
 }
@@ -358,7 +349,7 @@ api_tags_list() {
     API_REQ="${API_URL}/projects/$ID/repository/tags"
     METHOD="GET"
 
-    UPDATE_DATA=$(jq -n --arg page "$PAGE" --arg per_page "$PER_PAGE" '{page: $page, per_page: $per_page}')
+    UPDATE_DATA=$(jq -n --arg page "${PAGE:-1}" --arg per_page "${PER_PAGE:-20}" '{page: $page, per_page: $per_page}')
 
     do_request | jq -r '.'
 }
@@ -545,10 +536,10 @@ api_projects_list() {
     METHOD="GET"
 
     UPDATE_DATA=$(jq -n --arg archived "${ARCHIVED:-}" \
-        --arg with_archived "${WITH_ARCHIVED:-}" \
+        --arg with_archived "${ARCHIVED:-}" \
         --arg with_push "${WITH_PUSH:-}" \
         --arg abandoned "${ABANDONED:-}" \
-        --arg visibility_levels "${VISIBILITY_LEVELS:-}" \
+        --arg visibility_levels "${VISIBILITY_LEVEL:-}" \
         --arg search "${SEARCH:-}" \
         --arg order_by "${ORDER_BY:-}" \
         --arg sort "${SORT:-}" \
@@ -603,7 +594,7 @@ api_projects_info() {
 ## id	integer 或 string	项目唯一标识或NAMESPACE_PATH/PROJECT_PATH
 ## group_id	integer	要与之共享的组的id
 ## group_access	integer	授予组的权限级别
-api_projects_share() {
+api_projects_share_add() {
     API_REQ="${API_URL}/projects/$ID/share"
     METHOD="POST"
 
@@ -621,14 +612,12 @@ api_projects_share_list() {
     do_request | jq -r '.'
 }
 
-# 删除组中共享项目链接（官方文档有问题）
+# 删除组中共享项目链接
 ## id	integer 或 string	项目唯一标识或NAMESPACE_PATH/PROJECT_PATH
 ## group_id	integer	要与之共享的组的id
 api_projects_share_delete() {
-    API_REQ="${API_URL}/projects/$ID/share/$GROUP_ID"
+    API_REQ="${API_URL}/projects/$ID/share/$GROUP_ID?group_id=$GROUP_ID"
     METHOD="DELETE"
-
-    UPDATE_DATA=$(jq -n --arg group_id "$GROUP_ID" '{group_id: $group_id}')
 
     do_request | jq -r '.'
 }
@@ -710,7 +699,7 @@ judgment_parameters() {
                 ACTION="${1:?"错误: 操作类型 (action) 不能为空."}"
                 ;;
 
-            '-pg' | '--page') 
+            '-pa' | '--page') 
             # 页码
                 shift
                 PAGE="${1:?"错误: 页码 (page) 不能为空."}"
@@ -746,7 +735,7 @@ judgment_parameters() {
                 shift
                 SEARCH="${1:?"错误: 搜索 (search) 不能为空."}"
                 ;;
-            '-ud' | '--user_id') 
+            '-ui' | '--user_id') 
             # USER_ID
                 shift
                 USER_ID="${1:?"错误: USER_ID (user_id) 不能为空."}"
@@ -806,7 +795,7 @@ judgment_parameters() {
                 shift
                 QUERY="${1:?"错误: 查询 (query) 不能为空."}"
                 ;;
-            '-fn' | '--fork_enabled') 
+            '-fe' | '--fork_enabled') 
             # 是否可以被 fork
                 shift
                 FORK_ENABLED="${1:?"错误: 是否可以被 fork (fork_enabled) 不能为空."}"
@@ -871,6 +860,16 @@ judgment_parameters() {
                 shift
                 ARCHIVED="${1:?"错误: 归档状态 (archived) 不能为空."}"
                 ;;
+            'wp' | '--with_push')
+            # 推送状态
+                shift
+                WITH_PUSH="${1:?"错误: 推送状态 (with_push) 不能为空."}"
+                ;;
+            '-ab' | '--abandoned')
+            # 活跃状态
+                shift
+                ABANDONED="${1:?"错误: 活跃状态 (abandoned) 不能为空."}"
+                ;;
             '-gd' | '--group_id') 
             # 共享组 ID
                 shift
@@ -896,7 +895,9 @@ judgment_parameters() {
 # 显示帮助信息
 show_top_help() {
     cat <<EOF
-Usage: $0 [options]
+Usage: $0 --select [SELECT] --action [ACTION] [options]
+
+TencentGit CLI
 
 -h, --help          打印帮助信息
 -t, --token         私有令牌
@@ -904,24 +905,10 @@ Usage: $0 [options]
         gr,group       项目组
         ns,namespace   命名空间
         us,user        用户
-        la,labels      标签
--a, --action        指定操作类型            
--pg, --page         指定页码
--pp, --per_page     每页数量
--id, --id           （用户、邮箱、项目、项目组）的 ID
--na, --name         标签名、项目组的名字
--ph, --path         项目的路径
--de, --description  项目的描述
--sa, --search       搜索关键字
--ud, --user_id      用户的 ID
--al, --access_level 用户的访问级别
--ti, --title        SSH key 的标题
--ke, --key          SSH key 的内容
--em, --email        邮箱地址
--co, --color        标签颜色
--nn, --new_name     新标签名
--ob, --order_by     排序字段
--so, --sort         排序方式
+        la,label       标签
+        ta,tag         TAG
+-a, --action        指定操作类型     
+
 EOF
     exit 0
 }
@@ -930,52 +917,13 @@ EOF
 show_help() {
     case "${SELECT:-}" in
         'gr' | 'group') 
-            cat <<EOF
-Usage: $0 -s group [options]
-
--h, --help             打印帮助信息
--a, --action           指定操作类型
-    cr create          新建项目组
-    up update          编辑项目组
-    de delete          删除项目组
-    li list            获取项目组列表
-    se search          搜索项目组
-    ml members_list    获取项目组成员列表
-    ma member_add      增加项目组成员
-    mu member_update   修改项目组成员
-    md member_delete   移除一个项目组成员
-    pr projects        获取项目组的详细信息以及项目组下所有项目
-EOF
+            help_group
             ;;
         'ns' | 'namespace') 
-            cat <<EOF
-Usage: $0 -s namespace [options]
-
--h, --help             打印帮助信息  
--a, --action           指定操作类型          
-    li list            获取命名空间列表
-EOF
+            help_namespace
             ;;
         'us' | 'user') 
-            cat <<EOF
-Usage: $0 -s user [options]
-
--h, --help             打印帮助信息   
--a, --action           指定操作类型
-    li list            获取用户信息列表
-    wa watch           获用户关注项目列表
-    sp specify         获取单个用户信息
-    cu current         当前认证用户
-    ka key_add         给当前用户创建一个 SSH KEY
-    kd key_delete      删除某个指定的 SSH KEY
-    kl key_list        获取当前用户的 SSH KEY
-    ki key_info        获取某个指定的 SSH KEY
-    ea email_add       添加邮箱
-    ed email_delete    删除某个指定的邮箱
-    el email_list      获取用户邮箱列表
-    ei email_info      获取邮箱信息
-    eu email_user      通过邮箱获取用户信息
-EOF
+            help_user
             ;;
         'la' | 'label') 
             cat <<EOF
@@ -991,17 +939,7 @@ Usage: $0 -s label [options]
 EOF
             ;;
         'ta' | 'tag') 
-            cat <<EOF
-Usage: $0 -s tag [options]
-
--h, --help             打印帮助信息
--a, --action           指定操作类型
-    ad add             新增 TAG
-    sp specify         获取指定 TAG
-    de delete          删除 TAG
-    li list            获取 TAG 列表
-
-EOF
+            help_tag
             ;;
         'co' | 'commit')
             cat <<EOF
@@ -1013,25 +951,153 @@ Usage: $0 -s commit [options]
 EOF
             ;;
         'pr' | 'project')
-            cat <<EOF
-Usage: $0 -s project [options]
-
--h, --help             打印帮助信息
--a, --action           指定操作类型
-    cr create          创建项目
-    up update          编辑项目
-    de delete          删除项目
-    li list            获取项目列表
-    ow owned           获取用户授权的项目列表
-    sp specify         获取项目详细信息
-    sh share           与组共享项目
-    sl share_list      获取项目的共享组列表
-EOF
+            help_project
             ;;
         *)
             show_top_help
             ;;
     esac
+    exit 0
+}
+
+help_group() {
+    case "${ACTION:-}" in
+        'cr' | 'create')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "cr")|$(warn "create")] [options]
+    $(warn "新建项目组")
+
+    -h,  --help                       打印帮助信息
+    -pa, --path	             str      项目组的路径
+    -na, --name	             str      可选,项目组的名字
+    -de, --description	     str      可选,项目组的描述
+EOF
+        ;;  
+
+        'up' | 'update')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "up")|$(warn "update")] [options]
+    $(warn "编辑项目组")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      用户的项目组 ID 或者路径
+    -na, --name	             str      项目组的名字
+    -de, --description	     str      可选,项目组的描述
+EOF
+        ;;    
+
+        'de' | 'delete')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "de")|$(warn "delete")] [options]
+    $(warn "删除项目组")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      用户的项目组 ID 或者路径
+EOF
+        ;;               
+
+        'li' | 'list')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "li")|$(warn "list")] [options]
+    $(warn "获取命名空间列表")
+
+    -h,  --help                       打印帮助信息
+    -se, --search            str      可选,搜索条件，用户名称或者路径的命名空间
+    -pa, --page              int      可选,页数（默认值：1）
+    -pp, --per_page          int      可选,默认页面大小（默认值：20，最大值：100）  
+EOF
+        ;;      
+
+        'ml' | 'members_list')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "ml")|$(warn "members_list")] [options]
+    $(warn "获取项目组成员列表")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      用户的项目组 ID 或者路径
+    -pa, --page              int      可选,页数（默认值：1）
+    -pp, --per_page          int      可选,默认页面大小（默认值：20，最大值：100）  
+EOF
+        ;;               
+
+        'ma' | 'member_add')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "ma")|$(warn "member_add")] [options]
+    $(warn "增加项目组成员")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      项目组 ID 或者路径
+    -ui, user_id             int      用户的 ID
+    -al, access_level        int      用户的访问级别
+                                        GUEST     = 10
+                                        REPORTER  = 20
+                                        FOLLOWER  = 25
+                                        DEVELOPER = 30
+                                        MASTER    = 40
+                                        OWNER     = 50
+EOF
+        ;; 
+
+
+        'mu' | 'member_update')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "mu")|$(warn "member_update")] [options]
+    $(warn "修改项目组成员")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      项目组 ID 或者路径
+    -ui, user_id             int      用户的 ID
+    -al, access_level        int      用户的访问级别
+                                        GUEST     = 10
+                                        REPORTER  = 20
+                                        FOLLOWER  = 25
+                                        DEVELOPER = 30
+                                        MASTER    = 40
+                                        OWNER     = 50
+EOF
+        ;;         
+
+        'md' | 'member_delete')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "md")|$(warn "member_delete")] [options]
+    $(warn "修改项目组成员")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      项目组 ID 或者路径
+    -ui, user_id             int      用户的 ID
+EOF
+        ;;  
+
+        'pr' | 'projects')
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [$(warn "pr")|$(warn "projects")] [options]
+    $(warn "获取项目组的详细信息以及项目组下所有项目")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      项目组 ID 或者路径
+    -ui, user_id             int      用户的 ID
+EOF
+        ;;  
+
+        *)
+            cat <<EOF
+Usage: $0 -s $(warn "group") --action [options]
+
+-h, --help                 打印帮助信息
+-a, --action               指定操作类型
+        cr create          新建项目组
+        up update          编辑项目组
+        de delete          删除项目组
+        li list            获取项目组列表
+        ml members_list    获取项目组成员列表
+        ma member_add      增加项目组成员
+        mu member_update   修改项目组成员
+        md member_delete   移除一个项目组成员
+        pr projects        获取项目组的详细信息以及项目组下所有项目        
+EOF
+            ;;    
+    esac
+
     exit 0
 }
 
@@ -1053,17 +1119,13 @@ group() {
             # 获取项目组列表
             api_group_list
             ;;
-        'se' | 'search') 
-            # 搜索项目组
-            api_group_search
-            ;;
         'ml' | 'members_list') 
             # 获取项目组成员列表
             api_group_members_list
             ;;
         'ma' | 'member_add') 
             # 增加项目组成员
-            api_group_member_add
+            api_group_members_add
             ;;
         'mu' | 'member_update') 
             # 修改项目组成员
@@ -1083,6 +1145,34 @@ group() {
     esac
 }
 
+help_namespace() {
+    case "${ACTION:-}" in
+        'li' | 'list')
+            cat <<EOF
+Usage: $0 -s $(warn "namespace") --action [$(warn "li")|$(warn "list")] [options]
+    $(warn "获取命名空间列表")
+
+    -h,  --help                       打印帮助信息
+    -se, --search            str      可选,搜索条件，用户名称或者路径的命名空间
+    -pa, --page              int      可选,页数（默认值：1）
+    -pp, --per_page          int      可选,默认页面大小（默认值：20，最大值：100）  
+EOF
+        ;;  
+
+        *)
+            cat <<EOF
+Usage: $0 -s namespace --action [options]
+
+-h, --help                 打印帮助信息
+-a, --action               指定操作类型
+        li list            获取命名空间列表
+EOF
+            ;;    
+    esac
+
+    exit 0
+}
+
 namespace() {
     case "${ACTION:-}" in
         'li' | 'list') 
@@ -1095,6 +1185,153 @@ namespace() {
     esac
 }
 
+help_user() {
+    case "${ACTION:-}" in
+        'li' | 'list')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "li")|$(warn "list")] [options]
+    $(warn "获取用户信息列表")
+
+    -h,  --help                       打印帮助信息
+    -pa, --page              int      可选,页数（默认值：1）
+    -pp, --per_page          int      可选,默认页面大小（默认值：20，最大值：100）  
+EOF
+            ;;  
+
+        'wa' | 'watch')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "wa")|$(warn "watch")] [options]
+    $(warn "获用户关注项目列表")
+
+    -h,  --help                       打印帮助信息
+EOF
+            ;;  
+
+        'sp' | 'specify')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "sp")|$(warn "specify")] [options]
+    $(warn "获取单个用户信息")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int/str  用户唯一标识或用户名称
+EOF
+            ;;    
+
+        'cu' | 'current')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "cu")|$(warn "current")] [options]
+    $(warn "当前认证用户")
+
+    -h,  --help                       打印帮助信息
+EOF
+            ;;                
+
+        'ka' | 'key_add')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "ka")|$(warn "key_add")] [options]
+    $(warn "给当前用户创建一个 SSH KEY")
+
+    -h,  --help                       打印帮助信息
+    -ti, --title             str      SSH key 的标题
+    -ke, --key               str      SSH key 的内容    
+EOF
+            ;;
+
+        'kd' | 'key_delete')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "kd")|$(warn "key_delete")] [options]
+    $(warn "删除某个指定的 SSH KEY")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int/str  用户唯一标识或用户名称
+EOF
+            ;;   
+
+        'kl' | 'key_list')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "kl")|$(warn "key_list")] [options]
+    $(warn "获取当前用户的 SSH KEY")
+
+    -h,  --help                       打印帮助信息
+EOF
+            ;;
+
+        'ea' | 'email_add')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "ea")|$(warn "email_add")] [options]
+    $(warn "添加邮箱")
+
+    -h,  --help                       打印帮助信息
+    -ea, --email             str      邮箱地址
+EOF
+            ;;   
+
+        'ed' | 'email_delete')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "ed")|$(warn "email_delete")] [options]
+    $(warn "删除某个指定的邮箱")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      用户唯一标识或用户名称
+EOF
+            ;;   
+
+        'el' | 'email_list')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "el")|$(warn "email_list")] [options]
+    $(warn "获取用户邮箱列表")
+
+    -h,  --help                       打印帮助信息
+EOF
+            ;;   
+
+        'ei' | 'email_info')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "ei")|$(warn "email_info")] [options]
+    $(warn "获取邮箱信息")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int      邮箱的 ID
+EOF
+            ;;   
+
+        'eu' | 'email_user')
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [$(warn "eu")|$(warn "email_user")] [options]
+    $(warn "通过邮箱获取用户信息")
+
+    -h,  --help                       打印帮助信息
+    -em, --email                 str  邮箱地址
+EOF
+            ;;                                                                 
+
+        *)
+            cat <<EOF
+Usage: $0 -s $(warn "user") --action [options]
+
+-h, --help                 打印帮助信息
+-a, --action               指定操作类型
+        li list            获取用户信息列表
+        wa watch           获用户关注项目列表
+        sp specify         获取单个用户信息
+        cu current         当前认证用户
+        ka key_add         给当前用户创建一个 SSH KEY
+        kd key_delete      删除某个指定的 SSH KEY
+        kl key_list        获取当前用户的 SSH KEY
+        ki key_info        获取某个指定的 SSH KEY
+        ea email_add       添加邮箱
+        ed email_delete    删除某个指定的邮箱
+        el email_list      获取用户邮箱列表
+        ei email_info      获取邮箱信息
+        eu email_user      通过邮箱获取用户信息        
+EOF
+            ;;    
+    esac
+
+    exit 0
+}
+
+
 user() {
     case "${ACTION:-}" in
         'li' | 'list') 
@@ -1103,7 +1340,7 @@ user() {
             ;;
         'wa' | 'watch') 
             # 获取用户关注项目列表
-            api_users_watch
+            api_user_watch
             ;;
         'sp' | 'specify') 
             # 获取单个用户信息
@@ -1111,43 +1348,43 @@ user() {
             ;;
         'cu' | 'current') 
             # 当前认证用户
-            api_users_current
+            api_user_current
             ;;
         'ka' | 'key_add') 
             # 给当前用户创建一个 SSH KEY
-            api_users_key_add
+            api_user_keys_add
             ;;
         'kd' | 'key_delete') 
             # 删除某个指定的 SSH KEY
-            api_users_key_delete
+            api_user_keys_delete
             ;;
         'kl' | 'key_list')
             # 获取当前用户的 SSH KEY
-            api_users_key_list
+            api_user_keys_list
             ;;
         'ki' | 'key_info')
             # 获取某个指定的 SSH KEY
-            api_users_key_info
+            api_user_keys_info
             ;;
         'ea' | 'email_add')
             # 添加邮箱
-            api_users_email_add
+            api_user_emails_add
             ;;
         'ed' | 'email_delete')
             # 删除某个指定的邮箱
-            api_users_email_delete
+            api_user_emails_delete
             ;;
         'el' | 'email_list')
             # 获取用户邮箱列表
-            api_users_email_list
+            api_user_emails_list
             ;;
         'ei' | 'email_info')
             # 获取邮箱信息
-            api_users_email_info
+            api_user_emails_info
             ;;
         'eu' | 'email_user')
             # 通过邮箱获取用户信息
-            api_users_email_user
+            api_user_emails_user
             ;;     
         *)
             error_exit "无效的操作类型."
@@ -1179,6 +1416,72 @@ label() {
     esac
 }
 
+help_tag() {
+    case "${ACTION:-}" in
+        'ad' | 'add')
+            cat <<EOF
+Usage: $0 -s $(warn "tag") --action [$(warn "ad")|$(warn "add")] [options]
+    $(warn "新增 TAG")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int/str  项目唯一标识或 NAMESPACE_PATH/PROJECT_PATH
+    -tn, --tag_name          str      TAG 名
+    -re, --ref               str      从 commit hash、branch 或 tag 创建 tag
+    -me, --message           str      可选,描述、注释
+EOF
+        ;;  
+
+        'sp' | 'specify')
+            cat <<EOF
+Usage: $0 -s $(warn "tag") --action [$(warn "sp")|$(warn "specify")] [options]
+    $(warn "获取指定 TAG")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int/str  项目唯一标识或 NAMESPACE_PATH/PROJECT_PATH
+    -tn, --tag_name          str      TAG 名
+EOF
+        ;;  
+
+        'de' | 'delete')
+            cat <<EOF
+Usage: $0 -s $(warn "tag") --action [$(warn "de")|$(warn "delete")] [options]
+    $(warn "删除 TAG")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int/str  项目唯一标识或 NAMESPACE_PATH/PROJECT_PATH
+    -tn, --tag_name          str      TAG 名
+EOF
+        ;;  
+
+        'li' | 'list')
+            cat <<EOF
+Usage: $0 -s $(warn "tag") --action [$(warn "li")|$(warn "list")] [options]
+    $(warn "获取 TAG 列表 ")
+
+    -h,  --help                       打印帮助信息
+    -id, --id                int/str  项目唯一标识或 NAMESPACE_PATH/PROJECT_PATH
+    -pa, --page              int      可选,页数（默认值：1）
+    -pp, --per_page          int      可选,默认页面大小（默认值：20，最大值：100）  
+EOF
+        ;;  
+
+        *)
+            cat <<EOF
+Usage: $0 -s tag --action [options]
+
+-h, --help                 打印帮助信息
+-a, --action               指定操作类型
+        ad add             新增 TAG
+        sp specify         获取指定 TAG
+        de delete          删除 TAG
+        li list            获取 TAG 列表        
+EOF
+            ;;    
+    esac
+
+    exit 0
+}
+
 tag() {
     case "${ACTION:-}" in
         'ad' | 'add') 
@@ -1205,6 +1508,101 @@ tag() {
 
 commit() {
     echo "todo"
+}
+
+help_project() {
+    case "${ACTION:-}" in
+        'cr' | 'create')
+            cat <<EOF
+Usage: $0 -s $(warn "project") --action [$(warn "cr")|$(warn "create")] [options]
+    $(warn "创建项目")
+
+    -h,  --help                       打印帮助信息
+    -na, --name	             str      项目名
+    -ph, --path	             str      可选,项目版本库路径，默认：path = name
+    -fn, --fork_enabled	     bool     可选,项目是否可以被 fork，默认：false
+    -ni, --namespace_id	     int/str  可选,项目所属命名空间，默认用户的命名空间
+    -de, --description	     str      可选,项目描述
+    -vl, --visibility_level  int      可选,项目可视范围，默认 0
+
+EOF
+        ;;
+
+        'up' | 'update')
+            cat <<EOF
+Usage: $0 -s $(warn "project") --action [$(warn "up")|$(warn "update")] [options]
+    $(warn "编辑项目")
+
+    -h,  --help                       打印帮助信息
+    -id, --id	             int      项目唯一标识或NAMESPACE_PATH/PROJECT_PATH
+    -na, --name	             str      可选,项目名
+    -de, --description	     str      可选,项目描述
+    -db, --default_branch    str      可选,项目默认分支
+    -lf, --limit_file_size   num      文件大小限制，单位：MB
+    -ll, --limit_lfs_file_size	num   可选,LFS 文件大小限制，单位：MB
+    -ie, issues_enabled	        bool  可选,缺陷配置
+    -mr, merge_requests_enabled	bool  可选,合并请求配置
+    -we, wiki_enabled	     bool     可选,维基配置
+    -rn, review_enabled	     bool     可选,评审配置
+    -fe, fork_enabled	     bool     可选,是否可以被fork，默认：false
+    -tn, tag_name_regex	     str      可选,推送或创建 tag 规则
+    -tc, tag_create_push_level	int   可选,推送或创建 tag 权限
+    -vl, visibility_level    int      可选,项目可视范围
+
+EOF
+        ;;  
+
+        'de' | 'delete')
+            cat <<EOF
+Usage: $0 -s $(warn "project") --action [$(warn "de")|$(warn "delete")] [options]
+    $(warn "删除项目")
+
+    -h,  --help                       打印帮助信息
+    -id, --id	             int      项目唯一标识或NAMESPACE_PATH/PROJECT_PATH     
+EOF
+        ;;  
+
+        'li' | 'list')
+            cat <<EOF
+Usage: $0 -s $(warn "project") --action [$(warn "li")|$(warn "list")] [options]
+    $(warn "获取项目列表")
+
+    -h,  --help                       打印帮助信息
+    ...TODO...
+    -ar, --archived          bool     可选,归档状态，true 限制为查询归档项目，默认不区分
+    -wp, --with_push         bool     可选,推送状态，true 限制为查询推送过的项目，默认不区分
+    -ab, --abandoned	     bool     可选,活跃状态，true 限制为查询最近半年更新过的项目，默认全部
+    -vl, --visibility_level  str      可选,项目可视范围，默认 "0, 10, 20"
+    -se, --search            str      可选,搜索条件，模糊匹配 path,name
+    -ob, --order_by          str      可选,排序字段，允许按 id,name,path,created_at,updated_at,last_activity_at排序（默认created_at）
+    -so, --sort              str      可选,排序方式，允许asc,desc（默认 desc）
+    -pa, --page              int      可选,页数（默认值：1）
+    -pp, --per_page          int      可选,默认页面大小（默认值：20，最大值：100）  
+    ...TODO...
+EOF
+        ;;  
+
+        *)
+            cat <<EOF
+Usage: $0 -s project --action [options]
+
+-h, --help                 打印帮助信息
+-a, --action               指定操作类型
+        ...TODO...
+        cr create          创建项目
+        up update          编辑项目
+        de delete          删除项目
+        li list            获取项目列表
+        ow owned           获取用户授权的项目列表
+        sp specify         获取项目详细信息
+        sa share           与组共享项目
+        sl share_list      获取项目的共享组列表
+        sd share_delete    删除组中共享项目链接
+EOF
+            ;;    
+    esac
+
+    exit 0
 }
 
 project() {
@@ -1253,9 +1651,9 @@ project() {
             # 获取项目详细信息
             api_projects_info
             ;;
-        'sh' | 'share')
+        'sa' | 'share_add')
             # 与组共享项目
-            api_projects_share
+            api_projects_share_add
             ;;
         'sl' | 'share_list')
             # 获取项目的共享组列表
@@ -1300,6 +1698,10 @@ main() {
 
     if [ -z "${TOKEN:-}" ]; then
         TOKEN="${TENCENT_TOKEN:-}"
+    fi
+
+    if [ -z "$TOKEN" ]; then
+        error_exit "缺失令牌"
     fi
 
     case "${SELECT:-}" in
