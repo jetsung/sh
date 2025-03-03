@@ -362,73 +362,25 @@ backup() {
             USERNAME_TOKEN="${USERNAME}:${TOKEN}"
         fi
 
-        project_json=$(api_project_list)
-        echo "$project_json" | jq -c '.[]' | while read -r project; do
-            project_id=$(echo "$project" | jq -r '.id')
-            project_name=$(echo "$project" | jq -r '.name')
-            project_path=$(echo "$project" | jq -r '.path') 
-            path_with_namespace=$(echo "$project" | jq -r '.path_with_namespace')
-            description=$(echo "$project" | jq -r '.description')
-            http_url_to_repo=$(echo "$project" | jq -r '.http_url_to_repo')
-            ssh_url_to_repo=$(echo "$project" | jq -r '.ssh_url_to_repo')
-            web_url=$(echo "$project" | jq -r '.web_url')
-            project_path_dir=$(dirname "$path_with_namespace")
-
-            tip "项目 ID: $project_id"
-            tip "项目名称: $project_name"
-            tip "项目路径: $project_path"
-            tip "项目路径带命名空间: $path_with_namespace"
-            tip "项目描述: $description"
-            tip " Web URL: $web_url"
-            tip "HTTP URL: $http_url_to_repo"
-            tip " SSH URL: $ssh_url_to_repo"
-            tip "项目备份目录: $project_path_dir"
-
-            mkdir -p "$project_path_dir"
-
-            # 进入项目父目录
-            cd "$project_path_dir"
-
-            if [[ -d "${project_path}.git" ]]; then
-                if [[ -n "${FORCE:-}" ]]; then
-                    warn "项目已存在, 强制覆盖"
-                    rm -rf "${project_path}.git"
-                else
-                    warn "项目已存在, 跳过备份"
-                    echo ""
-                    # 返回顶级目录
-                    cd "$backup_path"
-                    continue
-                fi
+        PAGE="${PAGE:-1}"
+        PER_PAGE="${PER_PAGE:-100}"
+        while true; do
+            project_json=$(api_project_list)
+            if [[ $(echo "$project_json" | jq 'length') -eq 0 ]]; then
+                break
             fi
 
-            echo ""
-
-            # 执行备份
-            if [[ "$MODE" == "ssh" ]]; then
-                git clone "$ssh_url_to_repo" --bare
-            else
-                http_url_repo="https://${USERNAME_TOKEN:-}@${http_url_to_repo#https://}"
-                git clone "$http_url_repo" --bare
+            progress
+            if [[ -z "$project_json" ]]; then
+                break
             fi
-            echo "====================================================================="
-            echo ""
-            # 返回顶级目录
-            cd "$backup_path"
-            # echo "${project}" | jq '. | {id, name, path, path_with_namespace, description, web_url, http_url_to_repo, ssh_url_to_repo}'
-            # break
-        done    
+            PAGE=$((PAGE+1))    
+        done
 
-        echo "${project_json}" | jq '[.[] | {
-            id, 
-            name, 
-            path, 
-            path_with_namespace, 
-            description, 
-            web_url, 
-            http_url_to_repo, 
-            ssh_url_to_repo
-        }]' | tee "backup.json" > /dev/null 2>&1
+        # 合并数据文件
+        jq -s '[.[][]]' backup_*.json > data.json
+        # 删除临时文件
+        rm -f backup_*.json
     popd > /dev/null 2>&1
 
     echo ""
@@ -436,6 +388,86 @@ backup() {
     warn "备份路径: $backup_path"
     warn "备份完成"
     echo ""
+
+    # 压缩备份文件
+    if [[ -n "${COMPRESS:-}" ]]; then
+        warn "开始压缩备份文件"
+        tar -caf "${backup_name}.tar.xz" -C "${backup_dir}" "${backup_name}"
+        warn "压缩备份文件完成"
+        warn "备份文件大小: $(du -sh "${backup_name}.tar.xz" | awk '{print $1}')"
+        warn "备份文件路径: ${backup_name}.tar.xz"
+        echo ""
+    fi
+    echo ""
+}
+
+progress() {
+    echo "$project_json" | jq -c '.[]' | while read -r project; do
+        project_id=$(echo "$project" | jq -r '.id')
+        project_name=$(echo "$project" | jq -r '.name')
+        project_path=$(echo "$project" | jq -r '.path') 
+        path_with_namespace=$(echo "$project" | jq -r '.path_with_namespace')
+        description=$(echo "$project" | jq -r '.description')
+        http_url_to_repo=$(echo "$project" | jq -r '.http_url_to_repo')
+        ssh_url_to_repo=$(echo "$project" | jq -r '.ssh_url_to_repo')
+        web_url=$(echo "$project" | jq -r '.web_url')
+        project_path_dir=$(dirname "$path_with_namespace")
+
+        tip "项目 ID: $project_id"
+        tip "项目名称: $project_name"
+        tip "项目路径: $project_path"
+        tip "项目路径带命名空间: $path_with_namespace"
+        tip "项目描述: $description"
+        tip " Web URL: $web_url"
+        tip "HTTP URL: $http_url_to_repo"
+        tip " SSH URL: $ssh_url_to_repo"
+        tip "项目备份目录: $project_path_dir"
+
+        mkdir -p "$project_path_dir"
+
+        # 进入项目父目录
+        cd "$project_path_dir"
+
+        if [[ -d "${project_path}.git" ]]; then
+            if [[ -n "${FORCE:-}" ]]; then
+                warn "项目已存在, 强制覆盖"
+                rm -rf "${project_path}.git"
+            else
+                warn "项目已存在, 跳过备份"
+                echo ""
+                # 返回顶级目录
+                cd "$backup_path"
+                continue
+            fi
+        fi
+
+        echo ""
+
+        # 执行备份
+        if [[ "$MODE" == "ssh" ]]; then
+            git clone "$ssh_url_to_repo" --bare
+        else
+            http_url_repo="https://${USERNAME_TOKEN:-}@${http_url_to_repo#https://}"
+            git clone "$http_url_repo" --bare
+        fi
+        echo "====================================================================="
+        echo ""
+        # 返回顶级目录
+        cd "$backup_path"
+        # echo "${project}" | jq '. | {id, name, path, path_with_namespace, description, web_url, http_url_to_repo, ssh_url_to_repo}'
+        # break
+    done    
+
+    echo "${project_json}" | jq '[.[] | {
+        id, 
+        name, 
+        path, 
+        path_with_namespace, 
+        description, 
+        web_url, 
+        http_url_to_repo, 
+        ssh_url_to_repo
+    }]' | tee "backup_${PAGE:-1}_${PER_PAGE:-20}.json" > /dev/null 2>&1    
 }
 
 # 处理参数信息
@@ -475,8 +507,12 @@ judgment_parameters() {
                 MODE="${1:?"错误: 模式 (mode) 不能为空."}"
                 ;;
             '-f' | '--force')
-            # 强制覆盖
+            # 强制覆盖本地已经拉取的 GitLab 项目
                 FORCE=1
+                ;;
+            '-c' | '--compress')
+            # 压缩
+                COMPRESS=1
                 ;;
 
             '-pa' | '--page') 
