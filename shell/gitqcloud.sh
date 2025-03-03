@@ -682,7 +682,7 @@ api_projects_star_list() {
 # 处理参数信息
 judgment_parameters() {
     while [[ "$#" -gt '0' ]]; do
-        case "$1" in
+        case "${1,,}" in
             '-t' | '--token') 
             # TOKEN
                 shift
@@ -892,79 +892,11 @@ judgment_parameters() {
     done
 }
 
-# 显示帮助信息
-show_top_help() {
-    cat <<EOF
-Usage: $0 --select [SELECT] --action [ACTION] [options]
-
-TencentGit CLI
-
--h, --help          打印帮助信息
--t, --token         私有令牌
--s, --select        选择类型
-        gr,group       项目组
-        ns,namespace   命名空间
-        us,user        用户
-        la,label       标签
-        ta,tag         TAG
--a, --action        指定操作类型     
-
-EOF
-    exit 0
-}
-
-# 显示帮助信息
-show_help() {
-    case "${SELECT:-}" in
-        'gr' | 'group') 
-            help_group
-            ;;
-        'ns' | 'namespace') 
-            help_namespace
-            ;;
-        'us' | 'user') 
-            help_user
-            ;;
-        'la' | 'label') 
-            cat <<EOF
-Usage: $0 -s label [options]
-
--h, --help             打印帮助信息
--a, --action           指定操作类型
-    ad add             新增标签
-    up update          修改标签
-    de delete          删除标签
-    li list            获取标签列表
-
-EOF
-            ;;
-        'ta' | 'tag') 
-            help_tag
-            ;;
-        'co' | 'commit')
-            cat <<EOF
-Usage: $0 -s commit [options]
-
--h, --help             打印帮助信息
--a, --action           指定操作类型
-    ...TODO...
-EOF
-            ;;
-        'pr' | 'project')
-            help_project
-            ;;
-        *)
-            show_top_help
-            ;;
-    esac
-    exit 0
-}
-
 help_group() {
     case "${ACTION:-}" in
         'cr' | 'create')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "cr")|$(warn "create")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "cr")|$(warn "create")] [options]
     $(warn "新建项目组")
 
     -h,  --help                       打印帮助信息
@@ -976,7 +908,7 @@ EOF
 
         'up' | 'update')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "up")|$(warn "update")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "up")|$(warn "update")] [options]
     $(warn "编辑项目组")
 
     -h,  --help                       打印帮助信息
@@ -988,7 +920,7 @@ EOF
 
         'de' | 'delete')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "de")|$(warn "delete")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "de")|$(warn "delete")] [options]
     $(warn "删除项目组")
 
     -h,  --help                       打印帮助信息
@@ -998,7 +930,7 @@ EOF
 
         'li' | 'list')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "li")|$(warn "list")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "li")|$(warn "list")] [options]
     $(warn "获取命名空间列表")
 
     -h,  --help                       打印帮助信息
@@ -1010,7 +942,7 @@ EOF
 
         'ml' | 'members_list')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "ml")|$(warn "members_list")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "ml")|$(warn "members_list")] [options]
     $(warn "获取项目组成员列表")
 
     -h,  --help                       打印帮助信息
@@ -1022,7 +954,7 @@ EOF
 
         'ma' | 'member_add')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "ma")|$(warn "member_add")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "ma")|$(warn "member_add")] [options]
     $(warn "增加项目组成员")
 
     -h,  --help                       打印帮助信息
@@ -1041,7 +973,7 @@ EOF
 
         'mu' | 'member_update')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "mu")|$(warn "member_update")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "mu")|$(warn "member_update")] [options]
     $(warn "修改项目组成员")
 
     -h,  --help                       打印帮助信息
@@ -1059,7 +991,7 @@ EOF
 
         'md' | 'member_delete')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "md")|$(warn "member_delete")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "md")|$(warn "member_delete")] [options]
     $(warn "修改项目组成员")
 
     -h,  --help                       打印帮助信息
@@ -1070,7 +1002,7 @@ EOF
 
         'pr' | 'projects')
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [$(warn "pr")|$(warn "projects")] [options]
+用法: $0 -s $(warn "group") --action [$(warn "pr")|$(warn "projects")] [options]
     $(warn "获取项目组的详细信息以及项目组下所有项目")
 
     -h,  --help                       打印帮助信息
@@ -1081,7 +1013,7 @@ EOF
 
         *)
             cat <<EOF
-Usage: $0 -s $(warn "group") --action [options]
+用法: $0 -s $(warn "group") --action [options]
 
 -h, --help                 打印帮助信息
 -a, --action               指定操作类型
@@ -1149,7 +1081,7 @@ help_namespace() {
     case "${ACTION:-}" in
         'li' | 'list')
             cat <<EOF
-Usage: $0 -s $(warn "namespace") --action [$(warn "li")|$(warn "list")] [options]
+用法: $0 -s $(warn "namespace") --action [$(warn "li")|$(warn "list")] [options]
     $(warn "获取命名空间列表")
 
     -h,  --help                       打印帮助信息
@@ -1161,7 +1093,7 @@ EOF
 
         *)
             cat <<EOF
-Usage: $0 -s namespace --action [options]
+用法: $0 -s namespace --action [options]
 
 -h, --help                 打印帮助信息
 -a, --action               指定操作类型
@@ -1189,7 +1121,7 @@ help_user() {
     case "${ACTION:-}" in
         'li' | 'list')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "li")|$(warn "list")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "li")|$(warn "list")] [options]
     $(warn "获取用户信息列表")
 
     -h,  --help                       打印帮助信息
@@ -1200,7 +1132,7 @@ EOF
 
         'wa' | 'watch')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "wa")|$(warn "watch")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "wa")|$(warn "watch")] [options]
     $(warn "获用户关注项目列表")
 
     -h,  --help                       打印帮助信息
@@ -1209,7 +1141,7 @@ EOF
 
         'sp' | 'specify')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "sp")|$(warn "specify")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "sp")|$(warn "specify")] [options]
     $(warn "获取单个用户信息")
 
     -h,  --help                       打印帮助信息
@@ -1219,7 +1151,7 @@ EOF
 
         'cu' | 'current')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "cu")|$(warn "current")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "cu")|$(warn "current")] [options]
     $(warn "当前认证用户")
 
     -h,  --help                       打印帮助信息
@@ -1228,7 +1160,7 @@ EOF
 
         'ka' | 'key_add')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "ka")|$(warn "key_add")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "ka")|$(warn "key_add")] [options]
     $(warn "给当前用户创建一个 SSH KEY")
 
     -h,  --help                       打印帮助信息
@@ -1239,7 +1171,7 @@ EOF
 
         'kd' | 'key_delete')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "kd")|$(warn "key_delete")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "kd")|$(warn "key_delete")] [options]
     $(warn "删除某个指定的 SSH KEY")
 
     -h,  --help                       打印帮助信息
@@ -1249,7 +1181,7 @@ EOF
 
         'kl' | 'key_list')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "kl")|$(warn "key_list")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "kl")|$(warn "key_list")] [options]
     $(warn "获取当前用户的 SSH KEY")
 
     -h,  --help                       打印帮助信息
@@ -1258,7 +1190,7 @@ EOF
 
         'ea' | 'email_add')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "ea")|$(warn "email_add")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "ea")|$(warn "email_add")] [options]
     $(warn "添加邮箱")
 
     -h,  --help                       打印帮助信息
@@ -1268,7 +1200,7 @@ EOF
 
         'ed' | 'email_delete')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "ed")|$(warn "email_delete")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "ed")|$(warn "email_delete")] [options]
     $(warn "删除某个指定的邮箱")
 
     -h,  --help                       打印帮助信息
@@ -1278,7 +1210,7 @@ EOF
 
         'el' | 'email_list')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "el")|$(warn "email_list")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "el")|$(warn "email_list")] [options]
     $(warn "获取用户邮箱列表")
 
     -h,  --help                       打印帮助信息
@@ -1287,7 +1219,7 @@ EOF
 
         'ei' | 'email_info')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "ei")|$(warn "email_info")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "ei")|$(warn "email_info")] [options]
     $(warn "获取邮箱信息")
 
     -h,  --help                       打印帮助信息
@@ -1297,7 +1229,7 @@ EOF
 
         'eu' | 'email_user')
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [$(warn "eu")|$(warn "email_user")] [options]
+用法: $0 -s $(warn "user") --action [$(warn "eu")|$(warn "email_user")] [options]
     $(warn "通过邮箱获取用户信息")
 
     -h,  --help                       打印帮助信息
@@ -1307,7 +1239,7 @@ EOF
 
         *)
             cat <<EOF
-Usage: $0 -s $(warn "user") --action [options]
+用法: $0 -s $(warn "user") --action [options]
 
 -h, --help                 打印帮助信息
 -a, --action               指定操作类型
@@ -1420,7 +1352,7 @@ help_tag() {
     case "${ACTION:-}" in
         'ad' | 'add')
             cat <<EOF
-Usage: $0 -s $(warn "tag") --action [$(warn "ad")|$(warn "add")] [options]
+用法: $0 -s $(warn "tag") --action [$(warn "ad")|$(warn "add")] [options]
     $(warn "新增 TAG")
 
     -h,  --help                       打印帮助信息
@@ -1433,7 +1365,7 @@ EOF
 
         'sp' | 'specify')
             cat <<EOF
-Usage: $0 -s $(warn "tag") --action [$(warn "sp")|$(warn "specify")] [options]
+用法: $0 -s $(warn "tag") --action [$(warn "sp")|$(warn "specify")] [options]
     $(warn "获取指定 TAG")
 
     -h,  --help                       打印帮助信息
@@ -1444,7 +1376,7 @@ EOF
 
         'de' | 'delete')
             cat <<EOF
-Usage: $0 -s $(warn "tag") --action [$(warn "de")|$(warn "delete")] [options]
+用法: $0 -s $(warn "tag") --action [$(warn "de")|$(warn "delete")] [options]
     $(warn "删除 TAG")
 
     -h,  --help                       打印帮助信息
@@ -1455,7 +1387,7 @@ EOF
 
         'li' | 'list')
             cat <<EOF
-Usage: $0 -s $(warn "tag") --action [$(warn "li")|$(warn "list")] [options]
+用法: $0 -s $(warn "tag") --action [$(warn "li")|$(warn "list")] [options]
     $(warn "获取 TAG 列表 ")
 
     -h,  --help                       打印帮助信息
@@ -1467,7 +1399,7 @@ EOF
 
         *)
             cat <<EOF
-Usage: $0 -s tag --action [options]
+用法: $0 -s tag --action [options]
 
 -h, --help                 打印帮助信息
 -a, --action               指定操作类型
@@ -1514,7 +1446,7 @@ help_project() {
     case "${ACTION:-}" in
         'cr' | 'create')
             cat <<EOF
-Usage: $0 -s $(warn "project") --action [$(warn "cr")|$(warn "create")] [options]
+用法: $0 -s $(warn "project") --action [$(warn "cr")|$(warn "create")] [options]
     $(warn "创建项目")
 
     -h,  --help                       打印帮助信息
@@ -1530,7 +1462,7 @@ EOF
 
         'up' | 'update')
             cat <<EOF
-Usage: $0 -s $(warn "project") --action [$(warn "up")|$(warn "update")] [options]
+用法: $0 -s $(warn "project") --action [$(warn "up")|$(warn "update")] [options]
     $(warn "编辑项目")
 
     -h,  --help                       打印帮助信息
@@ -1554,7 +1486,7 @@ EOF
 
         'de' | 'delete')
             cat <<EOF
-Usage: $0 -s $(warn "project") --action [$(warn "de")|$(warn "delete")] [options]
+用法: $0 -s $(warn "project") --action [$(warn "de")|$(warn "delete")] [options]
     $(warn "删除项目")
 
     -h,  --help                       打印帮助信息
@@ -1564,7 +1496,7 @@ EOF
 
         'li' | 'list')
             cat <<EOF
-Usage: $0 -s $(warn "project") --action [$(warn "li")|$(warn "list")] [options]
+用法: $0 -s $(warn "project") --action [$(warn "li")|$(warn "list")] [options]
     $(warn "获取项目列表")
 
     -h,  --help                       打印帮助信息
@@ -1584,7 +1516,7 @@ EOF
 
         *)
             cat <<EOF
-Usage: $0 -s project --action [options]
+用法: $0 -s project --action [options]
 
 -h, --help                 打印帮助信息
 -a, --action               指定操作类型
@@ -1687,6 +1619,74 @@ project() {
             error_exit "无效的操作类型."
             ;;
     esac
+}
+
+# 显示帮助信息
+show_top_help() {
+    cat <<EOF
+用法: $0 --select [SELECT] --action [ACTION] [options]
+
+TencentGit CLI
+
+-h, --help          打印帮助信息
+-t, --token         私有令牌
+-s, --select        选择类型
+        gr,group       项目组
+        ns,namespace   命名空间
+        us,user        用户
+        la,label       标签
+        ta,tag         TAG
+-a, --action        指定操作类型     
+
+EOF
+    exit 0
+}
+
+# 显示帮助信息
+show_help() {
+    case "${SELECT:-}" in
+        'gr' | 'group') 
+            help_group
+            ;;
+        'ns' | 'namespace') 
+            help_namespace
+            ;;
+        'us' | 'user') 
+            help_user
+            ;;
+        'la' | 'label') 
+            cat <<EOF
+用法: $0 -s label [options]
+
+-h, --help             打印帮助信息
+-a, --action           指定操作类型
+    ad add             新增标签
+    up update          修改标签
+    de delete          删除标签
+    li list            获取标签列表
+
+EOF
+            ;;
+        'ta' | 'tag') 
+            help_tag
+            ;;
+        'co' | 'commit')
+            cat <<EOF
+用法: $0 -s commit [options]
+
+-h, --help             打印帮助信息
+-a, --action           指定操作类型
+    ...TODO...
+EOF
+            ;;
+        'pr' | 'project')
+            help_project
+            ;;
+        *)
+            show_top_help
+            ;;
+    esac
+    exit 0
 }
 
 main() {

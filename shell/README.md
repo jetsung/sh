@@ -36,8 +36,8 @@
     - [debfetch](#debfetch)
     - [debgetsh](#debgetsh)
     - [dockerpull](#dockerpull)
-    - [gitflydo](#gitflydo)
     - [gitqcloud](#gitqcloud)
+    - [gitlab-backup](#gitlab-backup)
 
 ## 脚本列表
 
@@ -172,14 +172,14 @@ Docker 从加速站拉取镜像
 
 ---
 
-### [gitflydo](gitflydo.sh)
-
-一台电脑上使用同一代码托管平台的多个 Git 账户
-
----
-
 ### [gitqcloud](gitqcloud.sh)
 
 腾讯工峰 Git 操作命令行
+
+---
+
+### [gitlab-backup](gitlab-backup.sh)
+
+GitLab 账号源码仓库备份
 
 ---
