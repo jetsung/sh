@@ -2,7 +2,10 @@
 
 #
 # GitLab 账号源码仓库备份
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/doc/api/openapi/openapi_v2.yaml
+# 项目地址： https://github.com/jetsung/sh/blob/main/shell/gitlab-backup.sh
+#          https://gitcode.com/jetsung/sh/blob/main/shell/gitlab-backup.sh
+#
+# OpenAPI： https://gitlab.com/gitlab-org/gitlab/-/blob/master/doc/api/openapi/openapi_v2.yaml
 #
 # 依赖:
 #   - jq
@@ -123,7 +126,7 @@ api_group_list() {
 }
 group() {
     case "${ACTION:-}" in
-        'li' | 'list') 
+        'ls' | 'list') 
             # 获取群组列表
             api_group_list
             ;;    
@@ -253,7 +256,7 @@ api_project_list() {
 }
 project() {
     case "${ACTION:-}" in
-        'li' | 'list')
+        'ls' | 'list')
             # 获取群组列表
             api_project_list
             ;;
@@ -337,7 +340,13 @@ backup() {
         backup_name="gitlab-${backup_time}"
     fi
 
-    # mkdir -p "$backup_dir"
+    MIRROR_STR="bare"
+    if [[ -n "${MIRROR:-}" ]]; then
+        MIRROR_STR="mirror"
+    fi
+
+    backup_name="${backup_name}-${MIRROR_STR}"
+    
     local backup_path="${backup_dir}/${backup_name}"
     mkdir -p "$backup_path"
     warn "备份路径: $backup_path"
@@ -435,10 +444,10 @@ progress() {
 
         # 执行备份
         if [[ "$MODE" == "ssh" ]]; then
-            git clone "$ssh_url_to_repo" --bare
+            git clone "$ssh_url_to_repo" "--$MIRROR_STR"
         else
             http_url_repo="https://${USERNAME_TOKEN:-}@${http_url_to_repo#https://}"
-            git clone "$http_url_repo" --bare
+            git clone "$http_url_repo" "--$MIRROR_STR"
         fi
         echo "====================================================================="
         echo ""
@@ -465,16 +474,17 @@ help_backup() {
         *)
 cat <<EOF
 用法: $0 -s $(warn "$SELECT") [options] 
-或者: $0 --backup [options] 
+别名: $0 $(warn "--backup") [options] 
 
     $(warn "备份")
 
 $(help_common)
+    -m,  --mode       [ssh|https]            模式,默认 https
+            ssh                              ssh 模式
+            https                            https 模式       
     -f,  --force                             强制覆盖本地已经拉取的 GitLab 项目
     -c,  --compress                          将整个备份压缩成 .tar.xz
-    -m,  --mode                              模式,默认 https
-            ssh                              ssh 模式
-            https                            https 模式        
+    -i,  --mirror                            可选, 拉取方式为镜像。默认拉取方式 --bare
 $(help_project_list)
 
 EOF
@@ -568,6 +578,10 @@ judgment_parameters() {
             # 压缩
                 COMPRESS=1
                 ;;
+            '-i' | '--mirror')
+            # 拉取方式为镜像
+                MIRROR=1
+                ;;
 
             '-pa' | '--page') 
             # 页码
@@ -610,8 +624,8 @@ judgment_parameters() {
 help_common() {
     cat <<EOF
     -h,  --help                              打印帮助信息
-    -t,  --token                             个人访问令牌, 需要权限 read_api,read_repository,read_user
-    -u,  --url                               自托管网址, 默认: https://gitlab.com
+    -t,  --token      [TOKEN]                个人访问令牌, 需要权限 read_api,read_repository,read_user
+    -u,  --url        [URL]                  自托管网址, 默认: https://gitlab.com
 EOF
 }
 
@@ -624,7 +638,7 @@ show_top_help() {
 
 $(help_common)
     -b,  --backup                            执行备份, 别名: --select backup
-    -s,  --select                            选择区域
+    -s,  --select     [bk|gr|pr|us]          选择区域
             bk backup                        执行备份
             gr group                         查询团队
             pr project                       查询项目
