@@ -15,11 +15,15 @@
 # 示例:
 #   gitlab-backup.sh --help
 #
+#
 # lastmod: 2025-03-04
 #
 
-set -euo pipefail
-# set -eux
+if [[ -n "$DEBUG" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
 
 DEFAULT_URL="https://gitlab.com"
 API_VERSION="/api/v4"
@@ -123,24 +127,26 @@ help_group() {
         'ls' | 'list')
 cat <<EOF
  用法: $0 -s $(warn "group") --action $(warn "$ACTION") [options]
+ 
     $(warn "获取群组列表")
 
-    -h,  --help                             打印帮助信息
-            --statistics                    可选,统计信息（默认值：false）
-            --skip_groups                   可选,跳过群组，格式：1,2,3,4
-            --all_available                 可选,显示可访问的所有组
-            --visibility                    可选,可见性，可选值：public, internal, private
-            --search                        可选,搜索特定群组
-            --owned                         可选,仅获取属于当前用户的群组（默认值：false）
-            --order_by                      可选,排序方式（默认值：name）
-            --sort                          可选,排序顺序（默认值：asc）
-            --min_access_level              可选,最小访问级别
-            --top_level_only                可选,仅获取顶级群组
-            --repository_storage            可选,按组使用的存储库存储进行过滤
-            --marked_for_deletion_on        可选,标记为删除组的日期
-            --page                          可选,页数（默认值：1）
-            --per_page                      可选,默认页面大小（默认值：20，最大值：100）
-            --with_custom_attributes        可选,是否包含自定义属性（默认值：false）
+    -h,  --help                              打印帮助信息
+         --statistics                        可选,统计信息（默认值：false）
+         --skip_groups                       可选,跳过群组，格式：1,2,3,4
+         --all_available                     可选,显示可访问的所有组
+         --visibility                        可选,可见性，可选值：public, internal, private
+         --search                            可选,搜索特定群组
+         --owned                             可选,仅获取属于当前用户的群组（默认值：false）
+         --order_by                          可选,排序方式（默认值：name）
+         --sort                              可选,排序顺序（默认值：asc）
+         --min_access_level                  可选,最小访问级别
+         --top_level_only                    可选,仅获取顶级群组
+         --repository_storage                可选,按组使用的存储库存储进行过滤
+         --marked_for_deletion_on            可选,标记为删除组的日期
+         --page                              可选,页数（默认值：1）
+         --per_page                          可选,默认页面大小（默认值：20，最大值：100）
+         --with_custom_attributes            可选,是否包含自定义属性（默认值：false）
+
 EOF
         ;;     
 
@@ -150,9 +156,10 @@ cat <<EOF
 
     $(warn "群组")
 
-    -h, --help                 打印帮助信息
-    -a, --action               指定操作类型
-            ls list            获取群组列表
+    -h,  --help                              打印帮助信息
+    -a,  --action                            指定操作类型
+            ls list                          获取群组列表
+
 EOF
         ;;
 
@@ -253,38 +260,8 @@ cat <<EOF
     $(warn "获取项目列表")
 
     -h,  --help                              打印帮助信息
-            --statistics                     可选, 包含项目统计信息（默认值：false）
-            --skip_groups                    可选, 跳过指定的群组，格式：1,2,3,4
-            --all_available                  可选, 显示所有可访问的项目（包括私有和公共的）
-            --visibility                     可选, 项目可见性， 可选值：private, internal, public
-            --search                         可选, 搜索项目的名称或描述
-            --search_namespaces              可选, 在搜索时是否包括父命名空间
-            --owned                          可选, 仅获取当前用户拥有的项目（默认值：false）
-            --starred                        可选, 仅获取当前用户星标的项目（默认值：false）
-            --imported                       可选, 仅获取当前用户导入的项目（默认值：false）
-            --membership                     可选, 仅获取当前用户作为成员的项目（默认值：false）
-            --with_issues_enabled            可选, 是否仅获取启用了问题功能的项目（默认值：false）
-            --with_merge_requests_enabled    可选, 是否仅获取启用了合并请求功能的项目（默认值：false）
-            --with_programming_language      可选, 限制返回特定编程语言的项目
-            --min_access_level               可选, 最小访问级别， 可选值：10, 15, 20, 30, 40, 50
-            --id_after                       可选, 限制返回 ID 大于指定值的项目
-            --id_before                      可选, 限制返回 ID 小于指定值的项目
-            --last_activity_after            可选, 限制返回最后活跃时间在指定时间之后的项目
-            --last_activity_before           可选, 限制返回最后活跃时间在指定时间之前的项目
-            --repository_storage             可选, 按项目存储分片过滤（仅管理员可用）
-            --topic                          可选, 限制返回包含所有指定主题的项目
-            --topic_id                       可选, 限制返回具有指定主题 ID 的项目
-            --updated_before                 可选, 限制返回最后更新时间在指定时间之前的项目
-            --updated_after                  可选, 限制返回最后更新时间在指定时间之后的项目
-            --include_pending_delete         可选, 是否包括待删除状态的项目（仅管理员可用）
-            --wiki_checksum_failed           可选, 是否仅返回 wiki 校验失败的项目（默认值：false）
-            --repository_checksum_failed     可选, 是否仅返回仓库校验失败的项目（默认值：false）
-            --include_hidden                 可选, 是否包括隐藏的项目（仅管理员可用）
-            --marked_for_deletion_on         可选, 项目标记为删除的日期
-            --page                           可选, 当前页数（默认值：1）
-            --per_page                       可选, 每页返回的项目数量（默认值：20）
-            --simple                         可选, 只返回项目的 ID、URL、名称和路径（默认值：false）
-            --with_custom_attributes         可选, 是否返回项目的自定义属性（默认值：false）
+$(help_project_list)    
+
 EOF
         ;;
 
@@ -294,9 +271,10 @@ cat <<EOF
 
     $(warn "项目")
 
-    -h, --help                 打印帮助信息
-    -a, --action               指定操作类型
-            ls list            获取项目列表
+    -h,  --help                              打印帮助信息
+    -a,  --action                            指定操作类型
+            ls list                          获取项目列表
+
 EOF
         ;;
     esac
@@ -326,9 +304,10 @@ cat <<EOF
 
     $(warn "用户")
 
-    -h, --help                 打印帮助信息
-    -a, --action               指定操作类型
-            cu current         获取当前用户信息
+    -h,  --help                              打印帮助信息
+    -a,  --action                            指定操作类型
+            cu current                       获取当前用户信息
+
 EOF
         ;;
     esac
@@ -379,6 +358,7 @@ backup() {
 
         # 合并数据文件
         jq -s '[.[][]]' backup_*.json > data.json
+        tip "$(jq -r '"本次备份共 " + (length|tostring) + " 个仓库"' data.json)"
         # 删除临时文件
         rm -f backup_*.json
     popd > /dev/null 2>&1
@@ -398,9 +378,9 @@ backup() {
         warn "备份文件路径: ${backup_name}.tar.xz"
         echo ""
     fi
-    echo ""
 }
 
+# 备份进度
 progress() {
     echo "$project_json" | jq -c '.[]' | while read -r project; do
         project_id=$(echo "$project" | jq -r '.id')
@@ -414,9 +394,9 @@ progress() {
         project_path_dir=$(dirname "$path_with_namespace")
 
         tip "项目 ID: $project_id"
-        tip "项目名称: $project_name"
         tip "项目路径: $project_path"
-        tip "项目路径带命名空间: $path_with_namespace"
+        tip "完整路径: $path_with_namespace"
+        tip "项目名称: $project_name"
         tip "项目描述: $description"
         tip " Web URL: $web_url"
         tip "HTTP URL: $http_url_to_repo"
@@ -467,7 +447,68 @@ progress() {
         web_url, 
         http_url_to_repo, 
         ssh_url_to_repo
-    }]' | tee "backup_${PAGE:-1}_${PER_PAGE:-20}.json" > /dev/null 2>&1    
+    }]' | tee "backup_${PAGE}_${PER_PAGE}.json" > /dev/null 2>&1    
+}
+
+help_backup() {
+    case "${ACTION:-}" in
+        *)
+cat <<EOF
+用法: $0 -s $(warn "$SELECT") [options] 
+或者: $0 --backup [options] 
+
+    $(warn "备份")
+
+    -h,  --help                              打印帮助信息
+    -f,  --force                             强制覆盖本地已经拉取的 GitLab 项目
+    -c,  --compress                          将整个备份压缩成 .tar.xz
+    -m,  --mode                              模式,默认 https
+            ssh                              ssh 模式
+            https                            https 模式        
+$(help_project_list)
+
+EOF
+        ;;
+    esac
+}
+
+help_project_list() {
+    cat <<EOF
+
+         --statistics                        可选, 包含项目统计信息（默认值：false）
+         --skip_groups                       可选, 跳过指定的群组，格式：1,2,3,4
+         --all_available                     可选, 显示所有可访问的项目（包括私有和公共的）
+         --visibility                        可选, 项目可见性， 可选值：private, internal, public
+         --search                            可选, 搜索项目的名称或描述
+         --search_namespaces                 可选, 在搜索时是否包括父命名空间
+         --owned                             可选, 仅获取当前用户拥有的项目（默认值：false）
+         --starred                           可选, 仅获取当前用户星标的项目（默认值：false）
+         --imported                          可选, 仅获取当前用户导入的项目（默认值：false）
+         --membership                        可选, 仅获取当前用户作为成员的项目（默认值：false）
+         --with_issues_enabled               可选, 是否仅获取启用了问题功能的项目（默认值：false）
+         --with_merge_requests_enabled       可选, 是否仅获取启用了合并请求功能的项目（默认值：false）
+         --with_programming_language         可选, 限制返回特定编程语言的项目
+         --min_access_level                  可选, 最小访问级别， 可选值：10, 15, 20, 30, 40, 50
+         --id_after                          可选, 限制返回 ID 大于指定值的项目
+         --id_before                         可选, 限制返回 ID 小于指定值的项目
+         --last_activity_after               可选, 限制返回最后活跃时间在指定时间之后的项目
+         --last_activity_before              可选, 限制返回最后活跃时间在指定时间之前的项目
+         --repository_storage                可选, 按项目存储分片过滤（仅管理员可用）
+         --topic                             可选, 限制返回包含所有指定主题的项目
+         --topic_id                          可选, 限制返回具有指定主题 ID 的项目
+         --updated_before                    可选, 限制返回最后更新时间在指定时间之前的项目
+         --updated_after                     可选, 限制返回最后更新时间在指定时间之后的项目
+         --include_pending_delete            可选, 是否包括待删除状态的项目（仅管理员可用）
+         --wiki_checksum_failed              可选, 是否仅返回 wiki 校验失败的项目（默认值：false）
+         --repository_checksum_failed        可选, 是否仅返回仓库校验失败的项目（默认值：false）
+         --include_hidden                    可选, 是否包括隐藏的项目（仅管理员可用）
+         --marked_for_deletion_on            可选, 项目标记为删除的日期
+         --page                              可选, 当前页数（默认值：1）
+         --per_page                          可选, 每页返回的项目数量（默认值：20）
+         --simple                            可选, 只返回项目的 ID、URL、名称和路径（默认值：false）
+         --with_custom_attributes            可选, 是否返回项目的自定义属性（默认值：false）
+EOF
+
 }
 
 # 处理参数信息
@@ -486,21 +527,24 @@ judgment_parameters() {
                 URL="${1:?"错误: 自托管网址 (url) 不能为空."}"
                 ;;
 
-            '-b' | '--backup')
-            # 执行备份
-                BACKUP=1
-                ;;
-
             '-s' | '--select') 
             # 选择
                 shift
-                SELECT="${1:?"错误: 选择类型 (select) 不能为空."}"
+                SELECT="${1,,:?"错误: 选择类型 (select) 不能为空."}"
+                SELECT="${SELECT,,}" # 转小写
                 ;;
             '-a' | '--action') 
             # 操作
                 shift
                 ACTION="${1:?"错误: 操作类型 (action) 不能为空."}"
+                ACTION="${ACTION,,}" # 转小写
+                ;;                
+
+            '-b' | '--backup')
+            # 执行备份
+                BACKUP=1
                 ;;
+
             '-m' | '--mode')
             # 模式
                 shift
@@ -558,20 +602,19 @@ show_top_help() {
     cat <<EOF
 用法: $0 [options]
 
-GitLab 账号源码仓库备份
+    $(warn "GitLab 账号源码仓库备份")
 
--h, --help          打印帮助信息
--t, --token         私有令牌
--u, --url           自托管网址, 默认: https://gitlab.com
--b, --backup        执行备份
--m, --mode          模式,默认 https
-    ssh             ssh 模式
-    https           https 模式
--s, --select        选择区域
-        group       团队
-        project     项目
-        user        用户
--a, --action        执行操作
+    -h,  --help                              打印帮助信息
+    -t,  --token                             个人访问令牌, 需要权限 read_api,read_repository,read_user
+    -u,  --url                               自托管网址, 默认: https://gitlab.com
+    -b,  --backup                            执行备份, 别名: --select backup
+    -s,  --select                            选择区域
+            bk backup                        执行备份
+            gr group                         查询团队
+            pr project                       查询项目
+            us user                          查询用户
+    -a,  --action                            执行操作
+
 EOF
     exit 0
 }
@@ -579,6 +622,10 @@ EOF
 # 显示帮助信息
 show_help() {
     case "${SELECT:-}" in
+        'bk' | 'backup')
+            help_backup
+            ;;
+
         'gr' | 'group') 
             help_group
             ;;
@@ -621,8 +668,7 @@ main() {
     fi
 
     if [[ -n "${BACKUP:-}" ]]; then
-        backup
-        exit 0
+        SELECT="backup"
     fi
 
     case "${SELECT:-}" in
@@ -639,6 +685,11 @@ main() {
         'us' | 'user')
             # 用户
             user
+            ;;
+
+        'bk' | 'backup')
+            # 备份
+            backup
             ;;
 
         *)
