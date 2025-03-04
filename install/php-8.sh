@@ -1,4 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+#============================================================
+# 文件名: php-8.sh
+# 描述: 安装 PHP 8
+# URL: 
+# 作者: Jetsung Chan <i@jetsung.com>
+# 版本: 1.0
+# 创建日期: 
+# 更新日期: 
+#============================================================
 
 ## libiconv
 #wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz

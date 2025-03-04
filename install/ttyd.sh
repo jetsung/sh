@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 #============================================================
 # 文件名: ttyd.sh
@@ -10,10 +10,10 @@
 # 更新日期: 2025-02-11
 #============================================================
 
-set -eu
+set -euo pipefail
 
 IN_CHINA="${CHINA:-}"
-CDN_URL="${CDN:-https://c.kkgo.cc/}"
+CDN_URL="${CDN:-https://fastfile.asfd.cn/}"
 
 REPO="tsl0922/ttyd"
 
@@ -125,7 +125,7 @@ get_download_url() {
     download_url="https://api.github.com/repos/$REPO/releases/latest"
 
     if [ -n "$IN_CHINA" ]; then
-        download_url=$(echo "$download_url" | sed "s#https://#${CDN_URL}#")
+        download_url="${download_url//https:\/\//${CDN_URL}}"
     fi
 
     if ! curl -fsSL "$download_url" | \
@@ -143,7 +143,7 @@ download() {
         download_url=$(get_download_url)
 
         if [ -n "$IN_CHINA" ]; then
-            download_url=$(echo "$download_url" | sed "s#https://#${CDN_URL}#")
+            download_url="${download_url//https:\/\//${CDN_URL}}"
         fi    
 
         if ! curl -fsSL "$download_url" -o ttyd; then
