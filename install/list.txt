@@ -1,11 +1,7 @@
-.
-├── frp.sh
-├── list.txt
-├── nginx.sh
-├── php-8.sh
-├── protoc.sh
-├── README.md
-├── redis.sh
-└── ttyd.sh
-
-1 directory, 8 files
+aliyunpan.sh  |  安装 aliyunpan
+frp.sh  |  安装 frp
+nginx.sh  |  安装 Nginx
+php-8.sh  |  安装 PHP 8
+protoc.sh  |  安装 protobuf
+redis.sh  |  安装 Redis
+ttyd.sh  |  安装 ttyd
