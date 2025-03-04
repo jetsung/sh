@@ -14,7 +14,16 @@
 #
 # 示例:
 #   gitlab-backup.sh --help
-#
+#   gitlab-backup.sh --backup --help
+#   # 执行备份
+#   gitlab-backup.sh --token "$(echo $FRAMAGIT_TOKEN)" \
+#       --url https://framagit.org \
+#       --membership true \
+#       --per_page 100 \
+#       --mode https \
+#       --visibility private \
+#       --backup \
+#       --compress
 #
 # lastmod: 2025-03-04
 #
@@ -130,7 +139,8 @@ cat <<EOF
  
     $(warn "获取群组列表")
 
-    -h,  --help                              打印帮助信息
+$(help_common)
+
          --statistics                        可选,统计信息（默认值：false）
          --skip_groups                       可选,跳过群组，格式：1,2,3,4
          --all_available                     可选,显示可访问的所有组
@@ -156,7 +166,7 @@ cat <<EOF
 
     $(warn "群组")
 
-    -h,  --help                              打印帮助信息
+$(help_common)
     -a,  --action                            指定操作类型
             ls list                          获取群组列表
 
@@ -181,7 +191,7 @@ api_project_list() {
         --arg owned "${OWNED:-}" \
         --arg starred "${STARRED:-}" \
         --arg imported "${IMPORTED:-}" \
-        --arg membership "${MEMBERSHIP:-}" \
+        --arg membership "${MEMBERSHIP:-true}" \
         --arg with_issues_enabled "${WITH_ISSUES_ENABLED:-}" \
         --arg with_merge_requests_enabled "${WITH_MERGE_REQUESTS_ENABLED:-}" \
         --arg with_programming_language "${WITH_PROGRAMMING_LANGUAGE:-}" \
@@ -259,7 +269,7 @@ cat <<EOF
 
     $(warn "获取项目列表")
 
-    -h,  --help                              打印帮助信息
+$(help_common)
 $(help_project_list)    
 
 EOF
@@ -271,7 +281,7 @@ cat <<EOF
 
     $(warn "项目")
 
-    -h,  --help                              打印帮助信息
+$(help_common)
     -a,  --action                            指定操作类型
             ls list                          获取项目列表
 
@@ -304,7 +314,7 @@ cat <<EOF
 
     $(warn "用户")
 
-    -h,  --help                              打印帮助信息
+$(help_common)
     -a,  --action                            指定操作类型
             cu current                       获取当前用户信息
 
@@ -459,7 +469,7 @@ cat <<EOF
 
     $(warn "备份")
 
-    -h,  --help                              打印帮助信息
+$(help_common)
     -f,  --force                             强制覆盖本地已经拉取的 GitLab 项目
     -c,  --compress                          将整个备份压缩成 .tar.xz
     -m,  --mode                              模式,默认 https
@@ -484,7 +494,7 @@ help_project_list() {
          --owned                             可选, 仅获取当前用户拥有的项目（默认值：false）
          --starred                           可选, 仅获取当前用户星标的项目（默认值：false）
          --imported                          可选, 仅获取当前用户导入的项目（默认值：false）
-         --membership                        可选, 仅获取当前用户作为成员的项目（默认值：false）
+         --membership                        可选, 仅获取当前用户作为成员的项目（默认值：true）
          --with_issues_enabled               可选, 是否仅获取启用了问题功能的项目（默认值：false）
          --with_merge_requests_enabled       可选, 是否仅获取启用了合并请求功能的项目（默认值：false）
          --with_programming_language         可选, 限制返回特定编程语言的项目
@@ -597,6 +607,14 @@ judgment_parameters() {
     done
 }
 
+help_common() {
+    cat <<EOF
+    -h,  --help                              打印帮助信息
+    -t,  --token                             个人访问令牌, 需要权限 read_api,read_repository,read_user
+    -u,  --url                               自托管网址, 默认: https://gitlab.com
+EOF
+}
+
 # 显示帮助信息
 show_top_help() {
     cat <<EOF
@@ -604,9 +622,7 @@ show_top_help() {
 
     $(warn "GitLab 账号源码仓库备份")
 
-    -h,  --help                              打印帮助信息
-    -t,  --token                             个人访问令牌, 需要权限 read_api,read_repository,read_user
-    -u,  --url                               自托管网址, 默认: https://gitlab.com
+$(help_common)
     -b,  --backup                            执行备份, 别名: --select backup
     -s,  --select                            选择区域
             bk backup                        执行备份
@@ -650,6 +666,10 @@ main() {
     if [[ $# -eq 0 ]]; then
         HELP=1
     fi
+    if [[ -n "${BACKUP:-}" ]]; then
+        SELECT="backup"
+    fi
+
     if [[ -n "${HELP:-}" ]]; then
         show_help
     fi
@@ -665,10 +685,6 @@ main() {
     API_URL="${URL:-$DEFAULT_URL}${API_VERSION}"
     if ! is_url "$API_URL"; then
         error_exit "无效的URL. 如 https://gitlab.com"
-    fi
-
-    if [[ -n "${BACKUP:-}" ]]; then
-        SELECT="backup"
     fi
 
     case "${SELECT:-}" in
