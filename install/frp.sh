@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 #============================================================
 # 文件名: frp.sh
@@ -13,7 +13,7 @@
 set -eu
 
 IN_CHINA="${CHINA:-}"
-CDN_URL="${CDN:-https://c.kkgo.cc/}"
+CDN_URL="${CDN:-https://fastfile.asfd.cn/}"
 
 REPO="fatedier/frp"
 

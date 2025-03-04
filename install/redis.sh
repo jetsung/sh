@@ -1,4 +1,14 @@
-#/bin/bash  
+#!/usr/bin/env bash
+
+#============================================================
+# 文件名: redis.sh
+# 描述: 安装 Redis
+# URL: 
+# 作者: Jetsung Chan <i@jetsung.com>
+# 版本: 1.0
+# 创建日期: 
+# 更新日期: 
+#============================================================
 
 install_centos_libs() {
   dnf install -y gcc \
