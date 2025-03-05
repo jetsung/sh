@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 
-# ORIGIN: https://framagit.org/-/snippets/7412/raw/main/dockerpull.sh
-
+#============================================================
+# File: dockerpull.sh
 # Description: Docker 通过加速站拉取镜像
 #
-# UpdatedAt: 2025-02-22
+# ORIGIN: https://framagit.org/-/snippets/7412/raw/main/dockerpull.sh
+#
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2025-02-22
+# UpdatedAt: 2025-03-05
+#============================================================
 
 set -euo pipefail
 
@@ -175,60 +181,62 @@ is_docker_compose() {
     return "$(find . -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) | wc -l)"
 }
 
-judgment_parameters "$@"
+main() {
+    judgment_parameters "$@"
 
-echo "DEFULAT_DOMAIN: https://${DEFAULT_MIRROR_DOMAIN}/"
-echo
-
-if [ -n "${IMAGE_NAME}" ]; then
-    # 若不存在 -r 参数，则判断 -i 是否为完整的 URL
-    if [ -z "${IMAGE_REGISTRY}" ]; then
-        parsing_url "${IMAGE_NAME}"
-    fi
-
-    select_registry
-
-    show_message
-
-    progress_image
-
-    exit 0
-fi
-
-if is_docker_compose -eq 0; then
-    echo "Not found .yml or .yaml file"
-    exit 1
-fi
-
-# docker-compose 项目下
-find . -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -exec grep -h '^\s.*image:' {} + | awk '{pos=index($0,":"); print substr($0,pos+1)}' | while read -r url; do
-    if [ -z "${url}" ]; then
-        continue
-    fi
-
-    # 镜像名
-    IMAGE_NAME=""
-    # 加速站名
-    IMAGE_REGISTRY=""
-
-    # 源站服务镜像
-    IMAGE_URL=""
-    # 加速站服务镜像
-    IMAGE_MIRROR_URL=""
-
+    echo "DEFULAT_DOMAIN: https://${DEFAULT_MIRROR_DOMAIN}/"
     echo
-    echo "FULL_IMAGE: $url"
 
-    parsing_url "${url}"
+    if [ -n "${IMAGE_NAME}" ]; then
+        # 若不存在 -r 参数，则判断 -i 是否为完整的 URL
+        if [ -z "${IMAGE_REGISTRY}" ]; then
+            parsing_url "${IMAGE_NAME}"
+        fi
 
-    select_registry
+        select_registry
 
-    show_message
+        show_message
 
-    progress_image
+        progress_image
 
-    echo "-----------------------------------"
-done
+        exit 0
+    fi
+
+    if is_docker_compose -eq 0; then
+        echo "Not found .yml or .yaml file"
+        exit 1
+    fi
+
+    # docker-compose 项目
+    find . -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -exec grep -h -E '^\s*image:' {} + | awk '{pos=index($0,":"); print substr($0,pos+1)}' | while read -r url; do
+        if [ -z "${url}" ]; then
+            continue
+        fi
+
+        # 镜像名
+        IMAGE_NAME=""
+        # 加速站名
+        IMAGE_REGISTRY=""
+
+        # 源站服务镜像
+        IMAGE_URL=""
+        # 加速站服务镜像
+        IMAGE_MIRROR_URL=""
+
+        echo
+        echo "FULL_IMAGE: $url"
+
+        parsing_url "${url}"
+
+        select_registry
+
+        show_message
+
+        progress_image
+
+        echo "-----------------------------------"
+    done
+}
 
 #
 # 1. 保存此代码到 dockerpull 文件
