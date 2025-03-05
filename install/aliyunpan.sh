@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 
 #============================================================
-# 文件名: aliyunpan.sh
-# 描述: 安装 aliyunpan
-# URL: https://github.com/tickstep/aliyunpan
-# 作者: Jetsung Chan <i@jetsung.com>
-# 版本: 0.1.0
-# 创建日期: 2025-03-05
-# 更新日期: 2025-03-05
+# File: aliyunpan.sh
+# Description: 安装 aliyunpan 命令行
+# URL: https://s.asfd.cn/a21f20b9
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2025-03-05
+# UpdatedAt: 2025-03-05
 #============================================================
 
-set -euo pipefail
-# set -eux
+if [[ -n "$DEBUG" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
 
 REPO="tickstep/aliyunpan"
 

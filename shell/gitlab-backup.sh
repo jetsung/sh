@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 
-#
-# GitLab 账号源码仓库备份
-# 项目地址： https://github.com/jetsung/sh/blob/main/shell/gitlab-backup.sh
-#          https://gitcode.com/jetsung/sh/blob/main/shell/gitlab-backup.sh
+#============================================================
+# File: gitlab-backup.sh
+# Description: GitLab 账号源码仓库备份
+# URL: https://s.asfd.cn/4ddf9061
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2025-03-04
+# UpdatedAt: 2025-03-05
+#============================================================
+
 #
 # OpenAPI： https://gitlab.com/gitlab-org/gitlab/-/blob/master/doc/api/openapi/openapi_v2.yaml
 #
@@ -27,8 +33,6 @@
 #       --visibility private \
 #       --backup \
 #       --compress
-#
-# lastmod: 2025-03-04
 #
 
 if [[ -n "$DEBUG" ]]; then
