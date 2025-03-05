@@ -238,6 +238,8 @@ main() {
     done
 }
 
+main "$@"
+
 #
 # 1. 保存此代码到 dockerpull 文件
 # 2. 给予此文件的可执行权限 chmod +x dockerpull
