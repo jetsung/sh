@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 
-# 腾讯工峰 命令行工具 (未完成)
+#============================================================
+# File: git-qcloud.sh
+# Description: 腾讯工峰 命令行工具
+# URL: https://s.asfd.cn/7c2f52c8
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2025-03-03
+# UpdatedAt: 2025-03-05
+#============================================================
+
+#
 # 基于 https://code.tencent.com/help/api/prepare
 # 包含：
 ##  项目组(group)
@@ -16,12 +26,13 @@
 ##  关注者（watcher）
 ##  库操作以及文件操作（repository）
 ##  项目分支管理（branch）
-# 
-# 作者: Jetsung Chan
 #
 
-set -euo pipefail
-# set -eux
+if [[ -n "$DEBUG" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
 
 API_BASE="https://git.code.tencent.com"
 API_URL="${API_BASE}/api/v3"

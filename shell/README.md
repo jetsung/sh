@@ -16,28 +16,14 @@
 # ORIGIN: https://myfiles.com/origin-sh.sh
 ```
 
-## 脚本列表索引
+## 脚本说明
 
-- [一键脚本](#一键脚本)
-  - [远程更新脚本](#远程更新脚本)
-  - [脚本列表索引](#脚本列表索引)
-  - [脚本列表](#脚本列表)
-    - [dpkg-remove-kernel](#dpkg-remove-kernel)
-    - [gitlab-runner](#gitlab-runner)
-    - [dl-m3u8](#dl-m3u8)
-    - [video2mp4](#video2mp4)
-    - [upgrade-linux-kernel](#upgrade-linux-kernel)
-    - [desktop](#desktop)
-    - [service](#service)
-    - [fonts-install](#fonts-install)
-    - [delete-github-workflows-run](#delete-github-workflows-run)
-    - [code-mirror](#code-mirror)
-    - [pusher](#pusher)
-    - [debfetch](#debfetch)
-    - [debgetsh](#debgetsh)
-    - [dockerpull](#dockerpull)
-    - [gitqcloud](#gitqcloud)
-    - [gitlab-backup](#gitlab-backup)
+| **推荐** | **文件名** | **标题** | **描述** |
+|:---|:---|:---|:---|
+| | [**`gitlab-backup`**](gitlab-backup.sh) | GitLab 账号源码仓库备份 |
+| | [**`docker-pull`**](docker-pull.sh) | Docker 通过加速站拉取镜像
+| | [**`git-qcloud`**](git-qcloud.sh) | 腾讯工峰 命令行工具
+
 
 ## 脚本列表
 
@@ -166,20 +152,5 @@ Git 代码迁移到新托管平台
 
 ---
 
-### [dockerpull](dockerpull.sh)
-
-Docker 从加速站拉取镜像
-
----
-
-### [gitqcloud](gitqcloud.sh)
-
-腾讯工峰 Git 操作命令行
-
----
-
-### [gitlab-backup](gitlab-backup.sh)
-
-GitLab 账号源码仓库备份
-
----
+- remove_workflow_run.sh
+- remove_packages_untagged.sh

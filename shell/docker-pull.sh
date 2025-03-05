@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: dockerpull.sh
+# File: docker-pull.sh
 # Description: Docker 通过加速站拉取镜像
-#
-# ORIGIN: https://framagit.org/-/snippets/7412/raw/main/dockerpull.sh
-#
+# URL: https://s.asfd.cn/0435a789
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-02-22
 # UpdatedAt: 2025-03-05
 #============================================================
 
-set -euo pipefail
+if [[ -n "$DEBUG" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
 
 # 默认镜像域名
 DEFAULT_MIRROR_DOMAIN="${MIRROR:-dockerproxy.net}"
