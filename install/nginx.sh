@@ -2,7 +2,7 @@
 
 #============================================================
 # 文件名: nginx.sh
-# 描述: 安装 Nginx
+# Description: 安装 Nginx
 # URL: 
 # 作者: Jetsung Chan <i@jetsung.com>
 # 版本: 1.0

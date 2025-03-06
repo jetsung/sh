@@ -2,7 +2,7 @@
 
 #============================================================
 # 文件名: protoc.sh
-# 描述: 安装 protobuf
+# Description: 安装 protobuf
 # URL: 
 # 作者: Jetsung Chan <i@jetsung.com>
 # 版本: 1.0

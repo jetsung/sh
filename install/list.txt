@@ -1,4 +1,6 @@
-aliyunpan.sh  |  安装 aliyunpan
+acme-docker.sh  |  acme docker 方式脚本拉取
+aliyunpan.sh  |  安装 aliyunpan 命令行
+croc.sh  |  安装 croc
 frp.sh  |  安装 frp
 nginx.sh  |  安装 Nginx
 php-8.sh  |  安装 PHP 8
