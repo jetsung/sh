@@ -2,7 +2,7 @@
 
 #============================================================
 # 文件名: redis.sh
-# 描述: 安装 Redis
+# Description: 安装 Redis
 # URL: 
 # 作者: Jetsung Chan <i@jetsung.com>
 # 版本: 1.0
