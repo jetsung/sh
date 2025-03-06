@@ -28,9 +28,12 @@ install() {
     )
 
     for item in "${LIST[@]}"; do
-        if [[ ! -f "$item" ]]; then
-            curl -fsSL -O "${REPO_RAW_URL}${item}"
+        if [[ "$item" = ".env" ]] && [[ -f ".env" ]]; then
+            echo ".env file exists, skip."
+            continue  
         fi
+        
+        curl -fsSL -O "${REPO_RAW_URL}${item}"
     done
 }
 
@@ -39,9 +42,11 @@ main() {
         echo -e "\033[31mInstall acme docker failed.\033[0m"
         exit 1
     }
-    
-    echo "Install success."
+
     echo ""
+    echo "Installation successfully"
+    echo ""
+    
     ls -1
     echo ""
 

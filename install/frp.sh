@@ -2,7 +2,7 @@
 
 #============================================================
 # 文件名: frp.sh
-# 描述: 安装 frp
+# Description: 安装 frp
 # URL: https://github.com/fatedier/frp
 # 作者: Jetsung Chan <i@jetsung.com>
 # 版本: 1.0

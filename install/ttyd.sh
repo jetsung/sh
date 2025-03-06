@@ -2,7 +2,7 @@
 
 #============================================================
 # 文件名: ttyd.sh
-# 描述: 安装 ttyd
+# Description: 安装 ttyd
 # URL: https://github.com/tsl0922/ttyd
 # 作者: Jetsung Chan <i@jetsung.com>
 # 版本: 1.0
