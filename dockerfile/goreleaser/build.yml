@@ -1,0 +1,9 @@
+stages:
+  - build
+
+goreleaser:
+  stage: build
+  script:
+    - docker build -t goreleaser-bookworm:latest .
+  tags:
+    - docker
