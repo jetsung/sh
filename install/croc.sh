@@ -92,7 +92,7 @@ main() {
     echo "croc has been installed successfully!"
     echo ""
     croc --version
-    echo
+    echo ""
 }
 
 main "$@"

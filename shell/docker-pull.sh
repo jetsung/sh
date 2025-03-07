@@ -18,6 +18,7 @@ fi
 
 # 默认镜像域名
 DEFAULT_MIRROR_DOMAIN="${MIRROR:-dockerproxy.net}"
+DEFAULT_MIRROR_DOMAIN="${M:-${DEFAULT_MIRROR_DOMAIN}}"
 
 # 镜像名
 IMAGE_NAME=""
@@ -31,6 +32,11 @@ IMAGE_MIRROR_URL=""
 
 # 处理参数信息
 judgment_parameters() {
+    if [[ "$#" -eq '1' ]]; then
+        IMAGE_NAME="$1"
+        return
+    fi
+
     local HELP=""
     while [[ "$#" -gt '0' ]]; do
         case "$1" in
@@ -65,7 +71,7 @@ judgment_parameters() {
         shift
     done
 
-    if [ -n "${HELP}" ]; then
+    if [ -n "$HELP" ]; then
         show_help
     fi
 }
@@ -117,6 +123,10 @@ select_registry() {
         IMAGE_MIRROR_URL="${DEFAULT_MIRROR_DOMAIN}/${IMAGE_URL}"
         ;;
     esac
+
+    if [[ -n "${M:-}" ]]; then
+        IMAGE_MIRROR_URL="${M}/${IMAGE_URL}"
+    fi
 }
 
 # 显示信息
@@ -189,10 +199,10 @@ main() {
     echo "DEFULAT_DOMAIN: https://${DEFAULT_MIRROR_DOMAIN}/"
     echo
 
-    if [ -n "${IMAGE_NAME}" ]; then
+    if [ -n "$IMAGE_NAME" ]; then
         # 若不存在 -r 参数，则判断 -i 是否为完整的 URL
-        if [ -z "${IMAGE_REGISTRY}" ]; then
-            parsing_url "${IMAGE_NAME}"
+        if [ -z "$IMAGE_REGISTRY" ]; then
+            parsing_url "$IMAGE_NAME"
         fi
 
         select_registry
@@ -211,8 +221,15 @@ main() {
 
     # docker-compose 项目
     find . -maxdepth 1 -type f \( -name "*.yml" -o -name "*.yaml" \) -exec grep -h -E '^\s*image:' {} + | awk '{pos=index($0,":"); print substr($0,pos+1)}' | while read -r url; do
-        if [ -z "${url}" ]; then
+        if [ -z "$url" ]; then
             continue
+        fi
+
+        if [[ "$url" == *:*:* ]]; then
+            IFS=: read -r HOST_AND_PORT _ VERSION <<< "$url"
+            VERSION="${VERSION#-}"  # 删除前面的 -
+            VERSION="${VERSION%\}}"  # 删除后面的 }
+            url="${HOST_AND_PORT}:${VERSION}"
         fi
 
         # 镜像名
@@ -228,7 +245,7 @@ main() {
         echo
         echo "FULL_IMAGE: $url"
 
-        parsing_url "${url}"
+        parsing_url "$url"
 
         select_registry
 
