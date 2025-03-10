@@ -33,7 +33,7 @@ cron_run_path="cronrun.sh"
 
 # 提取参数
 judgment_parameters() {
-  while getopts "id:p:b:u:h" opt; do
+  while getopts "id:p:b:s:u:h" opt; do
     case "$opt" in
       i)
         # 安装
@@ -54,7 +54,15 @@ judgment_parameters() {
         else
           backup="no"
         fi
-        ;;      
+        ;;   
+      s)
+        # 子目录运行
+        if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
+          subrun="yes"
+        else
+          subrun="no"
+        fi
+        ;;              
       u)
         # 更新
         if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
@@ -168,14 +176,14 @@ setup_crontab() {
   cron_str="$random_minute $random_hour $every_day * * $(whoami) cd $script_path; bash $cron_file_path"
   cron_path="${cron_dir}${cron_file_path%.*}"
 
-  # echo "$cron_str" > "$cron_path"
-  echo "cron str: $cron_str"
+  echo "$cron_str" > "$cron_path"
+  # echo "cron str: $cron_str"
   echo "crontab setup at: $cron_path"
 
-  # real_str=$(cat "$cron_path")
-  # printf "\033[40m\033[1;33m%s\033[0m\n" "$real_str"
+  real_str=$(cat "$cron_path")
+  printf "\033[40m\033[1;33m%s\033[0m\n" "$real_str"
   
-  # restart_crontab
+  restart_crontab
 }
 
 # 重启 crontab 服务
@@ -185,6 +193,7 @@ restart_crontab() {
 
 # 安装 crontab 服务
 setup() {
+    echo ""
     echo "setup crontab run"
 
     local pre_day='every'
@@ -220,15 +229,17 @@ subdirs_run() {
 }
 
 # 备份更新开关
-switch_backup_update() {
+switch() {
   # 源文件,不修改任何配置信息
   if [[ "$cron_run_path" != "cronrun.sh" ]]; then
     local backup="${backup:-}"
     local update="${update:-}"
 
-    echo "backup && update switch"
-    echo "backup: $backup"
-    echo "update: $update"
+    echo ""
+    echo "switch"
+    echo "    backup: $backup"
+    echo "    update: $update"
+    echo "    subrun: $subrun"
 
     if [[ -n "$backup" ]]; then
       if [[ "$backup" = "yes" ]]; then
@@ -246,7 +257,17 @@ switch_backup_update() {
         # 解除注释 update 行
       else
         # 注释掉 update 行
-        sed '/^\s*update\s*$/s/^/# /' "$cron_file_path"
+        sed -i '/^\s*update\s*$/s/^/# /' "$cron_file_path"
+      fi
+    fi
+
+    if [[ -n "$subrun" ]]; then
+      if [[ "$subrun" = "yes" ]]; then
+        sed -i '/^\s*#\s*subdirs_run\s*$/s/# //' "$cron_file_path"
+        # 解除注释 subrun 行
+      else
+        # 注释掉 subrun 行
+        sed -i '/^\s*subdirs_run\s*$/s/^/# /' "$cron_file_path"
       fi
     fi
   fi 
@@ -263,23 +284,23 @@ main() {
 
     cron_run_path="$cron_file_path"
     # 备份更新开关
-    switch_backup_update
+    switch
     exit 0
   fi
 
   if [[ "$cron_run_path" != "cronrun.sh" ]]; then
     # 备份更新开关
-    switch_backup_update
+    switch
 
     {
       echo ""
       date -R
 
-      backup
+      # backup
 
-      update
+      # update
 
-      subdirs_run
+      # subdirs_run
     } >> "$log_file"
   fi
 }
