@@ -84,6 +84,8 @@ main() {
         exit 1
     fi
 
+    rm -rf aliyunpan.zip
+
     mv "aliyunpan-"* aliyunpan
 
     if [[ -d "/opt/aliyunpan/" ]]; then
