@@ -3,6 +3,11 @@ stages:
 
 goreleaser:
   stage: build
+  image: docker:latest
+  services:
+    - name: docker:dind
+  artifacts:
+    expire_in: 1 d
   script:
     - docker build -t goreleaser-bookworm:latest .
   tags:
