@@ -10,5 +10,5 @@ goreleaser:
     expire_in: 1 d
   script:
     - docker build -t goreleaser-bookworm:latest .
-  tags:
-    - docker
+  # tags:
+  #   - docker
