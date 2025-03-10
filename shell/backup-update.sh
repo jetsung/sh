@@ -78,6 +78,7 @@ judgment_parameters() {
         echo "  -d: 每隔多少天备份一次"
         echo "  -p: Docker 路径"
         echo "  -b: 备份"
+        echo "  -s: 子目录运行"
         echo "  -u: 更新"
         echo "  -h: 帮助"
         exit 0
@@ -234,6 +235,7 @@ switch() {
   if [[ "$cron_run_path" != "cronrun.sh" ]]; then
     local backup="${backup:-}"
     local update="${update:-}"
+    local subrun="${subrun:-}"
 
     echo ""
     echo "switch"
