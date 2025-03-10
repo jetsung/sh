@@ -1,12 +1,4 @@
-# 一键脚本
-
-## 远程更新脚本
-
-- **从远程文件下载最新文件**
-
-```bash
-./.upgrade.sh
-```
+# 实用的 Shell 脚本
 
 - **设置更新源**
 
@@ -20,9 +12,10 @@
 
 | **推荐** | **文件名** | **标题** | **描述** |
 |:---|:---|:---|:---|
-| | [**`gitlab-backup`**](gitlab-backup.sh) | GitLab 账号源码仓库备份 |
 | | [**`docker-pull`**](docker-pull.sh) | Docker 通过加速站拉取镜像
+| | [**`backup-update`**](backup-update.sh) | 更新服务器中的 Docker 镜像和备份数据
 | | [**`git-qcloud`**](git-qcloud.sh) | 腾讯工峰 命令行工具
+| | [**`gitlab-backup`**](gitlab-backup.sh) | GitLab 账号源码仓库备份 |
 
 
 ## 脚本列表
