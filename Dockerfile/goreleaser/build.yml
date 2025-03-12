@@ -1,0 +1,23 @@
+default:
+  image: docker:latest
+  services:
+    - name: docker:dind
+      variables:
+        HEALTHCHECK_TCP_PORT: "2375"
+      command: ["--registry-mirror", "https://mirror.ccs.tencentyun.com"]
+      
+goreleaser:
+  stage: build
+  artifacts:
+    expire_in: 1 d
+  script: |
+    docker build -t goreleaser-bookworm:latest \
+      -f Dockerfile/goreleaser/Dockerfile \
+      --build-arg GOPROXY=https://goproxy.cn \
+      .
+  # tags:
+  #   - docker
+  only:
+    changes:
+      - Dockerfile/goreleaser/build.yml
+      - Dockerfile/goreleaser/Dockerfile

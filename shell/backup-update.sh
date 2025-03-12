@@ -239,11 +239,10 @@ switch() {
 
     echo ""
     echo "switch"
-    echo "    backup: $backup"
-    echo "    update: $update"
-    echo "    subrun: $subrun"
 
     if [[ -n "$backup" ]]; then
+      echo "  backup: $backup"
+      
       if [[ "$backup" = "yes" ]]; then
         # 解除注释 backup 行
         sed -i '/^\s*#\s*backup\s*$/s/# //' "$cron_file_path"
@@ -254,6 +253,8 @@ switch() {
     fi
 
     if [[ -n "$update" ]]; then
+      echo "  update: $update"
+      
       if [[ "$update" = "yes" ]]; then
         sed -i '/^\s*#\s*update\s*$/s/# //' "$cron_file_path"
         # 解除注释 update 行
@@ -264,6 +265,8 @@ switch() {
     fi
 
     if [[ -n "$subrun" ]]; then
+      echo "  subrun: $subrun"
+      
       if [[ "$subrun" = "yes" ]]; then
         sed -i '/^\s*#\s*subdirs_run\s*$/s/# //' "$cron_file_path"
         # 解除注释 subrun 行

@@ -10,13 +10,13 @@
 # UpdatedAt: 2025-03-07
 #============================================================
 
-if [[ -n "$DEBUG" ]]; then
+if [[ -n "${DEBUG:-}" ]]; then
     set -eux
 else
     set -euo pipefail
 fi
 
-CDN_URL="${CDN:-https://filetas.weigo.cc/}"
+CDN_URL="${CDN:-https://fastfile.asfd.cn/}"
 
 USER_ID="$(id -u)"
 

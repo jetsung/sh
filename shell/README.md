@@ -12,6 +12,7 @@
 
 | **推荐** | **文件名** | **标题** | **描述** |
 |:---|:---|:---|:---|
+| | [**`ffmpeg-dl`**](ffmpeg-dl.sh) | 通过 ffmpeg 下载 m3u8 视频 |
 | | [**`docker-pull`**](docker-pull.sh) | Docker 通过加速站拉取镜像
 | | [**`backup-update`**](backup-update.sh) | 更新服务器中的 Docker 镜像和备份数据
 | | [**`git-qcloud`**](git-qcloud.sh) | 腾讯工峰 命令行工具
@@ -25,24 +26,6 @@
 ### [dpkg-remove-kernel](dpkg-remove-kernel.sh)
 
 删除多余的 Ubuntu 内核
-
----
-
-### [gitlab-runner](gitlab-runner.sh)
-
-一键安装 `gitlab-runner`
-
-```bash
-bash gitlab-runner.sh
-```
-
----
-
-### [dl-m3u8](dl-m3u8.sh)
-
-下载 .m3u8 的视频资源，并且将其合并为 mp4。
-
-> 依赖：`ffmpeg`
 
 ---
 

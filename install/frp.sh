@@ -10,7 +10,7 @@
 # UpdatedAt: 2025-03-07
 #============================================================
 
-if [[ -n "$DEBUG" ]]; then
+if [[ -n "${DEBUG:-}" ]]; then
     set -eux
 else
     set -euo pipefail

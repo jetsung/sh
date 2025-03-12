@@ -10,7 +10,7 @@
 # UpdatedAt: 2025-03-06
 #============================================================
 
-if [[ -n "$DEBUG" ]]; then
+if [[ -n "${DEBUG:-}" ]]; then
     set -eux
 else
     set -euo pipefail
@@ -41,13 +41,12 @@ is_in_china() {
 
 get_download_url() {
     repo_api_url="${CDN_URL}https://api.github.com/repos/schollz/croc/releases/latest" 
-
     curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "${OS}-${ARCH}"
 }
 
 download_exact() {
     DOWNLOAD_FILE="croc.tar.gz"
-    CROC_BIN="croc"
+    FILE_BIN="croc"
 
     if ! curl -fsSL "${CDN_URL}${DOWNLOAD_URL}" -o "$DOWNLOAD_FILE"; then
         echo "Error: Failed to download $DOWNLOAD_FILE"
@@ -60,7 +59,7 @@ download_exact() {
         exit 1
     fi
 
-    sudo_exec mv "$CROC_BIN" /usr/local/bin/
+    sudo_exec mv "$FILE_BIN" /usr/local/bin/
 
     rm -rf "$DOWNLOAD_FILE" LICENSE
 }
