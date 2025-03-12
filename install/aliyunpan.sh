@@ -2,7 +2,7 @@
 
 #============================================================
 # File: aliyunpan.sh
-# Description: 安装 aliyunpan 命令行
+# Description: 安装 aliyunpan
 # URL: https://s.asfd.cn/a21f20b9
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
@@ -10,13 +10,11 @@
 # UpdatedAt: 2025-03-05
 #============================================================
 
-if [[ -n "$DEBUG" ]]; then
+if [[ -n "${DEBUG:-}" ]]; then
     set -eux
 else
     set -euo pipefail
 fi
-
-REPO="tickstep/aliyunpan"
 
 CDN_URL="${CDN:-https://fastfile.asfd.cn/}"
 
@@ -41,30 +39,48 @@ is_in_china() {
     return 1 # 非中国网络
 }
 
-get_arch() {
-    uname -m | tr '[:upper:]' '[:lower:]'
-}
-
-get_os() {
-    uname | tr '[:upper:]' '[:lower:]'
-}
-
-get_latest_release() {
-    curl -sL "${CDN_URL}https://api.github.com/repos/${1}/releases/latest" | grep '"tag_name":' | cut -d'"' -f4
-}
-
 get_download_url() {
-    OS="$(get_os)"
-    ARCH="$(get_arch)"
-    if [ "$ARCH" = "x86_64" ]; then
-        ARCH="amd64"
-    elif [ "$ARCH" = "aarch64" ]; then
-        ARCH="arm64"
+    repo_api_url="${CDN_URL}https://api.github.com/repos/tickstep/aliyunpan/releases/latest" 
+    curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "${OS}-${ARCH}"
+}
+
+download_exact() {
+    DOWNLOAD_FILE="aliyunpan.zip"
+    FILE_DIR="aliyunpan"  
+
+    if ! curl -fsSL "${CDN_URL}${DOWNLOAD_URL}" -o "$DOWNLOAD_FILE"; then
+        echo "Error: Failed to download $DOWNLOAD_FILE"
+        exit 1
     fi
 
-    VERSION=$(get_latest_release "$REPO")
-    download_url="${CDN_URL}https://github.com/${REPO}/releases/download/${VERSION}/aliyunpan-${VERSION}-${OS}-${ARCH}.zip"
-    echo "$download_url"
+    if ! unzip -q -f aliyunpan.zip; then
+        echo "Error: Extraction failed"
+        rm -f "$DOWNLOAD_FILE"
+        exit 1
+    fi
+
+    mv "${FILE_DIR}-"* "$FILE_DIR"
+
+    if [[ -d "/opt/${FILE_DIR}" ]]; then
+        sudo_exec rm -rf /opt/"${FILE_DIR}"
+    fi
+
+    if ! sudo_exec mv "$FILE_DIR" /opt/; then
+        printf "\033[31mFailed to move %s to /opt\033[0m\n" "$FILE_DIR"
+        exit 1
+    fi
+
+    # 若存在转链接则删除
+    if [[ -f "/usr/local/bin/aliyunpan" ]]; then
+        sudo_exec rm -f /usr/local/bin/aliyunpan
+    fi
+
+    if ! sudo_exec ln -sf "/opt/${FILE_DIR}/aliyunpan" "/usr/local/bin/aliyunpan"; then
+        printf "\033[31mInstall %s failed, Please Contact the author! \033[0m" "$FILE_DIR"
+        kill -9 $$
+    fi
+
+    rm -rf "$DOWNLOAD_FILE" 
 }
 
 main() {
@@ -72,38 +88,22 @@ main() {
         CDN_URL=""
     fi
 
-    download_url=$(get_download_url)
+    OS="$(uname| tr '[:upper:]' '[:lower:]')"
+    ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
+    if [ "$ARCH" = "x86_64" ]; then
+        ARCH="amd64"
+    elif [ "$ARCH" = "aarch64" ]; then
+        ARCH="arm64"
+    fi    
 
-    if ! curl -fsSL "$download_url" -o aliyunpan.zip; then
-        printf "\033[31mFailed to download aliyunpan\033[0m\n"
-        exit 1
-    fi
+    DOWNLOAD_URL="$(get_download_url)"
 
-    if ! unzip -q aliyunpan.zip; then
-        printf "\033[31mFailed to extract aliyunpan\033[0m\n"
-        exit 1
-    fi
+    download_exact
 
-    rm -rf aliyunpan.zip
-
-    mv "aliyunpan-"* aliyunpan
-
-    if [[ -d "/opt/aliyunpan/" ]]; then
-        sudo_exec rm -rf /opt/aliyunpan/
-    fi
-
-    if ! sudo_exec mv aliyunpan /opt/; then
-        printf "\033[31mFailed to move aliyunpan to /opt\033[0m\n"
-        exit 1
-    fi
-
-    if sudo_exec ln -sf /opt/aliyunpan/aliyunpan /usr/local/bin/aliyunpan; then
-        echo ""
-        aliyunpan --version
-    else
-        echo -e "\033[31maliyunpan install failed, Please Contact the author! \033[0m"
-        kill -9 $$
-    fi
+    echo ""
+    echo "aliyunpan has been installed successfully!"
+    echo ""
+    aliyunpan --version
     echo ""
 }
 

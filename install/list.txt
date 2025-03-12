@@ -1,7 +1,8 @@
-acme-docker.sh  |  acme docker 方式脚本拉取
-aliyunpan.sh  |  安装 aliyunpan 命令行
+acme-docker.sh  |  acme docker 方式脚本
+aliyunpan.sh  |  安装 aliyunpan
 croc.sh  |  安装 croc
 frp.sh  |  安装 frp
+gitlab-runner.sh  |  安装 GitLab Runner
 nginx.sh  |  安装 Nginx
 php-8.sh  |  安装 PHP 8
 protoc.sh  |  安装 protobuf

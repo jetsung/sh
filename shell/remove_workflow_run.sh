@@ -5,7 +5,6 @@ set -euo pipefail
 # 检查参数
 ORG_NAME=${1:?ORG_NAME is required}
 REPO_NAME=${2:?REPO_NAME is required}
-WORKFLOW_NAME=${3:?WORKFLOW_NAME is required}
 
 # 定义常量
 repo="$ORG_NAME/$REPO_NAME"
@@ -29,29 +28,34 @@ delete_id() {
   fi
 }
 
-# 主循环
-while true; do
+main() {
   # 获取工作流运行数据
   runs=$(gh api "$url")
 
   # 提取 ID 列表
-  ids=$(echo "$runs" | jq -r '.workflow_runs[].id')
+  mapfile -t ids < <(echo "$runs" | jq -r '.workflow_runs[].id')
 
-  # 如果没有 ID 可删除，退出循环
-  if [[ -z "$ids" ]]; then
-    echo "No more IDs to delete."
-    break
+  # 获取数组长度
+  total_ids=${#ids[@]}
+
+  # 如果没有 ID 可删除，退出脚本
+  if (( total_ids == 0 )); then
+    echo "No workflow runs found to delete."
+    exit 0
   fi
 
-  # 遍历 ID 列表并删除
-  while read -r id; do
+  # 获取最新的一个 ID（假设 ID 越大表示越新）
+  # latest_id="${ids[$total_ids - 1]}"
+
+  # 遍历 ID 列表并删除，保留最新的一个
+  for (( i=0; i<total_ids; i++ )); do
+    id="${ids[$i]}"
     if ! delete_id "$id"; then
-      echo "An error occurred. Exiting..."
+      echo "An error occurred while deleting ID $id. Exiting..."
       exit 1
     fi
-  done <<< "$ids"
+  done
 
-  # 可选：添加延迟以避免 API 速率限制
-  # sleep 10
-done
+}
 
+main "$@"
