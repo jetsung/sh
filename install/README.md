@@ -8,7 +8,16 @@
 
 | **推荐** | **文件名** | **标题** | **描述** |
 |:---|:---|:---|:---|
-| | [**`acme-docker`**](acme-docker.sh) | acme docker 方式脚本拉取
+| | [**`acme-docker`**](acme-docker.sh) | acme docker 方式脚本 |
+| | [**`aliyunpan`**](aliyunpan.sh)  |  安装 aliyunpan |
+| | [**`croc`**](croc.sh)  |  安装 croc |
+| | [**`frp`**](frp.sh)  |  安装 frp |
+| | [**`gitlab-runner`**](gitlab-runner.sh)  |  安装 GitLab Runner |
+| | [**`nginx`**](nginx.sh)  |  安装 Nginx |
+| | [**`php-8`**](php-8.sh)  |  安装 PHP 8 |
+| | [**`protoc`**](protoc.sh)  |  安装 protobuf |
+| | [**`redis`**](redis.sh)  |  安装 Redis |
+| | [**`ttyd`**](ttyd.sh)  |  安装 ttyd |
 
 - [list.txt](list.txt)
 

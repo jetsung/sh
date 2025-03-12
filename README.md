@@ -6,7 +6,7 @@
 
 ```bash
 ├── conf       # 软件配置文件
-|── dockerfile # Dockerfile
+|── Dockerfile # Dockerfile
 ├── init.d     # 软件启动文件
 ├── install    # 软件安装脚本
 ├── origin     # 脚本源
