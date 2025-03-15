@@ -13,7 +13,7 @@ goreleaser:
   script: |
     docker build -t goreleaser-bookworm:latest \
       -f Dockerfile/goreleaser/Dockerfile \
-      --build-arg GOPROXY=https://goproxy.cn \
+      --build-arg GOPROXY=${GOPROXY:-} \
       .
   # tags:
   #   - docker

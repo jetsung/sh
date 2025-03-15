@@ -12,14 +12,15 @@ stages:
 # framagit 不支持 Docker in Docker 服务,需要自建 Runner
 # https://docs.gitlab.com/user/packages/container_registry/build_and_push_images/
 variables:
-  GOPROXY: https://goproxy.cn
   TZ: Asia/Shanghai
   DOCKER_TLS_CERTDIR: ""
   
 before_script:
     - |
-      sed -i.bak 's#dl-cdn.alpinelinux.org#mirrors.tencentyun.com#g' /etc/apk/repositories
-      apk update && apk add --no-cache bash jq
+      if [ -n "${GOPROXY:-}" ]; then
+        sed -i.bak 's#dl-cdn.alpinelinux.org#mirrors.tencentyun.com#g' /etc/apk/repositories
+        apk update && apk add --no-cache bash jq
+      fi
     - /bin/bash --login
     - bash --version
     - |

@@ -9,15 +9,16 @@
 | **推荐** | **文件名** | **标题** | **描述** |
 |:---|:---|:---|:---|
 | | [**`acme-docker`**](acme-docker.sh) | acme docker 方式脚本 |
-| | [**`aliyunpan`**](aliyunpan.sh)  |  安装 aliyunpan |
-| | [**`croc`**](croc.sh)  |  安装 croc |
-| | [**`frp`**](frp.sh)  |  安装 frp |
+| | [**`aliyunpan`**](aliyunpan.sh)  |  安装 aliyunpan 阿里云盘工具 |
+| | [**`croc`**](croc.sh)  |  安装 croc 文件传输工具 |
+| | [**`frp`**](frp.sh)  |  安装 frp 网络穿透工具|
 | | [**`gitlab-runner`**](gitlab-runner.sh)  |  安装 GitLab Runner |
+| | [**`m3u8-downloader`**](m3u8-downloader.sh)  |  安装 m3u8 下载器 |
 | | [**`nginx`**](nginx.sh)  |  安装 Nginx |
 | | [**`php-8`**](php-8.sh)  |  安装 PHP 8 |
 | | [**`protoc`**](protoc.sh)  |  安装 protobuf |
 | | [**`redis`**](redis.sh)  |  安装 Redis |
-| | [**`ttyd`**](ttyd.sh)  |  安装 ttyd |
+| | [**`ttyd`**](ttyd.sh)  |  安装 ttyd WEB SSH|
 
 - [list.txt](list.txt)
 
