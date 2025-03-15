@@ -18,7 +18,8 @@
 | | [**`php-8`**](php-8.sh)  |  安装 PHP 8 |
 | | [**`protoc`**](protoc.sh)  |  安装 protobuf |
 | | [**`redis`**](redis.sh)  |  安装 Redis |
-| | [**`ttyd`**](ttyd.sh)  |  安装 ttyd WEB SSH|
+| | [**`ttyd`**](ttyd.sh)  |  安装 ttyd WEB SSH |
+| | [**`wush`**](wush.sh)  |  安装 wush 网络穿透工具 |
 
 - [list.txt](list.txt)
 
