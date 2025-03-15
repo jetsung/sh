@@ -28,11 +28,11 @@ sudo_exec() {
     fi
 }
 
-is_command() {
+check_is_command() {
     command -v "$1" >/dev/null 2>&1
 }
 
-is_in_china() {
+check_in_china() {
     if [ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" != "200" ]; then
         return 0 # 中国网络
     fi
@@ -84,11 +84,11 @@ download_exact() {
 }
 
 main() {
-    if ! is_in_china; then
+    if ! check_in_china; then
         CDN_URL=""
     fi
 
-    OS="$(uname| tr '[:upper:]' '[:lower:]')"
+    OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
     if [ "$ARCH" = "x86_64" ]; then
         ARCH="amd64"

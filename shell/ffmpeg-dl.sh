@@ -14,15 +14,9 @@ judgment_parameters() {
   while getopts "n:u:" opt; do
     case "$opt" in
       n)
-        if [[ -z "${OPTARG:?error: Please specify the correct file name.}" ]]; then
-            exit 1
-        fi
         NAME="$OPTARG"
         ;;
       u)
-        if [[ -z "${OPTARG:?error: Please specify the correct url.}" ]]; then
-            exit 1
-        fi
         URL="$OPTARG"
         ;;
       \?)
