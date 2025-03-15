@@ -141,7 +141,6 @@ install_with_shell() {
 install_with_package() {
     echo "Installing GitLab Runner with package (${SYSTEM})..."
 
-    local _method=""
     if [[ "$SYSTEM" == "debian" ]]; then
         local _base_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/deb/"
         _base_url=$(do_remove_https "$_base_url") 
