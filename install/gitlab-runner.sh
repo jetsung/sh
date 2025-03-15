@@ -33,7 +33,10 @@ check_is_command() {
 }
 
 check_in_china() {
-    if [ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" != "200" ]; then
+    if [[ -n "${CN:-}" ]]; then
+        return 0 # 手动指定
+    fi
+    if [[ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" != "200" ]]; then
         return 0 # 中国网络
     fi
     return 1 # 非中国网络
@@ -45,15 +48,36 @@ check_url_connection() {
         return 1
     fi
 
-    if [[ -n "${M:-}" ]]; then
+    if [[ -n "${CN:-}" ]]; then
         return 1 # 手动指定
-    fi
+    fi    
 
     _check_url=$(echo "$_url" | cut -d '/' -f 1-3)
     if [[ $(curl -s -m 3 -o /dev/null -w "%{http_code}" "$_check_url") != "200" ]]; then
         return 0 # 联通
     fi
     return 1 # 不能联通
+}
+
+# 若为 https://xxx.xx 不以 / 结尾，则组合时去掉加速网址的 https://
+#   格式为 https://file.xxx.io/github.com/
+# 若为 https://xxx.xx/ 以 / 结尾，则组合时保留加速网址的 https://
+#   格式为 https://xxx.xx/https://github.com/
+check_remove_https() {
+    if [[ -n "$1" && "${1: -1}" != "/" ]]; then
+        echo 1
+    fi    
+}
+
+do_remove_https() {
+    local _url="$1"
+    if [[ -n "$NO_HTTPS" ]]; then
+        # shellcheck disable=SC2001
+        echo "$_url" | sed 's|https:/||2'
+
+    else 
+        echo "$_url"
+    fi
 }
 
 get_system_info() {
@@ -109,15 +133,8 @@ install_with_shell() {
         exit 1
     fi
 
-    local _download_url="https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.${_method}.sh"
-    if ! check_url_connection "$_download_url"; then
-        _download_url="${CDN_URL}${_download_url}"
-    fi
-    if [[ "${CDN_URL: -1}" != "/" ]]; then
-        # shellcheck disable=SC2001
-        _download_url="$(echo "$_download_url" | sed 's|https:/||2')"
-    fi      
-
+    local _download_url="${CDN_URL}https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.${_method}.sh"
+    _download_url=$(do_remove_https "$_download_url") 
     curl -L "$_download_url" | sudo_exec bash
 }
 
@@ -126,14 +143,8 @@ install_with_package() {
 
     local _method=""
     if [[ "$SYSTEM" == "debian" ]]; then
-        local _base_url="https://gitlab-runner-downloads.s3.amazonaws.com/latest/deb/"
-        if ! check_url_connection "$_base_url"; then
-            _base_url="${CDN_URL}${_base_url}"
-        fi 
-        if [[ "${CDN_URL: -1}" != "/" ]]; then
-            # shellcheck disable=SC2001
-            _base_url="$(echo "$_base_url" | sed 's|https:/||2')"
-        fi                   
+        local _base_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/deb/"
+        _base_url=$(do_remove_https "$_base_url") 
         local _pkgs="-helper-images _${ARCH} "
         for pkg in $_pkgs; do
             local _download_url="${_base_url}gitlab-runner${pkg}.deb"
@@ -143,14 +154,8 @@ install_with_package() {
             rm -f "$_pkg_file"
         done
     elif [[ "$SYSTEM" == "redhat" ]]; then
-        local _base_url="https://gitlab-runner-downloads.s3.amazonaws.com/latest/rpm/"
-        if ! check_url_connection "$_base_url"; then
-            _base_url="${CDN_URL}${_base_url}"
-        fi   
-        if [[ "${CDN_URL: -1}" != "/" ]]; then
-            # shellcheck disable=SC2001
-            _base_url="$(echo "$_base_url" | sed 's|https:/||2')"
-        fi              
+        local _base_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/rpm/"    
+        _base_url=$(do_remove_https "$_base_url")        
         local _pkgs="-helper-images _${ARCH}"
         for pkg in $_pkgs; do
             local _download_url="${_base_url}gitlab-runner${pkg}.rpm"
@@ -168,15 +173,8 @@ install_with_package() {
 install_with_binary() {
     echo "Installing GitLab Runner with binary (${SYSTEM} ${OS} ${ARCH})..."
 
-    local _download_url="https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-${OS}-${ARCH}" 
-    if ! check_url_connection "$_download_url"; then
-        _download_url="${CDN_URL}${_download_url}"
-    fi
-    if [[ "${CDN_URL: -1}" != "/" ]]; then
-        # shellcheck disable=SC2001
-        _download_url="$(echo "$_download_url" | sed 's|https:/||2')"
-    fi       
-
+    local _download_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-${OS}-${ARCH}" 
+    _download_url=$(do_remove_https "$_download_url") 
     sudo_exec curl -L --output /usr/local/bin/gitlab-runner "$_download_url"
     sudo_exec chmod +x /usr/local/bin/gitlab-runner
 
@@ -323,6 +321,12 @@ judgment_parameters() {
 main() {
     judgment_parameters "$@"
 
+    if ! check_in_china; then
+        CDN_URL=""
+    fi
+
+    NO_HTTPS=$(check_remove_https "$CDN_URL")
+
     SYSTEM="$(get_system_info)"
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
@@ -333,10 +337,6 @@ main() {
             ;;
         "aarch64")
             ARCH="arm64"
-            ;;
-        *)
-            echo "Unsupported architecture: $ARCH"
-            exit 1
             ;;
     esac
 
