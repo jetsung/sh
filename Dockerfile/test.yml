@@ -1,0 +1,12 @@
+test:
+  stage: test
+  artifacts:
+    expire_in: 1 d
+  script: 
+    - cat /etc/issue
+  # tags:
+  #   - docker
+  only:
+    changes:
+      - Dockerfile/test.yml
+ 
