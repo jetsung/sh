@@ -1,0 +1,15 @@
+alpine:
+  stage: build
+  artifacts:
+    expire_in: 1 d
+  script: 
+    - |
+      docker build -t jetsung/alpine \
+        -f Dockerfile/alpine/Dockerfile \
+        .
+  # tags:
+  #   - docker
+  only:
+    changes:
+      - Dockerfile/alpine/build.yml
+      - Dockerfile/alpine/Dockerfile

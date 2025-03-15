@@ -1,77 +1,65 @@
-default:
-  image: docker:latest
-  services:
-    - name: docker:dind
-      variables:
-        HEALTHCHECK_TCP_PORT: "2375"
-      command: ["--registry-mirror", "https://mirror.ccs.tencentyun.com"]
-      
-stages:
-  - build
-
 # framagit 不支持 Docker in Docker 服务,需要自建 Runner
 # https://docs.gitlab.com/user/packages/container_registry/build_and_push_images/
 variables:
+  CI_DEBUG_SERVICES: "true"
   TZ: Asia/Shanghai
   DOCKER_TLS_CERTDIR: ""
+
+default:
+  image: docker:latest
+  # https://docs.gitlab.com/ci/services/
+  # services:
+  #   - name: docker:dind
+  #     variables:
+  #       HEALTHCHECK_TCP_PORT: "2375"
+  #     command: ["--registry-mirror", "https://docker.m.daocloud.io" ]
+
+stages:
+  - build
+  - test
   
 before_script:
-    - |
-      if [ -n "${GOPROXY:-}" ]; then
-        sed -i.bak 's#dl-cdn.alpinelinux.org#mirrors.tencentyun.com#g' /etc/apk/repositories
-        apk update && apk add --no-cache bash jq
-      fi
-    - /bin/bash --login
-    - bash --version
-    - |
-      if [ -n "${REGISTRIES:-}" ]; then
-        REGISTRY_CONF=$(echo "$REGISTRIES" | base64 -d)
-      fi
-    - |
-      if [ -z "${REGISTRY_CONF:-}" ]; then
-        echo "not found REGISTRIES"
-        exit 1
-      fi
-    - mkdir -p ~/.docker/
-    - echo "$REGISTRY_CONF" > ~/.docker/config.json
-
+  - |   
+    echo "DOCKER_TLS_CERTDIR: ${DOCKER_TLS_CERTDIR:-}"
+    echo "TZ: ${TZ:-}"
+    echo "GOPROXY: ${GOPROXY:-}"
+    echo "OS_MIRROR: ${OS_MIRROR:-}"
+    echo "REGISTRY_MIRROR: ${REGISTRY_MIRROR:-}"
+  - cat /etc/issue
+  # - docker info
+  - |
+    if [ -n "${OS_MIRROR:-}" ]; then
+      sed -i.bak "s#dl-cdn.alpinelinux.org#${OS_MIRROR}#g" /etc/apk/repositories
+    fi
+  - apk update && apk add --no-cache bash jq
+  - /bin/bash --login
+  - bash --version
+  - |
+    if [ -n "${REGISTRIES:-}" ]; then
+      REGISTRY_CONF=$(echo "$REGISTRIES" | base64 -d)
+    fi
+  - |
+    if [ -z "${REGISTRY_CONF:-}" ]; then
+      echo "not found REGISTRIES"
+      exit 1
+    fi
+  - mkdir -p ~/.docker/
+  - echo "$REGISTRY_CONF" > ~/.docker/config.json
+  - |
+    registries=$(jq -r '.auths | to_entries[] | .key' ~/.docker/config.json)
+    if [ -z "${registries:-}" ]; then
+      echo "not found registries"
+      exit 1
+    fi
 include:
+  - local: 'Dockerfile/alpine/build.yml'
   - local: 'Dockerfile/goreleaser/build.yml'
+  - local: 'Dockerfile/test.yml'
 
 after_script:
-    - docker images
-    - docker images --format '{{.Repository}}:{{.Repository}}'
-    - |
-      # 列出所有本地镜像
-      docker_images=$(docker images --format "{{.Repository}}:{{.Tag}}")
-
-      # 遍历每个镜像
-      for image in $docker_images; do
-          # 检查是否是 Docker Hub 的镜像
-          if [[ $image == "library/"* || $image == *"/"* ]]; then
-              # 获取镜像名称和标签
-              repo=${image%:*}
-              tag=${image##*:}
-              # 如果没有标签，默认为 latest
-              if [ "$tag" = "$image" ]; then
-                  tag="latest"
-              fi
-
-              # 遍历每个已登录的 Registry
-              for registry in $registries; do
-                  # 打上新标签
-                  new_image="$registry/${repo#:library/}:${tag}"
-                  docker tag "$image" "$new_image"
-                  # 推送到新 Registry
-                  if ! docker push "$new_image" > /dev/null 2>&1; then
-                      echo "Push failed for $new_image"
-                  else
-                      echo "Push successful for $new_image"
-                  fi
-              done
-          fi
-      done   
-    - |
-      rm -rf ~/.docker/
-      echo "Docker 账号登出完成"
+  - bash ./Dockerfile/push.sh   
+  - docker images
+  - |
+    rm -rf ~/.docker/
+    echo "Docker 账号登出完成"
     
