@@ -5,7 +5,7 @@ goreleaser:
     expire_in: 1 d
   script: 
     - |
-      docker build -t goreleaser-bookworm:latest \
+      docker build -t jetsung/goreleaser-bookworm:latest \
         -f Dockerfile/goreleaser/Dockerfile \
         --build-arg GOPROXY=${GOPROXY:-https://proxy.golang.org} \
         .
