@@ -7,6 +7,7 @@ docker_images=$(docker images --format "{{.Repository}}:{{.Tag}}")
 
 # 列出所有已登录的 Registry
 registries=$(jq -r '.auths | to_entries[] | .key' ~/.docker/config.json)
+echo -e "\nregistry list: \n$registries\n\n"
 if [ -z "${registries:-}" ]; then
     echo "No registries found in ~/.docker/config.json"
     exit 0
