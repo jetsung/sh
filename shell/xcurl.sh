@@ -3,11 +3,11 @@
 #============================================================
 # File: xcurl.sh
 # Description: 替换脚本中的字符串为加速网址
-# URL:
+# URL: https://s.asfd.cn/514b875c
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-05
-# UpdatedAt: 2025-03-15
+# UpdatedAt: 2025-03-17
 #============================================================
 
 if [[ -n "$DEBUG" ]]; then
