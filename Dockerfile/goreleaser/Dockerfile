@@ -4,7 +4,7 @@ ARG GOPROXY=https://proxy.golang.org
 
 RUN go install github.com/goreleaser/goreleaser/v2@latest
 
-FROM builder AS prod
+FROM golang:1.24 AS prod
 LABEL maintainer="Jetsung Chan<i@jetsung.com>"
 
 WORKDIR /app
