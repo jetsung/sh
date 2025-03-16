@@ -130,3 +130,11 @@ Git 代码迁移到新托管平台
 
 - remove_workflow_run.sh
 - remove_packages_untagged.sh
+
+---
+
+### [xcurl](xcurl.sh)
+
+替换脚本中的字符串为加速网址
+
+---
