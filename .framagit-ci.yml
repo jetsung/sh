@@ -4,6 +4,7 @@ variables:
   CI_DEBUG_SERVICES: "true"
   TZ: Asia/Shanghai
   DOCKER_TLS_CERTDIR: ""
+  # TRIGGER_JOB: ""  # 默认不触发任何作业
 
 default:
   image: docker:latest
@@ -13,6 +14,14 @@ default:
   #     variables:
   #       HEALTHCHECK_TCP_PORT: "2375"
   #     command: ["--registry-mirror", "https://docker.m.daocloud.io" ]
+
+.trigger_template:
+  rules:
+    - if: '$TRIGGER_JOB == ""'
+      when: manual
+    - if: "$TRIGGER_JOB =~ /\\b$CI_JOB_NAME\\b/"
+      when: manual
+    - when: never
 
 stages:
   - build
@@ -59,7 +68,4 @@ include:
 after_script:
   - bash ./Dockerfile/push.sh   
   - docker images
-  - |
-    rm -rf ~/.docker/
-    echo "Docker 账号登出完成"
     

@@ -1,4 +1,5 @@
 test:
+  extends: ".trigger_template"
   stage: test
   artifacts:
     expire_in: 1 d
@@ -6,7 +7,10 @@ test:
     - cat /etc/issue
   # tags:
   #   - docker
-  only:
-    changes:
-      - Dockerfile/test.yml
- 
+  # only:
+  #   changes:
+  #     - Dockerfile/test.yml
+  # rules:
+  #   - if: '$TARGET == "test"'
+  #     when: manual
+  #   - when: never

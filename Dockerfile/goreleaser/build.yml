@@ -1,4 +1,5 @@
 goreleaser:
+  extends: ".trigger_template"
   stage: build
   artifacts:
     expire_in: 1 d
@@ -8,9 +9,3 @@ goreleaser:
         -f Dockerfile/goreleaser/Dockerfile \
         --build-arg GOPROXY=${GOPROXY:-https://proxy.golang.org} \
         .
-  # tags:
-  #   - docker
-  only:
-    changes:
-      - Dockerfile/goreleaser/build.yml
-      - Dockerfile/goreleaser/Dockerfile
