@@ -3,8 +3,10 @@ aliyunpan.sh  |  安装 aliyunpan
 croc.sh  |  安装 croc
 frp.sh  |  安装 frp
 gitlab-runner.sh  |  安装 GitLab Runner
+m3u8-downloader.sh  |  安装 m3u8 下载器
 nginx.sh  |  安装 Nginx
 php-8.sh  |  安装 PHP 8
 protoc.sh  |  安装 protobuf
 redis.sh  |  安装 Redis
 ttyd.sh  |  安装 ttyd
+wush.sh  |  安装 wush 网络穿透工具

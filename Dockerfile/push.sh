@@ -2,13 +2,15 @@
 
 # 推送到 Registry
 
+set -euo pipefail
+
 # 列出所有本地镜像
 docker_images=$(docker images --format "{{.Repository}}:{{.Tag}}")
 
 # 列出所有已登录的 Registry
 registries=$(jq -r '.auths | to_entries[] | .key' ~/.docker/config.json)
 echo -e "\nregistry list: \n$registries\n\n"
-if [ -z "${registries:-}" ]; then
+if [[ -z "${registries:-}" ]]; then
     echo "No registries found in ~/.docker/config.json"
     exit 0
 fi
@@ -24,7 +26,7 @@ for image in $docker_images; do
         repo=${image%:*}
         tag=${image##*:}
         # 如果没有标签，默认为 latest
-        if [ "$tag" = "$image" ]; then
+        if [[ "$tag" = "$image" ]]; then
             tag="latest"
         fi
 
