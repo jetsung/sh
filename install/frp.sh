@@ -41,7 +41,6 @@ is_in_china() {
 
 get_download_url() {
     repo_api_url="${CDN_URL}https://api.github.com/repos/fatedier/frp/releases/latest" 
-
     curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "${OS}_${ARCH}"
 }
 
