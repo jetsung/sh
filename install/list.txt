@@ -10,3 +10,4 @@ protoc.sh  |  安装 protobuf
 redis.sh  |  安装 Redis
 ttyd.sh  |  安装 ttyd
 wush.sh  |  安装 wush 网络穿透工具
+zed.sh  |  安装 Zed 编辑器
