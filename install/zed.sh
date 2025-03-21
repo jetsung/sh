@@ -75,16 +75,19 @@ remove_second_https() {
 }
 
 install_for_linux() {
-    repo_api_url="${CDN_URL}https://api.github.com/repos/zed-industries/zed/releases${PRE_VERSION:+/latest}" 
+    repo_api_url="${CDN_URL}https://api.github.com/repos/zed-industries/zed/releases"
+    if [[ -z "${PRE_VERSION:-}" ]]; then
+        repo_api_url="${repo_api_url}/latest"
+    fi
     if [[ -n "$NO_HTTPS" ]]; then
         repo_api_url=$(remove_second_https "$repo_api_url")
     fi
 
     filename="zed-${OS}-${ARCH}.tar.gz"
     if [[ -n "${PRE_VERSION:-}" ]]; then
-        download_url=$(curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "$filename")
-    else
         download_url=$(curl -fsSL "$repo_api_url" | jq -r '[.[] | select(.prerelease == true)][0].assets[].browser_download_url' | grep "$filename")
+    else
+        download_url=$(curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "$filename")
     fi
 
     download_url="${CDN_URL}${download_url}"
