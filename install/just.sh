@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: aliyunpan.sh
-# Description: 安装 aliyunpan
-# URL: https://s.asfd.cn/a21f20b9
+# File: just.sh
+# Description: 安装 just 构建工具
+# URL: https://s.asfd.cn/hM1Rzj
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
-# CreatedAt: 2025-03-05
-# UpdatedAt: 2025-03-25
+# CreatedAt: 2025-03-28
+# UpdatedAt: 2025-03-28
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -64,17 +64,17 @@ remove_second_https() {
 }
 
 do_install() {
-    repo="tickstep/aliyunpan"
+    repo="casey/just"
     repo_api_url="${CDN_URL}https://api.github.com/repos/${repo}/releases/latest" 
     if [[ -n "$NO_HTTPS" ]]; then
         repo_api_url=$(remove_second_https "$repo_api_url")
     fi
 
-    os_arch="${OS}-${ARCH}"
+    os_arch="${ARCH}-${PLATFORM}-${OS}"
     download_url=$(curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "$os_arch")
 
-    filename_pkg="aliyunpan.zip"
-    file_dir="aliyunpan"  
+    filename_pkg="just.tar.gz"
+    file_dir="just"  
 
     download_url="${CDN_URL}${download_url}"
     if [[ -n "$NO_HTTPS" ]]; then
@@ -86,34 +86,15 @@ do_install() {
         exit 1
     fi
 
-    if ! unzip -q -f "$filename_pkg"; then
-        echo "Error: Extraction failed"
-        rm -f "$filename_pkg"
+    sudo_exec tar -xzf "$filename_pkg" -C /tmp || {
+        echo "Failed to install just."
         exit 1
-    fi
+    }    
 
-    unzip -q "$filename_pkg"
+    sudo_exec mv "/tmp/just" "/usr/local/bin/${file_dir}"
 
-    mv "${file_dir}-"* "$file_dir"
-
-    if [[ -d "/opt/${file_dir}" ]]; then
-        sudo_exec rm -rf /opt/"${file_dir}"
-    fi
-
-    if ! sudo_exec mv "$file_dir" /opt/; then
-        printf "\033[31mFailed to move %s to /opt\033[0m\n" "$file_dir"
-        exit 1
-    fi
-
-    # 若存在转链接则删除
-    if [[ -f "/usr/local/bin/aliyunpan" ]]; then
-        sudo_exec rm -f /usr/local/bin/aliyunpan
-    fi
-
-    if ! sudo_exec ln -sf "/opt/${file_dir}/aliyunpan" "/usr/local/bin/aliyunpan"; then
-        printf "\033[31mInstall %s failed, Please Contact the author! \033[0m" "$file_dir"
-        kill -9 $$
-    fi
+    sudo_exec mkdir -p "/usr/local/share/man/man1"
+    sudo_exec mv "/tmp/just.1" "/usr/local/share/man/man1/"
 
     rm -rf "$filename_pkg" 
 }
@@ -128,25 +109,24 @@ main() {
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
-    if [ "$ARCH" = "x86_64" ]; then
-        ARCH="amd64"
-    elif [ "$ARCH" = "aarch64" ]; then
-        ARCH="arm64"
-    fi    
+    PLATFORM="unknown"
+    if [[ "$OS" = "darwin" ]]; then
+        PLATFORM="apple"
+    fi
 
     do_install
 
     echo ""
 
-    if ! check_is_command "aliyunpan"; then
-        echo "aliyunpan has not been installed successfully."
+    if ! check_is_command "just"; then
+        echo "just has not been installed successfully."
         echo ""
         exit 1
     fi
 
-    echo "aliyunpan has been installed successfully!"
+    echo "just has been installed successfully!"
     echo ""
-    aliyunpan --version
+    just --version
     echo ""
 }
 

@@ -20,6 +20,7 @@
 | | [**`redis`**](redis.sh)  |  安装 Redis |
 | | [**`ttyd`**](ttyd.sh)  |  安装 ttyd WEB SSH |
 | | [**`wush`**](wush.sh)  |  安装 wush 网络穿透工具 |
+| | [**`just`**](just.sh)  | 安装 just 构建工具 |
 
 - [list.txt](list.txt)
 

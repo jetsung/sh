@@ -3,6 +3,7 @@ aliyunpan.sh  |  安装 aliyunpan
 croc.sh  |  安装 croc
 frp.sh  |  安装 frp
 gitlab-runner.sh  |  安装 GitLab Runner
+just.sh  |  安装 just 构建工具
 m3u8-downloader.sh  |  安装 m3u8 下载器
 nginx.sh  |  安装 Nginx
 php-8.sh  |  安装 PHP 8
