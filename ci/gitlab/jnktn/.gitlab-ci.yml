@@ -1,0 +1,21 @@
+pages:
+  stage: deploy
+  before_script:
+    - apt-get update && apt-get -y install rsync curl
+  script:
+    # html-minifier
+    - find ./public/ -type f -name "*.html" -exec echo {} \; -exec bash -c "curl -X POST -s --data-urlencode 'input@{}' https://html-minifier.com/raw > {}.mini" \; -exec rm {} \; -exec mv {}.mini {} \;
+    # css-minifier
+    - find ./public/ -type f -name "*.css" -exec echo {} \; -exec bash -c "curl -X POST -s --data-urlencode 'input@{}' https://cssminifier.com/raw > {}.mini" \; -exec rm {} \; -exec mv {}.mini {} \;
+    - rsync -avr --copy-links ./public/* .public
+    - rm -r public
+    - mv .public public
+  after_script:
+    - ls -lhR public/
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week
+  only:
+    - develop
+

@@ -1,0 +1,109 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+# goreleaser release --clean 
+# goreleaser release --snapshot --clean
+# goreleaser release --skip=publish
+
+version: 2
+
+# project_name: shortener
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - loong64
+      - riscv64
+    ldflags:
+      - '-s -w'
+      - '-X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}'
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- .Os }}-
+      {{- if eq .Arch "x86_64" }}amd64
+      {{- else if eq .Arch "aarch64" }}arm64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        formats: 
+        - zip
+
+    files:
+      - LICENSE
+      - README.md
+      - src: config/config.toml
+        dst: config.toml      
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  # disable: false
+  footer: >-
+
+    ---
+
+    Released by [Jetsung](https://github.com/jetsung).
+
+# https://goreleaser.com/customization/nfpm/
+nfpms:
+  - bindir: '/opt/{{ .ProjectName }}'
+    homepage: 'https://github.com/idevsig/{{ .ProjectName }}'
+    maintainer: 'Jetsung Chen <i@jetsung.com>'
+    description: |-
+      {{ .ProjectName }} Service.
+    license: Apache 2.0
+    formats:
+      - deb
+      - rpm
+    file_name_template: >-
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- .Os }}-
+      {{- if eq .Arch "x86_64" }}amd64
+      {{- else if eq .Arch "aarch64" }}arm64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    prerelease: beta1
+    release: 0.1.0
+    contents:
+      - src: 'config/config.toml'
+        dst: '/opt/{{ .ProjectName }}/config.toml'
+        type: config
+      - src: '{{ .ProjectName }}.service'
+        dst: '/opt/{{ .ProjectName }}/{{ .ProjectName }}.service'
+    scripts:
+      preinstall: 'scripts/preinstall.sh'
+      postinstall: 'scripts/postinstall.sh'
+      preremove: 'scripts/preremove.sh'
+      postremove: 'scripts/postremove.sh'
