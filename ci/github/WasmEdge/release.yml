@@ -1,0 +1,154 @@
+name: release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Log level"
+        required: true
+        default: "info"
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+*"
+
+jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.prep.outputs.version }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Ensure git safe directory
+        run: |
+          git config --global --add safe.directory $(pwd)
+      - name: Get version
+        id: prep
+        run: |
+          echo "version=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+      - name: Create Release
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ steps.prep.outputs.version }} --draft  --notes-file .CurrentChangelog.md --prerelease --title "WasmEdge ${{ steps.prep.outputs.version }}" --verify-tag
+
+  create_source_tarball:
+    needs: create_release
+    uses: ./.github/workflows/reusable-create-source-tarball.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      release: true
+    secrets: inherit
+
+  build_on_macos:
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-on-macos.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      matrix:
+        "[{'name':'MacOS 13 (x86_64)','runner':'macos-13','darwin_version':22,'arch':'x86_64'},
+        {'name':'MacOS 14 (arm64)','runner':'macos-14','darwin_version':23,'arch':'arm64'}]"
+      release: true
+    secrets: inherit
+
+  build_on_ubuntu_20_04:
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-on-ubuntu.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      matrix: "[{'name':'ubuntu-20.04','arch':'x86_64','runner':'ubuntu-latest','compiler':'clang++','build_type':'Release','docker_tag':'ubuntu-20.04-build-clang'},
+                {'name':'ubuntu-20.04','arch':'aarch64','runner':'linux-arm64-v2','compiler':'clang++','build_type':'Release','docker_tag':'ubuntu-20.04-build-clang-aarch64'}]"
+      release: true
+    secrets: inherit
+
+  build_on_manylinux_2_28:
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-on-manylinux.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      matrix:
+        "[{'name':'manylinux_2_28 x86_64','runner':'ubuntu-latest','docker_tag':'manylinux_2_28_x86_64','asset_tag':'manylinux_2_28_x86_64'},
+          {'name':'manylinux_2_28 aarch64','runner':'linux-arm64-v2','docker_tag':'manylinux_2_28_aarch64','asset_tag':'manylinux_2_28_aarch64'}]"
+      release: true
+    secrets: inherit
+
+  build_on_debian_static:
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-on-debian-static.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      release: true
+    secrets: inherit
+
+  build_on_alpine_static:
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-on-alpine-static.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      release: true
+    secrets: inherit
+
+  build_on_windows:
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-on-windows.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      release: true
+    secrets: inherit
+
+  build_on_windows_msvc:
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-on-windows-msvc.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      release: true
+    secrets: inherit
+
+  build_on_android:
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-on-android.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      release: true
+    secrets: inherit
+
+  build_and_upload_plugins:
+    name: Build and Upload
+    needs: create_release
+    uses: ./.github/workflows/reusable-build-extensions.yml
+    with:
+      version: ${{ needs.create_release.outputs.version }}
+      release: true
+    secrets: inherit
+
+  generate_sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    needs: create_release
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: Grant the safe directory for git
+        run: |
+          git config --global --add safe.directory $(pwd)
+      - name: generate sbom
+        uses: advanced-security/sbom-generator-action@v0.0.1
+        id: sbom
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Generate tar.gz file and upload release
+        shell: bash
+        run: |
+          tar -zcvf sbom.tar.gz ${{steps.sbom.outputs.fileName}}
+          gh release upload ${{needs.create_release.outputs.version}} sbom.tar.gz --clobber
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
