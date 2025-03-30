@@ -1,0 +1,18 @@
+[Unit]
+Description=Shortener Service
+
+[Service]
+Type=simple
+WorkingDirectory=/etc/shortener
+ExecStart=shortener
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStop=/bin/kill -s QUIT $MAINPID
+Restart=always
+RestartSec=10
+Environment=GIN_MODE=release
+LimitNOFILE=1000000
+LimitNPROC=1000000
+LimitCORE=1000000
+
+[Install]
+WantedBy=multi-user.target
