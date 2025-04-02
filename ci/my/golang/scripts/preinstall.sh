@@ -5,12 +5,8 @@ set -e
 
 # echo "Preinstall script"
 
-if [[ -f /etc/shortener/config.toml ]]; then
-  cp /etc/shortener/config.toml /opt/shortener/config.toml.bak
-fi
-
-if [[ ! -d /etc/shortener/data ]]; then
-  mkdir -p /etc/shortener/data
+if [[ -f /opt/shortener/config/config.toml ]]; then
+  mv /opt/shortener/config/config.toml /opt/shortener/config/config.toml.bak
 fi
 
 exit 0

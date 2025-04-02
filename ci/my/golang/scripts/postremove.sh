@@ -12,7 +12,3 @@ fi
 if [[ -e /usr/local/bin/shortener ]]; then
   rm -rf /usr/local/bin/shortener
 fi
-
-# if [[ -d /etc/shortener ]]; then
-#   rm -rf /etc/shortener
-# fi

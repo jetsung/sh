@@ -1,0 +1,54 @@
+services:
+  shortener:
+    build: 
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile
+      args:
+        GOPROXY: "https://goproxy.cn"
+        OS_MIRROR: "http://mirrors.tencent.com/debian"
+    container_name: shortener
+    restart: unless-stopped        
+    environment:
+      - TZ=Asia/Shanghai
+      - GIN_MODE=debug
+      - DATABASE_TYPE=${DATABASE_TYPE:-sqlite}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.toml:/app/config.toml   
+    profiles:
+      - sqlite
+      - mysql
+      - postgres
+      - redis
+
+  mysql:
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      # - MYSQL_USER=root
+      # - MYSQL_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=shortener
+    profiles:
+      - mysql   
+
+  postgres:
+    image: postgres:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=shortener    
+    profiles:
+      - postgres 
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+    profiles:
+      - redis 
