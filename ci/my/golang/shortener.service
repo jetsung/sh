@@ -3,7 +3,7 @@ Description=Shortener Service
 
 [Service]
 Type=simple
-WorkingDirectory=/etc/shortener
+WorkingDirectory=/opt/shortener
 ExecStart=shortener
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s QUIT $MAINPID

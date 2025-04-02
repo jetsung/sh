@@ -27,7 +27,7 @@ COPY . .
 # mv dist/shortener public
 # EOF
 RUN <<EOF
-mkdir -p /build/public/data
+mkdir -p /build/public/
 cp config/config.toml /build/public/
 
 # 构建
@@ -42,7 +42,7 @@ WORKDIR /app
 
 COPY --from=builder /build/public/shortener /bin/shortener
 COPY --from=builder /build/public/config.toml config.toml
-COPY --from=builder /build/public/data data
+# COPY --from=builder /build/public/data data
 EXPOSE 8080
 
 ENTRYPOINT ["shortener"]

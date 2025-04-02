@@ -36,37 +36,39 @@ github_workflows() {
 
 ## Golang
 git_url="https://framagit.org/idev/shortener/-/raw/main/"
+
+save_path=".github/workflows"
 file_list=(
-  .goreleaser.yaml
-  .hadolint.yaml
-  justfile
-  shortener.service
-  docker-bake.hcl
+  docker-dev.yml
+  docker-main.yml
+  docker-release.yml
+  release.yml
 )
-github_workflows "$git_url" "." "${file_list[@]}"
+github_workflows "$git_url" "$save_path" "${file_list[@]}"
 
 save_path="deploy/docker"
 file_list=(
   Dockerfile
-  sqlite.compose.yml
+  compose.yml
 )
 github_workflows "$git_url" "$save_path" "${file_list[@]}"
 
+save_path="scripts"
 file_list=(
   preinstall.sh
   postinstall.sh
   preremove.sh
   postremove.sh
 )
-scripts_path="scripts"
-github_workflows "$git_url" "$scripts_path" "${file_list[@]}"
+github_workflows "$git_url" "$save_path" "${file_list[@]}"
 
-workflows_list=(
-  docker-dev.yml
-  docker-main.yml
-  docker-release.yml
-  release.yml
+save_path="."
+file_list=(
+  .goreleaser.yaml
+  .hadolint.yaml
+  justfile
+  shortener.service
+  docker-bake.hcl
+  .github/dependabot.yml
 )
-workflow_path=".github/workflows"
-github_workflows "$git_url" "$workflow_path" "${workflows_list[@]}"
-
+github_workflows "$git_url" "$save_path" "${file_list[@]}"

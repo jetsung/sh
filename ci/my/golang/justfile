@@ -43,3 +43,28 @@ clean:
     @rm -f "{{project_name}}"
     @rm -rf "{{dist_dir}}"
     @echo "Cleaned up successfully"
+
+## 参考：https://github.com/redis/go-redis/blob/master/Makefile
+docker-start:
+    @DATABASE_TYPE=sqlite docker compose --profile redis -f deploy/docker/compose.yml up -d
+
+docker-stop:
+    @DATABASE_TYPE=sqlite docker compose --profile redis -f deploy/docker/compose.yml down
+
+test:
+    just docker-start
+    just test-ci
+    just docker-stop
+
+test-ci:
+    @echo "test-ci"
+
+go-mod-tidy:
+    #!/bin/bash
+    set -e
+    find . -type f -name 'go.mod' -exec dirname {} \; | sort | while read dir; do
+      echo "go mod tidy in $dir"
+        (cd "$dir" && \
+            go get -u ./... && \
+            go mod tidy)
+    done

@@ -46,11 +46,21 @@ target "default" {
 }
 
 group "dev" {
-  targets = ["dev"]
+  targets = ["dev-amd64", "dev-arm64"]
 }
 
 target "dev" {
     inherits = ["_common", "_image"]
+}
+
+target "dev-amd64" {
+    inherits = ["_common", "_image"]
+    platforms = ["linux/amd64"]
+}
+
+target "dev-arm64" {
+    inherits = ["_common", "_image"]
+    platforms = ["linux/arm64"]
 }
 
 group "release" {
