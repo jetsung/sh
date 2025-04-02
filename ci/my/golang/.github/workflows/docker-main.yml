@@ -7,7 +7,12 @@ on:
     paths:
       - docker-bake.hcl
       - "deploy/docker/Dockerfile"
-      - ".github/workflows/docker-main.yml"
+      - ".github/workflows/docker-dev.yml"
+      - "internal/**"
+      - "cmd/**"
+      - "go.mod"
+      - "go.sum"
+      - "justfile"
 
 env:
   branch: main

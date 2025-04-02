@@ -5,10 +5,13 @@ set -e
 
 #echo "Postinstall script"
 
-if [[ -f /opt/shortener/config.toml.bak ]]; then
-  mv /opt/shortener/config.toml.bak /etc/shortener/config.toml
-elif [[ -f /opt/shortener/config.toml ]]; then
-  cp /opt/shortener/config.toml /etc/shortener/config.toml
+if [[ -f /opt/shortener/config/config.toml.bak ]]; then
+  mv /opt/shortener/config/config.toml.bak /opt/shortener/config/config.toml
+fi
+
+if [[ ! -f /opt/shortener/config/config.toml ]]; then
+  mkdir -p /opt/shortener/config
+  cp /opt/shortener/config.toml /opt/shortener/config/config.toml
 fi
 
 if [[ -e /usr/local/bin/shortener ]]; then

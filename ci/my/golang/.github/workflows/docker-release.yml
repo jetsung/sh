@@ -4,10 +4,6 @@ on:
   push:
     tags:
       - "*"
-    paths:
-      - docker-bake.hcl
-      - "deploy/docker/Dockerfile"
-      - ".github/workflows/docker-release.yml"
 
 env:
   package_name: shortener
