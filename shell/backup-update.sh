@@ -3,7 +3,7 @@
 #============================================================
 # File: backup-update.sh
 # Description: 更新服务器中的 Docker 镜像和备份数据
-# URL: https://s.asfd.cn/56be48a8
+# URL: https://s.fx4.cn/56be48a8
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 

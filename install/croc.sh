@@ -3,7 +3,7 @@
 #============================================================
 # File: croc.sh
 # Description: 安装 croc
-# URL: https://s.asfd.cn/be728e84
+# URL: https://s.fx4.cn/be728e84
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-06

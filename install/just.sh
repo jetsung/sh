@@ -3,7 +3,7 @@
 #============================================================
 # File: just.sh
 # Description: 安装 just 构建工具
-# URL: https://s.asfd.cn/hM1Rzj
+# URL: https://s.fx4.cn/hM1Rzj
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-28

@@ -3,7 +3,7 @@
 #============================================================
 # File: aliyunpan.sh
 # Description: 安装 aliyunpan
-# URL: https://s.asfd.cn/a21f20b9
+# URL: https://s.fx4.cn/a21f20b9
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-05
