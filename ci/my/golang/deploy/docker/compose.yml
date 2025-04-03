@@ -15,7 +15,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./config.toml:/app/config.toml   
+      - ./config.toml:/app/config.toml
+      - data:/app/data
     profiles:
       - sqlite
       - mysql
@@ -52,3 +53,6 @@ services:
       - TZ=Asia/Shanghai
     profiles:
       - redis 
+
+volumes:
+  data:

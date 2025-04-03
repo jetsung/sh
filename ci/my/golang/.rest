@@ -1,0 +1,95 @@
+# https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+@hostname = localhost
+@port = 8080
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+
+@code = shortener
+@apiKey = 1234567890
+
+### PING
+
+GET http://{{host}}/ping
+
+### 跳转网址
+
+GET http://{{host}}/{{code}}{{$randomInt 5 100}}
+
+### 添加短网址（随机）
+
+POST http://{{host}}/api/v1/shortens
+Content-Type: {{contentType}}
+
+{
+  "original_url": "https://go.dsig.cn/shortener",
+  "code": "{{code}}{{$randomInt 5 100}}",
+  "describe": "短网址"
+}
+
+### 添加短网址（随机 + KEY）
+
+POST http://{{host}}/api/v1/shortens
+Content-Type: {{contentType}}
+X-API-KEY: {{apiKey}}
+
+{
+  "original_url": "https://go.dsig.cn/shortener",
+  "code": "{{code}}{{$randomInt 5 100}}",
+  "describe": "短网址"
+}
+
+
+### 添加短网址
+POST http://{{host}}/api/v1/shortens
+Content-Type: {{contentType}}
+
+{
+  "original_url": "https://go.dsig.cn/shortener",
+  "code": "{{code}}",
+  "describe": "短网址"
+}
+
+### 删除短网址（随机）
+
+DELETE http://{{host}}/api/v1/shortens/{{code}}{{$randomInt 5 100}}
+
+### 删除短网址
+
+DELETE http://{{host}}/api/v1/shortens/{{code}}
+
+### 更新短网址（随机）
+
+PUT http://{{host}}/api/v1/shortens/{{code}}{{$randomInt 5 100}}
+Content-Type: {{contentType}}
+
+{
+  "original_url": "https://go.dsig.cn/{{code}}{{$randomInt 5 100}}",
+  "describe": "短网址{{$randomInt 5 100}}"
+}
+
+### 更新短网址
+
+PUT http://{{host}}/api/v1/shortens/{{code}}
+Content-Type: {{contentType}}
+
+{
+  "original_url": "https://go.dsig.cn/{{code}}{{$randomInt 5 100}}",
+  "describe": "短网址{{$randomInt 5 100}}"
+}
+
+### 获取短网址详情（随机）
+
+GET http://{{host}}/api/v1/shortens/{{code}}{{$randomInt 5 100}}
+
+### 获取短网址详情
+
+GET http://{{host}}/api/v1/shortens/{{code}}963
+
+### 获取短网址列表（随机）
+
+GET http://{{host}}/api/v1/shortens?page={{$randomInt 1 3}}&page_size={{$randomInt 1 5}}
+
+### 获取短网址列表
+
+GET http://{{host}}/api/v1/shortens?page=1&page_size=10
