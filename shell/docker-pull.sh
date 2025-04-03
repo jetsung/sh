@@ -3,7 +3,7 @@
 #============================================================
 # File: docker-pull.sh
 # Description: Docker 通过加速站拉取镜像
-# URL: https://s.asfd.cn/0435a789
+# URL: https://s.fx4.cn/0435a789
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-02-22

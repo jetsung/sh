@@ -3,7 +3,7 @@
 #============================================================
 # File: git-qcloud.sh
 # Description: 腾讯工峰 命令行工具
-# URL: https://s.asfd.cn/7c2f52c8
+# URL: https://s.fx4.cn/7c2f52c8
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-03

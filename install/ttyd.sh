@@ -3,7 +3,7 @@
 #============================================================
 # File: ttyd.sh
 # Description: 安装 ttyd
-# URL: https://s.asfd.cn/
+# URL: https://s.fx4.cn/
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-02-11
