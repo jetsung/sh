@@ -3,7 +3,7 @@
 #============================================================
 # File: wush.sh
 # Description: 安装 wush 网络穿透工具
-# URL: https://s.asfd.cn/gitlab-runner
+# URL: https://s.fx4.cn/gitlab-runner
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-14
