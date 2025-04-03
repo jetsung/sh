@@ -43,6 +43,7 @@ file_list=(
   docker-main.yml
   docker-release.yml
   release.yml
+  golangci-lint.yml
 )
 github_workflows "$git_url" "$save_path" "${file_list[@]}"
 
@@ -64,11 +65,14 @@ github_workflows "$git_url" "$save_path" "${file_list[@]}"
 
 save_path="."
 file_list=(
+  .github/dependabot.yml
+  .golangci.yml
   .goreleaser.yaml
   .hadolint.yaml
+  .rest
   justfile
-  shortener.service
   docker-bake.hcl
-  .github/dependabot.yml
+  openapi.yml
+  shortener.service
 )
 github_workflows "$git_url" "$save_path" "${file_list[@]}"

@@ -1,0 +1,306 @@
+openapi: 3.1.1
+info:
+  title: '短网址'
+  description: '短网址接口'
+  contact:
+    name: 'Jetsung Chan'
+    url: 'https://github.com/jetsung'
+    email: 'i@jetsung.com'
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html    
+  version: 0.1.0
+servers:
+  - url: http://127.0.0.1:8080/api/v1
+    description: Version 1
+tags:
+  - name: shorten
+    description: 短址
+paths:
+  /shortens:
+    post:
+      tags:
+        - shorten
+      summary: '添加短网址'
+      description: '添加一个新的短网址'
+      operationId: 'addShorten'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Shorten'
+      responses:
+        '201':
+          description: '短网址创建成功'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShortenResponse'
+        '400':
+          description: '请求错误'
+        '409':
+          description: '短网址已存在'
+        '500':
+          description: '操作失败'
+        default:
+          description: '未知错误'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"  
+
+    get:
+      tags:
+        - shorten
+      summary: '获取所有短址信息'
+      description: '获取所有短址信息'
+      operationId: 'getShortens'
+      parameters:
+        - name: page
+          in: query
+          description: '页码'
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: '每页条数'
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: sort_by
+          in: query
+          description: '排序字段'
+          required: false
+          schema:
+            type: string
+            default: 'created_time'
+            enum:
+              - created_time
+              - updated_time
+        - name: order
+          in: query
+          description: '排序方向'
+          required: false
+          schema:
+            type: string
+            default: 'desc'
+            enum:
+              - asc
+              - desc
+        - name: status
+          in: query
+          description: '状态'
+          required: false
+          schema:
+            type: integer
+            default: 0
+            enum:
+              - 0
+              - 1
+              - 2
+      responses:
+        '200':
+          description: '操作成功'
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: '#/components/schemas/ShortenResponse'          
+        default:
+          description: '未知错误'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+                
+  /shorten/{code}:
+    get:
+      tags:
+        - shorten
+      summary: '获取短网址信息'
+      description: '通过短码获取短网址信息'
+      operationId: 'getShorten'
+      parameters:
+        - name: code
+          in: path
+          description: '短码'
+          required: true
+          schema:
+            type: string
+            maxLength: 16
+            pattern: '^[a-zA-Z0-9]+$'
+            example: 'aBc123'
+      responses:
+        '200':
+          description: '操作成功'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShortenResponse'
+        '400':
+          description: '请求错误'
+        '404':
+          description: '短网址不存在'
+        '500':
+          description: '操作失败'
+        default:
+          description: '未知错误'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      tags:
+        - shorten
+      summary: '更新短网址'
+      description: '更新一个短网址'
+      operationId: 'updateShorten'
+      parameters:
+        - name: code
+          in: path
+          description: '短码'
+          required: true
+          schema:
+            type: string
+            maxLength: 16
+            pattern: '^[a-zA-Z0-9]+$'
+            example: 'aBc123'      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShortenUpdate'
+      responses:
+        '200':
+          description: '操作成功'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShortenResponse'
+        '400':
+          description: '请求错误'
+        '404':
+          description: '短码不存在'
+        '500':
+          description: '操作失败'
+        default:
+          description: '未知错误'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error" 
+
+    delete:
+      tags:
+        - shorten
+      summary: '删除短网址'
+      description: '删除一个短网址'
+      operationId: 'deleteShorten'
+      parameters:
+        - name: code
+          in: path
+          description: '短码'
+          required: true
+          schema:
+            type: string
+            maxLength: 8
+            pattern: '^[a-zA-Z0-9]+$'
+            example: 'aBc123'  
+      responses:
+        '204':
+          description: '操作成功'
+        '400':
+          description: '请求错误'
+        '404':
+          description: '短网址不存在'
+        '500':
+          description: '操作失败'
+        default:
+          description: '未知错误'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Shorten:
+      type: object
+      properties:
+        original_url:
+          type: string
+          format: uri
+          description: '原始长网址'
+        code:
+          type: string
+          description: '短码'
+          maxLength: 16
+          pattern: '^[a-zA-Z0-9]+$'
+        describe:
+          type: string
+          description: '长网址描述'
+      required:
+        - original_url
+        - code
+
+    ShortenUpdate:
+      type: object
+      properties:
+        original_url:
+          type: string
+          format: uri
+          description: '原始长网址'      
+        describe:
+          type: string
+          description: '长网址描述'
+      required:
+        - original_url   
+
+    ShortenResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 'ID'
+        code:
+          type: string
+          description: '短码'
+          maxLength: 16
+          pattern: '^[a-zA-Z0-9]+$'        
+        short_url:
+          type: string
+          format: uri
+          description: '短网址'
+        original_url:
+          type: string
+          format: uri
+          description: '原始长网址'
+        describe:
+          type: string
+          description: '长网址描述' 
+        status:
+          type: integer
+          description: '状态'
+        created_time:
+          type: string
+          description: '创建时间'
+        updated_time:
+          type: string
+          description: '更新时间'      
+
+    Error: 
+      type: object
+      properties:
+        errcode:
+          type: integer
+          description: '错误代码'
+        errinfo:
+          type: string
+          description: '错误信息'          

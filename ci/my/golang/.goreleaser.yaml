@@ -22,7 +22,8 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - id: "shortener"
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -37,8 +38,29 @@ builds:
       - '-s -w'
       - '-X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}'
 
+  - id: "shortener-cli"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - loong64
+      - riscv64
+    ldflags:
+      - '-s -w'
+      - '-X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}'   
+    main: ./cmd/shorten/main.go
+    binary: "shorten"
+
 archives:
-  - formats:
+  - id: "shortener"
+    builds:
+      - "shortener"
+    formats:
       - tar.gz
     name_template: >-
       {{ .ProjectName }}-
@@ -69,11 +91,22 @@ changelog:
 
 release:
   # disable: false
+  draft: true
+  replace_existing_draft: true
+  use_existing_draft: true
+  replace_existing_artifacts: true
+  target_commitish: "{{ .Commit }}"
+  make_latest: true
+  header: |
+    ## {{ .ProjectName }} {{ .Version }}
+    ---
+    Date: {{ .Date }}
+
   footer: >-
 
     ---
 
-    Released by [Jetsung](https://github.com/jetsung).
+    Released by [Jetsung Chan](https://github.com/jetsung).
 
 # https://goreleaser.com/customization/nfpm/
 nfpms:
