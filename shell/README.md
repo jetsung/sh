@@ -17,6 +17,7 @@
 | | [**`backup-update`**](backup-update.sh) | 更新服务器中的 Docker 镜像和备份数据
 | | [**`git-qcloud`**](git-qcloud.sh) | 腾讯工峰 命令行工具
 | | [**`gitlab-backup`**](gitlab-backup.sh) | GitLab 账号源码仓库备份 |
+| | [**`docker-copy`**](docker-copy.sh) | 通用镜像复制脚本 |
 
 
 ## 脚本列表
@@ -136,5 +137,11 @@ Git 代码迁移到新托管平台
 ### [xcurl](xcurl.sh)
 
 替换脚本中的字符串为加速网址
+
+---
+
+### [docker-copy](docker-copy.sh)
+
+通用镜像复制脚本
 
 ---
