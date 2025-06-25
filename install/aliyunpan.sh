@@ -54,7 +54,9 @@ check_remove_https() {
 
 # 保持最末只有一个斜杠
 keep_a_slash() {
-    echo "$1" | sed -E 's#/*$#/#'
+    if [[ -n "$1" ]]; then
+        echo "$1" | sed -E 's#/*$#/#'
+    fi
 }
 
 # 检查是否需要去掉第二个 https
