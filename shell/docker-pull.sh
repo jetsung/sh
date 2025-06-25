@@ -16,6 +16,9 @@ else
     set -euo pipefail
 fi
 
+# MIRROR
+# MIRROR=nju.edu.cn
+
 # 默认镜像域名
 DEFAULT_MIRROR_DOMAIN="${MIRROR:-dockerproxy.net}"
 DEFAULT_MIRROR_DOMAIN="${M:-${DEFAULT_MIRROR_DOMAIN}}"
