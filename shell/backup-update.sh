@@ -130,7 +130,7 @@ backup_all() {
     folder_path=$(dirname "$line")
     pushd "$folder_path" > /dev/null 2>&1
       echo "badkup $folder_path"
-      bash "$backup_file" "$cronday"
+      bash "$backup_file" "$cronday" < /dev/null
     popd > /dev/null 2>&1
   done < <(find "$docker_path" -mindepth "$mindepth" -maxdepth "$maxdepth" -type f -name "$backup_file")
 }
@@ -242,7 +242,7 @@ switch() {
     local subrun_arg="${subrun_arg:-}"
 
     echo ""
-    echo "switch"
+    echo "switch backup/update"
 
     if [[ -n "$backup_arg" ]]; then
       echo "  backup: $backup_arg"
@@ -298,6 +298,8 @@ main() {
   fi
 
   if [[ "$cron_run_path" != "cronrun.sh" ]]; then
+    cron_file_path="$cron_run_path"
+
     # 备份更新开关
     switch
 
@@ -315,9 +317,9 @@ main() {
 }
 
 #
-# curl -L https://s.fx4.cn/56be48a8 -o docker-update.sh
+# curl -L https://s.fx4.cn/56be48a8 -o backup-update.sh
 #
-# 查看帮助: bash docker-update.sh -h
+# 查看帮助: bash backup-update.sh -h
 # 安装定时计划,每5天执行备份和更新: bash backup-update.sh -i -p ~/dockers -d 5 -b y -u y
 
 # 1. 在每个 docker 服务的文件夹下，创建 update.sh 和 backup.sh
