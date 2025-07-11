@@ -5,9 +5,9 @@
 # Description: 更新服务器中的 Docker 镜像和备份数据
 # URL: https://s.fx4.cn/56be48a8
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.1.1
 # CreatedAt: 
-# UpdatedAt: 2025-03-10
+# UpdatedAt: 2025-07-12
 #============================================================
 
 if [[ -n "$DEBUG" ]]; then
@@ -31,6 +31,10 @@ interval_day='*'
 
 cron_run_path="cronrun.sh"
 
+# Docker 项目的目录深度
+mindepth=2
+maxdepth=2
+
 # 提取参数
 judgment_parameters() {
   while getopts "id:p:b:s:u:h" opt; do
@@ -50,25 +54,25 @@ judgment_parameters() {
       b)
         # 备份
         if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
-          backup="yes"
+          backup_arg="yes"
         else
-          backup="no"
+          backup_arg="no"
         fi
         ;;   
       s)
         # 子目录运行
         if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
-          subrun="yes"
+          subrun_arg="yes"
         else
-          subrun="no"
+          subrun_arg="no"
         fi
         ;;              
       u)
         # 更新
         if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
-          update="yes"
+          update_arg="yes"
         else
-          update="no"
+          update_arg="no"
         fi
         ;;    
       h)
@@ -128,7 +132,7 @@ backup_all() {
       echo "badkup $folder_path"
       bash "$backup_file" "$cronday"
     popd > /dev/null 2>&1
-  done < <(find "$docker_path" -mindepth 2 -maxdepth 2 -type f -name "$backup_file")
+  done < <(find "$docker_path" -mindepth "$mindepth" -maxdepth "$maxdepth" -type f -name "$backup_file")
 }
 
 # 检查输入参数是否为数字且在指定范围内
@@ -233,17 +237,17 @@ subdirs_run() {
 switch() {
   # 源文件,不修改任何配置信息
   if [[ "$cron_run_path" != "cronrun.sh" ]]; then
-    local backup="${backup:-}"
-    local update="${update:-}"
-    local subrun="${subrun:-}"
+    local backup_arg="${backup_arg:-}"
+    local update_arg="${update_arg:-}"
+    local subrun_arg="${subrun_arg:-}"
 
     echo ""
     echo "switch"
 
-    if [[ -n "$backup" ]]; then
-      echo "  backup: $backup"
+    if [[ -n "$backup_arg" ]]; then
+      echo "  backup: $backup_arg"
       
-      if [[ "$backup" = "yes" ]]; then
+      if [[ "$backup_arg" = "yes" ]]; then
         # 解除注释 backup 行
         sed -i '/^\s*#\s*backup\s*$/s/# //' "$cron_file_path"
       else
@@ -252,10 +256,10 @@ switch() {
       fi
     fi
 
-    if [[ -n "$update" ]]; then
-      echo "  update: $update"
+    if [[ -n "$update_arg" ]]; then
+      echo "  update: $update_arg"
       
-      if [[ "$update" = "yes" ]]; then
+      if [[ "$update_arg" = "yes" ]]; then
         sed -i '/^\s*#\s*update\s*$/s/# //' "$cron_file_path"
         # 解除注释 update 行
       else
@@ -264,10 +268,10 @@ switch() {
       fi
     fi
 
-    if [[ -n "$subrun" ]]; then
-      echo "  subrun: $subrun"
+    if [[ -n "$subrun_arg" ]]; then
+      echo "  subdir run: $subrun_arg"
       
-      if [[ "$subrun" = "yes" ]]; then
+      if [[ "$subrun_arg" = "yes" ]]; then
         sed -i '/^\s*#\s*subdirs_run\s*$/s/# //' "$cron_file_path"
         # 解除注释 subrun 行
       else
@@ -310,14 +314,17 @@ main() {
   fi
 }
 
-# 查看帮助: bash docker-sync.sh -h
+#
+# curl -L https://s.fx4.cn/56be48a8 -o docker-update.sh
+#
+# 查看帮助: bash docker-update.sh -h
 # 安装定时计划,每5天执行备份和更新: bash backup-update.sh -i -p ~/dockers -d 5 -b y -u y
 
 # 1. 在每个 docker 服务的文件夹下，创建 update.sh 和 backup.sh
 # 2. 生成 crontab 任务: bash backup-update.sh -i -p ~/dockers -d 5 -b y -u y
-# 3. 将需要备份的 Docker 项目文件夹添加到 .docker_sync 文件中，每行一个文件夹(只需要文件夹本名即可)
+# 3. 将需要定时更新（docker compose pull）的 Docker 项目文件夹添加到 .docker_sync 文件中，每行一个文件夹(只需要文件夹本名即可)
 #    如 ~/dockers/minio => minio
-#    该文件夹下,需要有 update.sh 和 backup.sh 文件
+#    该文件夹下,需要有 update.sh 文件
 # *4. 后期可通过 ./file.sh -b y -u y 来切换备份和更新
 # 5. 本脚本目录下的所有子目录,包含 cronrun.sh 脚本则会被执行
 
