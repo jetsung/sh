@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: croc.sh
-# Description: 安装 croc
-# URL: https://s.fx4.cn/be728e84
+# File: hugo.sh
+# Description: 安装 hugo
+# URL: https://s.fx4.cn/iuyTvo
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
-# CreatedAt: 2025-03-06
-# UpdatedAt: 2025-03-06
+# CreatedAt: 2025-07-20
+# UpdatedAt: 2025-07-20
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -63,16 +63,16 @@ remove_second_https() {
 }
 
 get_download_url() {
-    repo_api_url="${CDN_URL}https://api.github.com/repos/schollz/croc/releases/latest" 
+    repo_api_url="${CDN_URL}https://api.github.com/repos/gohugoio/hugo/releases/latest" 
     if [[ -n "$NO_HTTPS" ]]; then
         repo_api_url=$(remove_second_https "$repo_api_url")
     fi    
-    curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "${OS}-${ARCH}"
+    curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "${OS}-${ARCH}.tar.gz" | grep -E "${PKG_PREFIX}_[0-9.]+"
 }
 
 download_exact() {
-    DOWNLOAD_FILE="croc.tar.gz"
-    FILE_BIN="croc"
+    DOWNLOAD_FILE="hugo.tar.gz"
+    FILE_BIN="hugo"
 
     if ! curl -fsSL "${CDN_URL}${DOWNLOAD_URL}" -o "$DOWNLOAD_FILE"; then
         echo "Error: Failed to download $DOWNLOAD_FILE"
@@ -87,7 +87,7 @@ download_exact() {
 
     sudo_exec mv "$FILE_BIN" /usr/local/bin/
 
-    rm -rf "$DOWNLOAD_FILE" LICENSE
+    rm -rf "$DOWNLOAD_FILE" LICENSE README.md
 }
 
 main() {
@@ -96,15 +96,26 @@ main() {
     fi
 
     NO_HTTPS=$(check_remove_https "$CDN_URL")
-    CDN_URL=$(keep_a_slash "$CDN_URL")        
+    CDN_URL=$(keep_a_slash "$CDN_URL")    
 
-    OS="$(uname)"
+    PKG_PREFIX="hugo"
+
+    # 扩展版
+    if [[ -n "${1:-}" ]]; then
+        if [[ "$1" = "-w" || "$1" = "--ew" ]]; then
+            PKG_PREFIX="${PKG_PREFIX}_extended_withdeploy"
+        else
+            PKG_PREFIX="${PKG_PREFIX}_extended"
+        fi
+    fi    
+
+    OS="$(uname | tr '[:upper:]' '[:lower:]')"
     case "$(uname -m)" in
         x86_64) 
-            ARCH="64bit" 
+            ARCH="amd64" 
             ;;
         aarch64) 
-            ARCH="ARM64" 
+            ARCH="arm64" 
             ;;
         *) 
             echo "Unsupported architecture"
@@ -117,10 +128,14 @@ main() {
     download_exact
 
     echo ""
-    echo "croc has been installed successfully!"
+    echo "hugo has been installed successfully!"
     echo ""
-    croc --version
+    hugo version
     echo ""
 }
 
 main "$@"
+
+# 基础版: curl -L https://s.fx4.cn/iuyTvo | bash
+# 扩展版: curl -L https://s.fx4.cn/iuyTvo | bash -s -- -e
+# 扩展版+部署: curl -L https://s.fx4.cn/iuyTvo | bash -s -- -w
