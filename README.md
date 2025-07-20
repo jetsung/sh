@@ -11,6 +11,7 @@
 ├── init.d     # 软件启动文件
 ├── install    # 软件安装脚本
 ├── origin     # 脚本源
+├── scripts    # 本项目使用的，比如 pre-commit
 ├── shell      # 自己编写的脚本
 └── snippets   # 自己编写的脚本片段 
 ```
