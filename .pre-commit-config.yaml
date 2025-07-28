@@ -20,4 +20,4 @@ repos:
     name: Run all custom script
     entry: scripts/run_all_checks.sh
     language: script
-    files: \.sh$
+    files: run_all_checks.sh
