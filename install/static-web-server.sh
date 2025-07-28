@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: vsd.sh
-# Description: 安装 m3u8 下载器 （vsd）
-# URL: https://s.fx4.cn/vsd
+# File: static-web-server.sh
+# Description: 安装 static-web-server
+# URL: https://s.fx4.cn/yocoYx
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
-# CreatedAt: 2025-07-03
-# UpdatedAt: 2025-07-03
+# CreatedAt: 2025-07-28
+# UpdatedAt: 2025-07-28
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -64,15 +64,14 @@ do_remove_https() {
 }
 
 get_download_url() {
-    local repo="clitic/vsd"
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${repo}/releases/latest")
-    #curl -fsSL "$repo_api_url" | jq -r '.assets[] | select(.name | test("x86_64.*linux")) | .browser_download_url'
-    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '.assets[] | select(.name | test("\($arch).*\($os)")) | .browser_download_url'
+    _repo="static-web-server/static-web-server"
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${_repo}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "$FLITER_STR"
 }
 
 download_exact() {
-    DOWNLOAD_FILE="vsd.tar.xz"
-    FILE_BIN="vsd"  
+    DOWNLOAD_FILE="tmp.tar.gz"
+    FILE_BIN="static-web-server"  
 
     _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
     if ! curl -fsSL "$_download_url" -o "$DOWNLOAD_FILE"; then
@@ -80,15 +79,15 @@ download_exact() {
         exit 1
     fi
 
-    if ! tar -xJf "$DOWNLOAD_FILE"; then 
+    if ! tar -xzf "$DOWNLOAD_FILE"; then 
         echo "Error: Extraction failed"
         rm -f "$DOWNLOAD_FILE"
         exit 1
     fi  
 
-    sudo_exec mv "$FILE_BIN" /usr/local/bin/
+    sudo_exec mv ./*"${FLITER_STR}/${FILE_BIN}" /usr/local/bin/
 
-    rm -rf "$DOWNLOAD_FILE"
+    rm -rf "$DOWNLOAD_FILE" ./*"${FLITER_STR}" 
 }
 
 main() {
@@ -100,15 +99,34 @@ main() {
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
+    PLATFORM="unknown"
+    LIBC_VERSION=""
+    if [[ "$OS" == "windows" ]]; then
+        PLATFORM="pc"
+    elif [[ "$OS" == "darwin" ]]; then
+        PLATFORM="apple"
+    elif [[ "$OS" == "linux" ]]; then
+        PLATFORM="unknown"
+        LDD_VERSION=$(ldd --version 2>/dev/null)
+        if [[ "$LDD_VERSION" == *"GNU libc"* ]] || [[ "$LDD_VERSION" == *"GLIBC"* ]]; then
+            LIBC_VERSION="-gnu"
+        elif [[ "$LDD_VERSION" == *"musl"* ]]; then
+            LIBC_VERSION="-musl"
+        fi
+    else
+        echo "Error: Unsupported OS: $OS"
+        exit 1
+    fi
 
+    FLITER_STR="${ARCH}-${PLATFORM}-${OS}${LIBC_VERSION}"
     DOWNLOAD_URL="$(get_download_url)"
 
     download_exact
 
     echo ""
-    echo "vsd has been installed successfully!"
+    echo "static-web-server has been installed successfully!"
     echo ""
-    vsd --help
+    static-web-server --version
     echo ""    
 }
 

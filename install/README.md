@@ -22,6 +22,7 @@
 | | [**`wush`**](wush.sh)  |  安装 wush 网络穿透工具 |
 | | [**`just`**](just.sh)  | 安装 just 构建工具 |
 | | [**`hugo`**](hugo.sh)  | 安装 hugo 博客部署工具 |
+| | [**static-web-server**](static-web-server.sh) | 安装 static-web-server 静态文件服务器 |
 
 - [list.txt](list.txt)
 

@@ -145,3 +145,9 @@ Git 代码迁移到新托管平台
 通用镜像复制脚本
 
 ---
+
+### [Google Cloud Token](google-cloud-token.sh)
+
+获取 Google Cloud Token
+
+---

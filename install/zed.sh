@@ -47,7 +47,7 @@ check_in_china() {
     if [[ -n "${CN:-}" ]]; then
         return 0 # 手动指定
     fi
-    if [[ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" != "200" ]]; then
+    if [[ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" == "000" ]]; then
         return 0 # 中国网络
     fi
     return 1 # 非中国网络
