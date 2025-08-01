@@ -32,14 +32,14 @@ branch=$1
 full_name=$2
 
 # 可修改的固定值
-before="0000000000000000000000000000000000000000"
-after="1111111111111111111111111111111111111111"
+before=$(git rev-parse HEAD)
+after=$(head -c 20 /dev/urandom | od -An -tx1 | tr -d ' \n' | cut -c1-40)
 pusher_name="jetsung"
 commit_id="$after"
-commit_message="Test commit"
-timestamp="2025-07-31T12:00:00Z"
-author_name="test"
-author_email="test@gmail.com"
+commit_message="chore(ci): Test act commit"
+timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+author_name="Jetsung Chan"
+author_email="jetsungchan@gmail.com"
 
 ref="refs/heads/${branch}"
 
@@ -75,3 +75,7 @@ jq -n \
   }' > event.json
 
 echo "已写入 event.json：ref=$ref, full_name=$full_name"
+
+###
+#      curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
+###
