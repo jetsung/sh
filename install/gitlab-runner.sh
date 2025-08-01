@@ -191,7 +191,7 @@ install_with_docker() {
         SOCKET_PATH="/run/user/${USER_ID}/docker.sock"
     fi
 
-    cat <<EOF > docker-compose.yml
+    cat <<EOF > compose.yml
 services:
   gitlab-runner:
     image: gitlab/gitlab-runner:latest
@@ -210,9 +210,9 @@ EOF
             echo ''
             echo 'volumes:'
             echo '  gitlab-runner-config:'
-        } >> docker-compose.yml
+        } >> compose.yml
     else 
-            echo "    - ${VOLUME}:/etc/gitlab-runner" >> docker-compose.yml
+            echo "    - ${VOLUME}:/etc/gitlab-runner" >> compose.yml
     fi
 
     docker run --rm gitlab/gitlab-runner --version
@@ -360,3 +360,13 @@ main() {
 }
 
 main "$@"
+
+###
+# -m binary   二进制文件方式
+# -m docker   Docker 方式
+# -m package  deb/rpm 方式
+# -m shell    官方脚本方式
+#
+# -v          Docker 方式下，指定配置文件挂载目录
+# -i          二进制文件方式下，是否以服务方式启动
+###
