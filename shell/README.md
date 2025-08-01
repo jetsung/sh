@@ -18,6 +18,8 @@
 | | [**`git-qcloud`**](git-qcloud.sh) | 腾讯工峰 命令行工具
 | | [**`gitlab-backup`**](gitlab-backup.sh) | GitLab 账号源码仓库备份 |
 | | [**`docker-copy`**](docker-copy.sh) | 通用镜像复制脚本 |
+| | [**`google-cloud-token`**](google-cloud-token.sh) | 获取 Google Cloud Token |
+| | [**`xcurl`**](xcurl.sh) | 替换脚本中的字符串为加速网址 |
 
 
 ## 脚本列表
@@ -149,5 +151,11 @@ Git 代码迁移到新托管平台
 ### [Google Cloud Token](google-cloud-token.sh)
 
 获取 Google Cloud Token
+
+---
+
+### [Act Event](act-event.sh)
+
+生成 act 的 event.json 文件
 
 ---
