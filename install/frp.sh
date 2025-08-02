@@ -3,7 +3,7 @@
 #============================================================
 # File: frp.sh
 # Description: 安装 frp
-# URL: https://s.fx4.cn/
+# URL: https://s.fx4.cn/frp
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-02-11
@@ -28,58 +28,85 @@ sudo_exec() {
     fi
 }
 
-is_command() {
+check_is_command() {
     command -v "$1" >/dev/null 2>&1
 }
 
-is_in_china() {
-    if [ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" != "200" ]; then
+check_in_china() {
+    if [[ -n "${CN:-}" ]]; then
+        return 0 # 手动指定
+    fi
+    if [[ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" == "000" ]]; then
         return 0 # 中国网络
     fi
     return 1 # 非中国网络
 }
 
+# 若为 https://xxx.xx 不以 / 结尾，则组合时去掉加速网址的 https://
+#   格式为 https://file.xxx.io/github.com/
+# 若为 https://xxx.xx/ 以 / 结尾，则组合时保留加速网址的 https://
+#   格式为 https://xxx.xx/https://github.com/
+check_remove_https() {
+    if [[ -n "$1" && "${1: -1}" != "/" ]]; then
+        echo 1
+    fi    
+}
+
+do_remove_https() {
+    local url="$1"
+    if [[ -n "$NO_HTTPS" ]]; then
+        # shellcheck disable=SC2001
+        echo "$url" | sed 's|https:/||2'
+
+    else 
+        echo "$url"
+    fi
+}
+
+########################## 以上为通用函数 #########################
+
 get_download_url() {
-    repo_api_url="${CDN_URL}https://api.github.com/repos/fatedier/frp/releases/latest" 
-    curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "${OS}_${ARCH}"
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg os "$OS" '.assets[] | select(.name | test("\($os)_\($arch)")) | .browser_download_url'
 }
 
 download_exact() {
-    DOWNLOAD_FILE="frp.tar.gz"
-    FRP_BIN_LIST="frpc frps"
+    local download_file="tmp.tar.gz"
+    TMP_DIR=$(mktemp -d /tmp/frp.XXXXXX)
+    
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
 
-    if ! curl -fsSL "${CDN_URL}${DOWNLOAD_URL}" -o "$DOWNLOAD_FILE"; then
-        echo "Error: Failed to download $DOWNLOAD_FILE"
+    pushd "$TMP_DIR" >/dev/null
+
+    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if ! curl -fsSL "$_download_url" -o "$download_file"; then
+        echo "Error: Failed to download $download_file"
         exit 1
     fi
 
-    if ! tar -xzf "$DOWNLOAD_FILE"; then 
+    if ! tar -xzf "$download_file"; then 
         echo "Error: Extraction failed"
-        rm -f "$DOWNLOAD_FILE"
+        rm -f "$download_file"
         exit 1
-    fi
+    fi  
 
     sudo_exec mkdir -p /etc/frp
 
-    pushd "frp_"*/ > /dev/null 2>&1
-        for FRP_BIN in $FRP_BIN_LIST; do
-            if ! sudo_exec mv "$FRP_BIN" /usr/local/bin/; then
-                printf "\033[31mFailed to move %s to /usr/local/bin\033[0m\n" "$FRP_BIN"
-                exit 1
-            fi
-            if [[ ! -f "/etc/frp/${FRP_BIN}.toml" ]]; then
-                sudo_exec cp "${FRP_BIN}.toml" "/etc/frp/"
-            fi
-        done
-    popd > /dev/null 2>&1
+    mv "frp_"*/{frps,frpc}.toml /etc/frp/
+    mv "frp_"*/{frps,frpc} /usr/local/bin/
 
-    rm -rf "$DOWNLOAD_FILE" "frp_"*
+    popd >/dev/null
 }
 
 main() {
-    if ! is_in_china; then
+    if ! check_in_china; then
         CDN_URL=""
     fi
+
+    NO_HTTPS=$(check_remove_https "$CDN_URL")
 
     OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
@@ -89,11 +116,18 @@ main() {
         ARCH="arm64"
     fi
 
-    DOWNLOAD_URL="$(get_download_url)"
+    DOWNLOAD_URL="$(get_download_url fatedier/frp)"
 
-    download_exact
+    download_exact  
 
     echo ""
+
+    if ! check_is_command "frps"; then
+        echo "frp has not been installed successfully."
+        echo ""
+        exit 1
+    fi
+
     echo "frp has been installed successfully"
     echo ""
     echo "frps --version: $(frps --version)"

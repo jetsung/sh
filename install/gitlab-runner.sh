@@ -141,40 +141,62 @@ install_with_shell() {
 install_with_package() {
     echo "Installing GitLab Runner with package (${SYSTEM})..."
 
+    local file_bin="gitlab-runner"
+    TMP_DIR=$(mktemp -d /tmp/gitlab-runner.XXXXXX)
+    
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
+
+    local pkg_ext=""
+    local pkg_manager=""
+
     if [[ "$SYSTEM" == "debian" ]]; then
-        local _base_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/deb/"
-        _base_url=$(do_remove_https "$_base_url") 
-        local _pkgs="-helper-images _${ARCH} "
-        for pkg in $_pkgs; do
-            local _download_url="${_base_url}gitlab-runner${pkg}.deb"
-            local _pkg_file="/tmp/gitlab-runner${pkg}.deb"
-            curl -L --output "$_pkg_file" "$_download_url"
-            sudo_exec dpkg -i "$_pkg_file"
-            rm -f "$_pkg_file"
-        done
+        pkg_ext="deb"
+        pkg_manager="dpkg"
     elif [[ "$SYSTEM" == "redhat" ]]; then
-        local _base_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/rpm/"    
-        _base_url=$(do_remove_https "$_base_url")        
-        local _pkgs="-helper-images _${ARCH}"
-        for pkg in $_pkgs; do
-            local _download_url="${_base_url}gitlab-runner${pkg}.rpm"
-            local _pkg_file="/tmp/gitlab-runner${pkg}.rpm"
-            curl -L --output "$_pkg_file" "$_download_url"
-            sudo_exec rpm -i "$_pkg_file"
-            rm -f "$_pkg_file"
-        done    
+        pkg_ext="rpm"
+        pkg_manager="rpm"
     else
         echo "Unsupported system: $SYSTEM"
         exit 1
     fi
+
+    local base_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/${pkg_ext}/${file_bin}"
+    base_url=$(do_remove_https "$base_url") 
+    
+    pushd "$TMP_DIR" >/dev/null
+
+    local helper_images_file="helper-images.${pkg_ext}"
+    local helper_images_url="${base_url}-${helper_images_file}"
+    if ! sudo_exec curl -fsSL "$helper_images_url" -o "$helper_images_file"; then
+        echo "Error: Failed to download helper-images.${pkg_ext}"
+        exit 1
+    fi
+    sudo_exec "$pkg_manager" -i "$helper_images_file"
+
+    local runner_file="_${ARCH}.${pkg_ext}"
+    local runner_url="${base_url}${runner_file}"
+    if ! sudo_exec curl -fsSL "$runner_url" -o "$runner_file"; then
+        echo "Error: Failed to download ${runner_file}"
+        exit 1
+    fi
+    sudo_exec "$pkg_manager" -i "$runner_file"
+    
+    popd >/dev/null
 }
 
 install_with_binary() {
     echo "Installing GitLab Runner with binary (${SYSTEM} ${OS} ${ARCH})..."
 
-    local _download_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-${OS}-${ARCH}" 
-    _download_url=$(do_remove_https "$_download_url") 
-    sudo_exec curl -L --output /usr/local/bin/gitlab-runner "$_download_url"
+    local download_url="${CDN_URL}https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-${OS}-${ARCH}" 
+    download_url=$(do_remove_https "$download_url") 
+
+    if ! sudo_exec curl -fsSL "$download_url" -o "/usr/local/bin/gitlab-runner"; then
+        echo "Error: Failed to download gitlab-runner"
+        exit 1
+    fi    
     sudo_exec chmod +x /usr/local/bin/gitlab-runner
 
     if [[ -n "${INIT:-}" ]]; then
@@ -339,7 +361,7 @@ main() {
             ;;
     esac
 
-    METHOD="${METHOD:-s}"
+    METHOD="${METHOD:-b}"
 
     do_install
 
@@ -362,7 +384,7 @@ main() {
 main "$@"
 
 ###
-# -m binary   二进制文件方式
+# -m binary   二进制文件方式 （默认）
 # -m docker   Docker 方式
 # -m package  deb/rpm 方式
 # -m shell    官方脚本方式

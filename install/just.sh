@@ -3,12 +3,13 @@
 #============================================================
 # File: just.sh
 # Description: 安装 just 构建工具
-# URL: https://s.fx4.cn/hM1Rzj
+# URL: https://s.fx4.cn/just
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.1.1
 # CreatedAt: 2025-03-28
-# UpdatedAt: 2025-03-28
+# UpdatedAt: 2025-08-02
 #============================================================
+
 
 if [[ -n "${DEBUG:-}" ]]; then
     set -eux
@@ -52,53 +53,54 @@ check_remove_https() {
     fi    
 }
 
-# 保持最末只有一个斜杠
-keep_a_slash() {
-    if [[ -n "$1" ]]; then
-        echo "$1" | sed -E 's#/*$#/#'
+do_remove_https() {
+    local url="$1"
+    if [[ -n "$NO_HTTPS" ]]; then
+        # shellcheck disable=SC2001
+        echo "$url" | sed 's|https:/||2'
+
+    else 
+        echo "$url"
     fi
 }
 
-# 检查是否需要去掉第二个 https
-remove_second_https() {
-    # shellcheck disable=SC2001
-    echo "$1" | sed 's|\(https://[^/]\+\)/https://|\1/|g'
+########################## 以上为通用函数 #########################
+
+get_download_url() {
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg platform "$PLATFORM" --arg os "$OS" '.assets[] | select(.name | test("\($arch)-\($platform)-\($os)")) | .browser_download_url'
 }
 
-do_install() {
-    repo="casey/just"
-    repo_api_url="${CDN_URL}https://api.github.com/repos/${repo}/releases/latest" 
-    if [[ -n "$NO_HTTPS" ]]; then
-        repo_api_url=$(remove_second_https "$repo_api_url")
-    fi
+download_exact() {
+    local download_file="tmp.tar.gz"
+    local file_bin="just"
+    TMP_DIR=$(mktemp -d /tmp/just.XXXXXX)
+    
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
 
-    os_arch="${ARCH}-${PLATFORM}-${OS}"
-    download_url=$(curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "$os_arch")
+    pushd "$TMP_DIR" >/dev/null
 
-    filename_pkg="just.tar.gz"
-    file_dir="just"  
-
-    download_url="${CDN_URL}${download_url}"
-    if [[ -n "$NO_HTTPS" ]]; then
-        download_url=$(remove_second_https "$download_url")
-    fi
-
-    if ! curl -fsSL "$download_url" -o "$filename_pkg"; then
-        echo "Error: Failed to download $filename_pkg"
+    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if ! curl -fsSL "$_download_url" -o "$download_file"; then
+        echo "Error: Failed to download $download_file"
         exit 1
     fi
 
-    sudo_exec tar -xzf "$filename_pkg" -C /tmp || {
-        echo "Failed to install just."
+    if ! tar -xzf "$download_file"; then 
+        echo "Error: Extraction failed"
+        rm -f "$download_file"
         exit 1
-    }    
+    fi  
 
-    sudo_exec mv "/tmp/just" "/usr/local/bin/${file_dir}"
+    sudo_exec mv "${file_bin}" "/usr/local/bin/${file_bin}"
 
     sudo_exec mkdir -p "/usr/local/share/man/man1"
-    sudo_exec mv "/tmp/just.1" "/usr/local/share/man/man1/"
+    sudo_exec mv "${file_bin}.1" "/usr/local/share/man/man1/"
 
-    rm -rf "$filename_pkg" 
+    popd >/dev/null
 }
 
 main() {
@@ -107,7 +109,6 @@ main() {
     fi
 
     NO_HTTPS=$(check_remove_https "$CDN_URL")
-    CDN_URL=$(keep_a_slash "$CDN_URL")
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
@@ -116,7 +117,9 @@ main() {
         PLATFORM="apple"
     fi
 
-    do_install
+    DOWNLOAD_URL="$(get_download_url casey/just)"
+
+    download_exact
 
     echo ""
 
@@ -127,6 +130,8 @@ main() {
     fi
 
     echo "just has been installed successfully!"
+    echo ""
+    just --help
     echo ""
     just --version
     echo ""

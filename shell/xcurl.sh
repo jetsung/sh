@@ -3,7 +3,7 @@
 #============================================================
 # File: xcurl.sh
 # Description: 替换脚本中的字符串为加速网址
-# URL: https://s.fx4.cn/514b875c
+# URL: https://s.fx4.cn/xcurl
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-05
@@ -109,4 +109,8 @@ main "$@"
 # 网络使用示例
 # curl -L https://s.fx4.cn/514b875c | bash -s -- https://get.docker.com | bash
 # curl -L https://s.fx4.cn/514b875c | CDN=https://fastfile.asfd.cn/ bash -s -- https://get.docker.com | bash
+# 
+# 先保存至本地再操作（适合交互式）
+# curl -L https://s.fx4.cn/514b875c | bash -s -- https://get.docker.com | tee /tmp/docker.sh
+# bash /tmp/docker.sh
 ###

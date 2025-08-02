@@ -3,7 +3,7 @@
 #============================================================
 # File: wush.sh
 # Description: 安装 wush 网络穿透工具
-# URL: https://s.fx4.cn/gitlab-runner
+# URL: https://s.fx4.cn/wush
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-14
@@ -42,23 +42,6 @@ check_in_china() {
     return 1 # 非中国网络
 }
 
-check_url_connection() {
-    _url="${1:-}"
-    if [[ -z "$_url" ]]; then
-        return 1
-    fi
-
-    if [[ -n "${CN:-}" ]]; then
-        return 1 # 手动指定
-    fi    
-
-    _check_url=$(echo "$_url" | cut -d '/' -f 1-3)
-    if [[ $(curl -s -m 3 -o /dev/null -w "%{http_code}" "$_check_url") != "200" ]]; then
-        return 0 # 联通
-    fi
-    return 1 # 不能联通
-}
-
 # 若为 https://xxx.xx 不以 / 结尾，则组合时去掉加速网址的 https://
 #   格式为 https://file.xxx.io/github.com/
 # 若为 https://xxx.xx/ 以 / 结尾，则组合时保留加速网址的 https://
@@ -70,20 +53,21 @@ check_remove_https() {
 }
 
 do_remove_https() {
-    local _url="$1"
+    local url="$1"
     if [[ -n "$NO_HTTPS" ]]; then
         # shellcheck disable=SC2001
-        echo "$_url" | sed 's|https:/||2'
+        echo "$url" | sed 's|https:/||2'
 
     else 
-        echo "$_url"
+        echo "$url"
     fi
 }
 
+########################## 以上为通用函数 #########################
+
 get_download_url() {
-    local _suffix="${1:-}"
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/coder/wush/releases/latest")
-    curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "${OS}_${ARCH}${_suffix}"
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg os "$OS" --arg ext "$2" '.assets[] | select(.name | test("\($os)_\($arch).\($ext)")) | .browser_download_url'
 }
 
 get_system_info() {
@@ -112,59 +96,98 @@ do_install() {
             install_with_package
             ;;
 
-        "b" | "binary" | *)
+        "b" | "binary")
             install_with_binary
+            ;;
+        
+        "s" | "shell"  | *)
+            install_with_shell
             ;;
     esac
 }
 
 install_with_package() {
-    echo "Installing wush with package (${SYSTEM})..."
+    echo "Installing with package (${SYSTEM})..."
 
-    local _method=""
+    local download_file="tmp"
+    local file_bin="wush"
+    TMP_DIR=$(mktemp -d /tmp/wush.XXXXXX)
+    
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
+
+    pushd "$TMP_DIR" >/dev/null
+
+    local _pkg_ext=""
     if [[ "$SYSTEM" == "debian" ]]; then
-        _download_url=$(get_download_url ".deb")
-        _download_url=$(do_remove_https "${CDN_URL}${_download_url}") 
-        local _pkg_file="/tmp/wush.deb"
-        curl -L --output "$_pkg_file" "$_download_url"
-        sudo_exec dpkg -i "$_pkg_file"
-        rm -f "$_pkg_file"
+        _pkg_ext="deb"
     elif [[ "$SYSTEM" == "redhat" ]]; then
-        _download_url=$(get_download_url ".rpm")
-        _download_url=$(do_remove_https "${CDN_URL}${_download_url}") 
-        local _pkg_file="/tmp/wush.rpm"
-        curl -L --output "$_pkg_file" "$_download_url"
-        sudo_exec rpm -i "$_pkg_file"
-        rm -f "$_pkg_file"
+        _pkg_ext="rpm"
     else
         echo "Unsupported system: $SYSTEM"
         exit 1
     fi
-}
 
-install_with_binary() {
-    echo "Installing wush with binary (${SYSTEM} ${OS} ${ARCH} .tar.gz)..."
-
-    DOWNLOAD_FILE="wush.tar.gz"
-    FILE_BIN="wush"  
-
-    _download_url=$(get_download_url ".tar.gz")
+    _download_url=$(get_download_url "$REPO" "$_pkg_ext")
     _download_url=$(do_remove_https "${CDN_URL}${_download_url}") 
 
-    if ! curl -fsSL "$_download_url" -o "$DOWNLOAD_FILE"; then
-        echo "Error: Failed to download $DOWNLOAD_FILE"
+    local _pkg_file="${download_file}.${_pkg_ext}"
+
+    if ! curl -fsSL "$_download_url" -o "$_pkg_file"; then
+        echo "Error: Failed to download $_pkg_file"
         exit 1
     fi
 
-    if ! tar -xzf "$DOWNLOAD_FILE"; then 
+    if [[ "$SYSTEM" == "debian" ]]; then
+        sudo_exec dpkg -i "$_pkg_file"
+    elif [[ "$SYSTEM" == "redhat" ]]; then
+        sudo_exec rpm -i "$_pkg_file"
+    fi
+
+    popd >/dev/null
+}
+
+install_with_binary() {
+    echo "Installing with binary (${SYSTEM} ${OS} ${ARCH} .tar.gz)..."
+
+    local download_file="tmp.tar.gz"
+    local file_bin="wush"
+    TMP_DIR=$(mktemp -d /tmp/wush.XXXXXX)
+    
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
+
+    _download_url=$(get_download_url "$REPO" "tar.gz")
+    _download_url=$(do_remove_https "${CDN_URL}${_download_url}") 
+
+    pushd "$TMP_DIR" >/dev/null
+
+    if ! curl -fsSL "$_download_url" -o "$download_file"; then
+        echo "Error: Failed to download $download_file"
+        exit 1
+    fi
+
+    if ! tar -xzf "$download_file"; then 
         echo "Error: Extraction failed"
-        rm -f "$DOWNLOAD_FILE"
+        rm -f "$download_file"
         exit 1
     fi  
 
-    sudo_exec mv "$FILE_BIN" /usr/local/bin/
+    sudo_exec mv "$file_bin" /usr/local/bin/
 
-    rm -rf "$DOWNLOAD_FILE" LICENSE README.md      
+    popd >/dev/null    
+}
+
+install_with_shell() {
+    echo "Installing with shell (${SYSTEM})..."
+
+    local download_url="${CDN_URL}https://github.com/coder/wush/raw/refs/heads/main/install.sh"
+    download_url=$(do_remove_https "$download_url") 
+    curl -L "$download_url" | sudo_exec bash    
 }
 
 judgment_parameters() {
@@ -175,7 +198,7 @@ judgment_parameters() {
         ;;
 
       \?)
-        echo "Usage: $0 [-m <b|binary|p|package>]"
+        echo "Usage: $0 [-m <b|binary|p|package|s|shell>]"
         exit 1
         ;;
     esac
@@ -191,6 +214,7 @@ main() {
 
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
+    REPO="coder/wush"
     SYSTEM="$(get_system_info)"
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
@@ -218,8 +242,15 @@ main() {
 
     echo "wush has been installed successfully!"
     echo ""
+    wush --help
+    echo ""
     wush --version
     echo ""
 }
 
 main "$@"
+
+###
+# -m binary   二进制文件方式 (默认)
+# -m package  deb/rpm 方式
+# -m shell    官方脚本方式

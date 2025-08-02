@@ -53,40 +53,50 @@ check_remove_https() {
 }
 
 do_remove_https() {
-    local _url="$1"
+    local url="$1"
     if [[ -n "$NO_HTTPS" ]]; then
         # shellcheck disable=SC2001
-        echo "$_url" | sed 's|https:/||2'
+        echo "$url" | sed 's|https:/||2'
 
     else 
-        echo "$_url"
+        echo "$url"
     fi
 }
 
+########################## 以上为通用函数 #########################
+
 get_download_url() {
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/forkdo/m3u8-downloader/releases/latest")
-    curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "${OS}_${ARCH}"
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg os "$OS" '.assets[] | select(.name | test("\($os)_\($arch)")) | .browser_download_url'
 }
 
 download_exact() {
-    DOWNLOAD_FILE="m3u8-downloader.tar.gz"
-    FILE_BIN="m3u8-downloader"  
+    local download_file="tmp.tar.gz"
+    local file_bin="m3u8-downloader"
+    TMP_DIR=$(mktemp -d /tmp/m3u8-downloader.XXXXXX)
+    
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
+
+    pushd "$TMP_DIR" >/dev/null
 
     _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
-    if ! curl -fsSL "$_download_url" -o "$DOWNLOAD_FILE"; then
-        echo "Error: Failed to download $DOWNLOAD_FILE"
+    if ! curl -fsSL "$_download_url" -o "$download_file"; then
+        echo "Error: Failed to download $download_file"
         exit 1
     fi
 
-    if ! tar -xzf "$DOWNLOAD_FILE"; then 
+    if ! tar -xzf "$download_file"; then 
         echo "Error: Extraction failed"
-        rm -f "$DOWNLOAD_FILE"
+        rm -f "$download_file"
         exit 1
-    fi  
+    fi 
 
-    sudo_exec mv "$FILE_BIN" /usr/local/bin/
+    sudo_exec mv "$file_bin" /usr/local/bin/
 
-    rm -rf "$DOWNLOAD_FILE" LICENSE README.md  
+    popd >/dev/null
 }
 
 main() {
@@ -96,15 +106,31 @@ main() {
 
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
-    OS="$(uname)"
-    ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
-    if [ "$ARCH" = "aarch64" ]; then
-        ARCH="arm64"
-    fi    
+    OS="$(uname | tr '[:upper:]' '[:lower:]')"
+    case "$(uname -m)" in
+        x86_64) 
+            ARCH="amd64" 
+            ;;
+        aarch64) 
+            ARCH="arm64" 
+            ;;
+        *) 
+            echo "Unsupported architecture"
+            exit 1
+            ;; 
+    esac
 
-    DOWNLOAD_URL="$(get_download_url)"
+    DOWNLOAD_URL="$(get_download_url forkdo/m3u8-downloader)"
 
     download_exact
+
+    echo ""
+
+    if ! check_is_command "m3u8-downloader"; then
+        echo "m3u8-downloader has not been installed successfully."
+        echo ""
+        exit 1
+    fi
 
     echo ""
     echo "m3u8-downloader has been installed successfully!"

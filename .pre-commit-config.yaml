@@ -12,6 +12,8 @@ repos:
   rev: v0.10.0.1
   hooks:
   - id: shellcheck
+    files: \.sh$
+    exclude: ^origin/.*
 
 # 自定义
 - repo: local
