@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #============================================================
-# 文件名: php-8.sh
-# Description: 安装 PHP 8
+# File: php-8.sh
+# Description: 
 # URL: 
-# 作者: Jetsung Chan <i@jetsung.com>
-# 版本: 1.0
-# 创建日期: 
-# 更新日期: 
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2025-
+# UpdatedAt: 2025-
 #============================================================
 
 ## libiconv

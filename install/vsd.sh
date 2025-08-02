@@ -53,42 +53,50 @@ check_remove_https() {
 }
 
 do_remove_https() {
-    local _url="$1"
+    local url="$1"
     if [[ -n "$NO_HTTPS" ]]; then
         # shellcheck disable=SC2001
-        echo "$_url" | sed 's|https:/||2'
+        echo "$url" | sed 's|https:/||2'
 
     else 
-        echo "$_url"
+        echo "$url"
     fi
 }
 
+########################## 以上为通用函数 #########################
+
 get_download_url() {
-    local repo="clitic/vsd"
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${repo}/releases/latest")
-    #curl -fsSL "$repo_api_url" | jq -r '.assets[] | select(.name | test("x86_64.*linux")) | .browser_download_url'
-    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '.assets[] | select(.name | test("\($arch).*\($os)")) | .browser_download_url'
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '.assets[] | select(.name | test("\($os)_\($arch)")) | .browser_download_url'
 }
 
 download_exact() {
-    DOWNLOAD_FILE="vsd.tar.xz"
-    FILE_BIN="vsd"  
+    local download_file="tmp.tar.xz"
+    local file_bin="vsd"
+    TMP_DIR=$(mktemp -d /tmp/vsd.XXXXXX)
+
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
+
+    pushd "$TMP_DIR" >/dev/null
 
     _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
-    if ! curl -fsSL "$_download_url" -o "$DOWNLOAD_FILE"; then
-        echo "Error: Failed to download $DOWNLOAD_FILE"
+    if ! curl -fsSL "$_download_url" -o "$download_file"; then
+        echo "Error: Failed to download $download_file"
         exit 1
     fi
 
-    if ! tar -xJf "$DOWNLOAD_FILE"; then 
+    if ! tar -xJf "$download_file"; then 
         echo "Error: Extraction failed"
-        rm -f "$DOWNLOAD_FILE"
+        rm -f "$download_file"
         exit 1
     fi  
 
-    sudo_exec mv "$FILE_BIN" /usr/local/bin/
+    sudo_exec mv "$file_bin" /usr/local/bin/
 
-    rm -rf "$DOWNLOAD_FILE"
+    popd >/dev/null
 }
 
 main() {
@@ -101,14 +109,24 @@ main() {
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
 
-    DOWNLOAD_URL="$(get_download_url)"
+    DOWNLOAD_URL="$(get_download_url forkdo/vsd)"
 
     download_exact
+
+    echo ""
+
+    if ! check_is_command "vsd"; then
+        echo "vsd has not been installed successfully."
+        echo ""
+        exit 1
+    fi       
 
     echo ""
     echo "vsd has been installed successfully!"
     echo ""
     vsd --help
+    echo ""
+    vsd --version
     echo ""    
 }
 

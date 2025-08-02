@@ -3,7 +3,7 @@
 #============================================================
 # File: static-web-server.sh
 # Description: 安装 static-web-server
-# URL: https://s.fx4.cn/yocoYx
+# URL: https://s.fx4.cn/sws
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-07-28
@@ -53,41 +53,50 @@ check_remove_https() {
 }
 
 do_remove_https() {
-    local _url="$1"
+    local url="$1"
     if [[ -n "$NO_HTTPS" ]]; then
         # shellcheck disable=SC2001
-        echo "$_url" | sed 's|https:/||2'
+        echo "$url" | sed 's|https:/||2'
 
     else 
-        echo "$_url"
+        echo "$url"
     fi
 }
 
+########################## 以上为通用函数 #########################
+
 get_download_url() {
-    _repo="static-web-server/static-web-server"
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${_repo}/releases/latest")
-    curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "$FLITER_STR"
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg os "$OS" --arg platform "$PLATFORM" --arg libc "$LIBC_VERSION" '.assets[] | select(.name | test("\($arch)-\($platform)-\($os)\($libc)")) | .browser_download_url'
 }
 
 download_exact() {
-    DOWNLOAD_FILE="tmp.tar.gz"
-    FILE_BIN="static-web-server"  
+    local download_file="tmp.tar.gz"
+    local file_bin="static-web-server"
+    TMP_DIR=$(mktemp -d /tmp/static-web-server.XXXXXX)
+    
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
+
+    pushd "$TMP_DIR" >/dev/null
 
     _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
-    if ! curl -fsSL "$_download_url" -o "$DOWNLOAD_FILE"; then
-        echo "Error: Failed to download $DOWNLOAD_FILE"
+    if ! curl -fsSL "$_download_url" -o "$download_file"; then
+        echo "Error: Failed to download $download_file"
         exit 1
     fi
 
-    if ! tar -xzf "$DOWNLOAD_FILE"; then 
+    if ! tar -xzf "$download_file"; then 
         echo "Error: Extraction failed"
-        rm -f "$DOWNLOAD_FILE"
+        rm -f "$download_file"
         exit 1
     fi  
 
-    sudo_exec mv ./*"${FLITER_STR}/${FILE_BIN}" /usr/local/bin/
-
-    rm -rf "$DOWNLOAD_FILE" ./*"${FLITER_STR}" 
+    sudo_exec mv "./${file_bin}"*/"${file_bin}" /usr/local/bin/
+    
+    popd >/dev/null
 }
 
 main() {
@@ -118,13 +127,22 @@ main() {
         exit 1
     fi
 
-    FLITER_STR="${ARCH}-${PLATFORM}-${OS}${LIBC_VERSION}"
-    DOWNLOAD_URL="$(get_download_url)"
+    DOWNLOAD_URL="$(get_download_url static-web-server/static-web-server)"
 
     download_exact
 
     echo ""
+
+    if ! check_is_command "static-web-server"; then
+        echo "static-web-server has not been installed successfully."
+        echo ""
+        exit 1
+    fi
+
+    echo ""
     echo "static-web-server has been installed successfully!"
+    echo ""
+    static-web-server --help
     echo ""
     static-web-server --version
     echo ""    

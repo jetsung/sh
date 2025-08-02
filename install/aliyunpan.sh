@@ -3,7 +3,7 @@
 #============================================================
 # File: aliyunpan.sh
 # Description: 安装 aliyunpan
-# URL: https://s.fx4.cn/a21f20b9
+# URL: https://s.fx4.cn/aliyunpan
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-05
@@ -52,72 +52,75 @@ check_remove_https() {
     fi    
 }
 
-# 保持最末只有一个斜杠
-keep_a_slash() {
-    if [[ -n "$1" ]]; then
-        echo "$1" | sed -E 's#/*$#/#'
+do_remove_https() {
+    local url="$1"
+    if [[ -n "$NO_HTTPS" ]]; then
+        # shellcheck disable=SC2001
+        echo "$url" | sed 's|https:/||2'
+
+    else 
+        echo "$url"
     fi
 }
 
-# 检查是否需要去掉第二个 https
-remove_second_https() {
-    # shellcheck disable=SC2001
-    echo "$1" | sed 's|\(https://[^/]\+\)/https://|\1/|g'
+########################## 以上为通用函数 #########################
+
+get_download_url() {
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg os "$OS" '.assets[] | select(.name | test("\($os)-\($arch)")) | .browser_download_url'
 }
 
-do_install() {
-    repo="tickstep/aliyunpan"
-    repo_api_url="${CDN_URL}https://api.github.com/repos/${repo}/releases/latest" 
-    if [[ -n "$NO_HTTPS" ]]; then
-        repo_api_url=$(remove_second_https "$repo_api_url")
-    fi
+download_exact() {
+    local download_file="tmp.tar.gz"
+    local file_bin="aliyunpan"
+    TMP_DIR=$(mktemp -d /tmp/aliyunpan.XXXXXX)
+    
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
 
-    os_arch="${OS}-${ARCH}"
-    download_url=$(curl -fsSL "$repo_api_url" | jq -r '.assets[].browser_download_url' | grep "$os_arch")
+    pushd "$TMP_DIR" >/dev/null
 
-    filename_pkg="aliyunpan.zip"
-    file_dir="aliyunpan"  
-
-    download_url="${CDN_URL}${download_url}"
-    if [[ -n "$NO_HTTPS" ]]; then
-        download_url=$(remove_second_https "$download_url")
-    fi
-
-    if ! curl -fsSL "$download_url" -o "$filename_pkg"; then
-        echo "Error: Failed to download $filename_pkg"
+    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if ! curl -fsSL "$_download_url" -o "$download_file"; then
+        echo "Error: Failed to download $download_file"
         exit 1
     fi
 
-    if ! unzip -q -f "$filename_pkg"; then
+    if ! unzip -q -f "$download_file"; then
         echo "Error: Extraction failed"
-        rm -f "$filename_pkg"
+        rm -f "$download_file"
         exit 1
     fi
 
-    unzip -q "$filename_pkg"
+    unzip -q "$download_file"
 
-    mv "${file_dir}-"* "$file_dir"
+    mv "${file_bin}-"* "$file_bin"
 
-    if [[ -d "/opt/${file_dir}" ]]; then
-        sudo_exec rm -rf /opt/"${file_dir}"
+    # 删除已存在的目录
+    if [[ -d "/opt/${file_bin}" ]]; then
+        sudo_exec rm -rf "/opt/${file_bin}"
     fi
 
-    if ! sudo_exec mv "$file_dir" /opt/; then
-        printf "\033[31mFailed to move %s to /opt\033[0m\n" "$file_dir"
+    # 移动到目标目录
+    if ! sudo_exec mv "$file_bin" /opt/; then
+        printf "\033[31mFailed to move %s to /opt\033[0m\n" "$file_bin"
         exit 1
     fi
+
+    popd >/dev/null
 
     # 若存在转链接则删除
-    if [[ -f "/usr/local/bin/aliyunpan" ]]; then
-        sudo_exec rm -f /usr/local/bin/aliyunpan
+    if [[ -f "/usr/local/bin/${file_bin}" ]]; then
+        sudo_exec rm -f "/usr/local/bin/${file_bin}"
     fi
 
-    if ! sudo_exec ln -sf "/opt/${file_dir}/aliyunpan" "/usr/local/bin/aliyunpan"; then
-        printf "\033[31mInstall %s failed, Please Contact the author! \033[0m" "$file_dir"
+    # 添加软链接
+    if ! sudo_exec ln -sf "/opt/${file_bin}/${file_bin}" "/usr/local/bin/${file_bin}"; then
+        printf "\033[31mInstall %s failed, Please Contact the author! \033[0m" "$file_bin"
         kill -9 $$
     fi
-
-    rm -rf "$filename_pkg" 
 }
 
 main() {
@@ -126,7 +129,6 @@ main() {
     fi
 
     NO_HTTPS=$(check_remove_https "$CDN_URL")
-    CDN_URL=$(keep_a_slash "$CDN_URL")
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
@@ -136,7 +138,9 @@ main() {
         ARCH="arm64"
     fi    
 
-    do_install
+    DOWNLOAD_URL="$(get_download_url tickstep/aliyunpan)"
+
+    download_exact    
 
     echo ""
 
@@ -147,6 +151,8 @@ main() {
     fi
 
     echo "aliyunpan has been installed successfully!"
+    echo ""
+    aliyunpan --help
     echo ""
     aliyunpan --version
     echo ""

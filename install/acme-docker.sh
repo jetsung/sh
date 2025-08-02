@@ -3,7 +3,7 @@
 #============================================================
 # File: acme-docker.sh
 # Description: acme docker 方式脚本
-# URL: https://s.fx4.cn/a792ec34
+# URL: https://s.fx4.cn/acme
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-05
