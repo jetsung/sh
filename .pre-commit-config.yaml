@@ -20,6 +20,6 @@ repos:
   hooks:
   - id: pre-commit-before
     name: Run all custom script
-    entry: scripts/run_all_checks.sh
+    entry: run_after.sh
     language: script
-    files: run_all_checks.sh
+    files: ^origin/*.sh

@@ -1,51 +1,18 @@
 acme-docker.sh  |  acme docker 方式脚本
-acme-docker.sh  |  acme docker 方式脚本
-acme-docker.sh  |  acme docker 方式脚本
 aliyunpan.sh  |  安装 aliyunpan
 croc.sh  |  安装 croc
-aliyunpan.sh  |  安装 aliyunpan
-aliyunpan.sh  |  安装 aliyunpan
 frp.sh  |  安装 frp
-croc.sh  |  安装 croc
-croc.sh  |  安装 croc
-gitlab-runner.sh  |  安装 GitLab Runner
-frp.sh  |  安装 frp
-frp.sh  |  安装 frp
-hugo.sh  |  安装 hugo
-gitlab-runner.sh  |  安装 GitLab Runner
 gitlab-runner.sh  |  安装 GitLab Runner
 hugo.sh  |  安装 hugo
 just.sh  |  安装 just 构建工具
-hugo.sh  |  安装 hugo
-just.sh  |  安装 just 构建工具
-just.sh  |  安装 just 构建工具
-m3u8-downloader.sh  |  安装 m3u8 下载器
-m3u8-downloader.sh  |  安装 m3u8 下载器
 m3u8-downloader.sh  |  安装 m3u8 下载器
 nginx.sh  |  安装 Nginx
-nginx.sh  |  安装 Nginx
-nginx.sh  |  安装 Nginx
-php-8.sh  |  安装 PHP 8
-php-8.sh  |  安装 PHP 8
-php-8.sh  |  安装 PHP 8
+php-8.sh
 protoc.sh  |  安装 protobuf
-protoc.sh  |  安装 protobuf
-protoc.sh  |  安装 protobuf
-redis.sh  |  安装 Redis
-redis.sh  |  安装 Redis
-static-web-server.sh  |  安装 static-web-server
-redis.sh  |  安装 Redis
-static-web-server.sh  |  安装 static-web-server
+redis.sh  |  安装 redis
+shellcheck.sh  |  安装 shellcheck
 static-web-server.sh  |  安装 static-web-server
 ttyd.sh  |  安装 ttyd
-ttyd.sh  |  安装 ttyd
-ttyd.sh  |  安装 ttyd
-vsd.sh  |  安装 m3u8 下载器 （vsd）
-vsd.sh  |  安装 m3u8 下载器 （vsd）
 vsd.sh  |  安装 m3u8 下载器 （vsd）
 wush.sh  |  安装 wush 网络穿透工具
-wush.sh  |  安装 wush 网络穿透工具
-wush.sh  |  安装 wush 网络穿透工具
-zed.sh  |  安装 Zed 编辑器
-zed.sh  |  安装 Zed 编辑器
 zed.sh  |  安装 Zed 编辑器
