@@ -30,7 +30,13 @@ do_install_readme() {
             _file_no_ext="${file%%.*}"
             _desc=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)  # 提取标题
             _url=$(grep -m1 '^# URL:' "$file" | cut -d':' -f2- | xargs)  # 提取标题
-            echo "| [**${_file_no_ext}**](${file}) | [${_url}](${_url}) | ${_desc} |"
+
+            url_str=""
+            if [[ -n "$_url" ]]; then
+                url_str="[${_url}](${_url})"
+            fi
+
+            echo "| [**${_file_no_ext}**](${file}) | ${url_str} | ${_desc} |"
         fi
     done
     ) >> README.md

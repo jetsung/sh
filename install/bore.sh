@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: just.sh
-# Description: 安装 just 构建工具
-# URL: https://s.fx4.cn/just
+# File: bore.sh
+# Description: 安装 bore 穿透工具
+# URL: https://s.fx4.cn/bore
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1
-# CreatedAt: 2025-03-28
-# UpdatedAt: 2025-08-02
+# CreatedAt: 2025-08-03
+# UpdatedAt: 2025-08-03
 #============================================================
 
 
@@ -73,8 +73,8 @@ get_download_url() {
 
 download_exact() {
     local download_file="tmp.tar.gz"
-    local file_bin="just"
-    TMP_DIR=$(mktemp -d /tmp/just.XXXXXX)
+    local file_bin="bore"
+    TMP_DIR=$(mktemp -d /tmp/bore.XXXXXX)
     
     cleanup() {
         rm -rf -- "$TMP_DIR"
@@ -97,9 +97,6 @@ download_exact() {
 
     sudo_exec mv "${file_bin}" "/usr/local/bin/${file_bin}"
 
-    sudo_exec mkdir -p "/usr/local/share/man/man1"
-    sudo_exec mv "${file_bin}.1" "/usr/local/share/man/man1/"
-
     popd >/dev/null
 }
 
@@ -117,23 +114,23 @@ main() {
         PLATFORM="apple"
     fi
 
-    DOWNLOAD_URL="$(get_download_url casey/just)"
+    DOWNLOAD_URL="$(get_download_url ekzhang/bore)"
 
     download_exact
 
     echo ""
 
-    if ! check_is_command "just"; then
-        echo "just has not been installed successfully."
+    if ! check_is_command "bore"; then
+        echo "bore has not been installed successfully."
         echo ""
         exit 1
     fi
 
-    echo "just has been installed successfully!"
+    echo "bore has been installed successfully!"
     echo ""
-    just --help
+    bore --help
     echo ""
-    just --version
+    bore --version
     echo ""
 }
 
