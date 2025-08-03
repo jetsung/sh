@@ -3,27 +3,6 @@
 1. 编译库或软件   
 2. 安装二进制软件
 
-
-## 脚本说明
-
-| **推荐** | **文件名** | **标题** | **描述** |
-|:---|:---|:---|:---|
-| | [**`acme-docker`**](acme-docker.sh) | acme docker 方式脚本 |
-| | [**`aliyunpan`**](aliyunpan.sh)  |  安装 aliyunpan 阿里云盘工具 |
-| | [**`croc`**](croc.sh)  |  安装 croc 文件传输工具 |
-| | [**`frp`**](frp.sh)  |  安装 frp 网络穿透工具|
-| | [**`gitlab-runner`**](gitlab-runner.sh)  |  安装 GitLab Runner |
-| | [**`m3u8-downloader`**](m3u8-downloader.sh)  |  安装 m3u8 下载器 |
-| | [**`nginx`**](nginx.sh)  |  安装 Nginx |
-| | [**`php-8`**](php-8.sh)  |  安装 PHP 8 |
-| | [**`protoc`**](protoc.sh)  |  安装 protobuf |
-| | [**`redis`**](redis.sh)  |  安装 Redis |
-| | [**`ttyd`**](ttyd.sh)  |  安装 ttyd WEB SSH |
-| | [**`wush`**](wush.sh)  |  安装 wush 网络穿透工具 |
-| | [**`just`**](just.sh)  | 安装 just 构建工具 |
-| | [**`hugo`**](hugo.sh)  | 安装 hugo 博客部署工具 |
-| | [**static-web-server**](static-web-server.sh) | 安装 static-web-server 静态文件服务器 |
-
 - [list.txt](list.txt)
 
 ```bash
@@ -39,3 +18,26 @@ for file in *.sh; do
     fi
 done
 ```
+
+## 脚本说明
+
+| **标题** | **URL** | **描述** |
+|:---|:---|:---|
+| [**acme-docker**](acme-docker.sh) | [https://s.fx4.cn/acme](https://s.fx4.cn/acme) | acme docker 方式脚本 |
+| [**aliyunpan**](aliyunpan.sh) | [https://s.fx4.cn/aliyunpan](https://s.fx4.cn/aliyunpan) | 安装 aliyunpan |
+| [**croc**](croc.sh) | [https://s.fx4.cn/croc](https://s.fx4.cn/croc) | 安装 croc |
+| [**frp**](frp.sh) | [https://s.fx4.cn/frp](https://s.fx4.cn/frp) | 安装 frp |
+| [**gitlab-runner**](gitlab-runner.sh) | [https://s.fx4.cn/gitlab-runner](https://s.fx4.cn/gitlab-runner) | 安装 GitLab Runner |
+| [**hugo**](hugo.sh) | [https://s.fx4.cn/hugo](https://s.fx4.cn/hugo) | 安装 hugo |
+| [**just**](just.sh) | [https://s.fx4.cn/just](https://s.fx4.cn/just) | 安装 just 构建工具 |
+| [**m3u8-downloader**](m3u8-downloader.sh) | [https://s.fx4.cn/m3u8-downloader](https://s.fx4.cn/m3u8-downloader) | 安装 m3u8 下载器 |
+| [**nginx**](nginx.sh) | []() | 安装 Nginx |
+| [**php-8**](php-8.sh) | []() |  |
+| [**protoc**](protoc.sh) | []() | 安装 protobuf |
+| [**redis**](redis.sh) | []() | 安装 redis |
+| [**shellcheck**](shellcheck.sh) | [https://s.fx4.cn/shellcheck](https://s.fx4.cn/shellcheck) | 安装 shellcheck |
+| [**static-web-server**](static-web-server.sh) | [https://s.fx4.cn/sws](https://s.fx4.cn/sws) | 安装 static-web-server |
+| [**ttyd**](ttyd.sh) | [https://s.fx4.cn/ttyd](https://s.fx4.cn/ttyd) | 安装 ttyd |
+| [**vsd**](vsd.sh) | [https://s.fx4.cn/vsd](https://s.fx4.cn/vsd) | 安装 m3u8 下载器 （vsd） |
+| [**wush**](wush.sh) | [https://s.fx4.cn/wush](https://s.fx4.cn/wush) | 安装 wush 网络穿透工具 |
+| [**zed**](zed.sh) | [https://s.fx4.cn/zed](https://s.fx4.cn/zed) | 安装 Zed 编辑器 |
