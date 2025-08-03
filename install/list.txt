@@ -1,5 +1,6 @@
 acme-docker.sh  |  acme docker 方式脚本
 aliyunpan.sh  |  安装 aliyunpan
+bore.sh  |  安装 bore 穿透工具
 croc.sh  |  安装 croc
 frp.sh  |  安装 frp
 gitlab-runner.sh  |  安装 GitLab Runner

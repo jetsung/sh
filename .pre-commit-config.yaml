@@ -18,8 +18,8 @@ repos:
 # 自定义
 - repo: local
   hooks:
-  - id: pre-commit-before
+  - id: pre-commit-local
     name: Run all custom script
-    entry: run_after.sh
+    entry: scripts/local-hook.sh
     language: script
-    files: ^origin/*.sh
+    files: ^scripts/.*$
