@@ -24,6 +24,7 @@ done
 | **标题** | **URL** | **描述** |
 |:---|:---|:---|
 | [**acme-docker**](acme-docker.sh) | [https://s.fx4.cn/acme](https://s.fx4.cn/acme) | acme docker 方式脚本 |
+| [**act**](act.sh) | [https://s.fx4.cn/act](https://s.fx4.cn/act) | GitHub Action 本地构建 |
 | [**aliyunpan**](aliyunpan.sh) | [https://s.fx4.cn/aliyunpan](https://s.fx4.cn/aliyunpan) | 安装 aliyunpan |
 | [**bore**](bore.sh) | [https://s.fx4.cn/bore](https://s.fx4.cn/bore) | 安装 bore 穿透工具 |
 | [**croc**](croc.sh) | [https://s.fx4.cn/croc](https://s.fx4.cn/croc) | 安装 croc |
@@ -42,3 +43,4 @@ done
 | [**vsd**](vsd.sh) | [https://s.fx4.cn/vsd](https://s.fx4.cn/vsd) | 安装 m3u8 下载器 （vsd） |
 | [**wush**](wush.sh) | [https://s.fx4.cn/wush](https://s.fx4.cn/wush) | 安装 wush 网络穿透工具 |
 | [**zed**](zed.sh) | [https://s.fx4.cn/zed](https://s.fx4.cn/zed) | 安装 Zed 编辑器 |
+| [**zoxide**](zoxide.sh) | [https://s.fx4.cn/zoxide](https://s.fx4.cn/zoxide) | 更智能的 CD 命令行工具 |

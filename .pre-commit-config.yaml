@@ -22,4 +22,4 @@ repos:
     name: Run all custom script
     entry: scripts/local-hook.sh
     language: script
-    files: ^scripts/.*$
+    # files: ^scripts/.*$

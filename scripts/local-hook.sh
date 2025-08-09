@@ -5,14 +5,12 @@ set -euo pipefail
 do_install_list() {
     pushd install > /dev/null 2>&1
     rm -rf list.txt
-    for file in *.sh; do
-        if [[ -f "$file" ]]; then
-            title=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)  # 提取标题
-            if [[ -n "$title" ]]; then
-                echo "$file  |  $title" >> list.txt
-            else
-                echo "$file" >> list.txt  # 处理无 description 的情况
-            fi
+    find . -maxdepth 1 -type f -name '*.sh' | sort | while read -r file; do
+        title=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)
+        if [[ -n "$title" ]]; then
+            echo "$file  |  $title" >> list.txt
+        else
+            echo "$file" >> list.txt
         fi
     done
     popd > /dev/null 2>&1

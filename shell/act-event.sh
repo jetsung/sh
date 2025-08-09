@@ -77,5 +77,6 @@ jq -n \
 echo "已写入 event.json：ref=$ref, full_name=$full_name"
 
 ###
-#      curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
+#      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
+#      示例： curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
 ###
