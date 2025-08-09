@@ -1,19 +1,42 @@
-acme-docker.sh  |  acme docker 方式脚本
-aliyunpan.sh  |  安装 aliyunpan
-bore.sh  |  安装 bore 穿透工具
-croc.sh  |  安装 croc
-frp.sh  |  安装 frp
-gitlab-runner.sh  |  安装 GitLab Runner
-hugo.sh  |  安装 hugo
-just.sh  |  安装 just 构建工具
-m3u8-downloader.sh  |  安装 m3u8 下载器
-nginx.sh  |  安装 Nginx
-php-8.sh
-protoc.sh  |  安装 protobuf
-redis.sh  |  安装 redis
-shellcheck.sh  |  安装 shellcheck
-static-web-server.sh  |  安装 static-web-server
-ttyd.sh  |  安装 ttyd
-vsd.sh  |  安装 m3u8 下载器 （vsd）
-wush.sh  |  安装 wush 网络穿透工具
-zed.sh  |  安装 Zed 编辑器
+./acme-docker.sh  |  acme docker 方式脚本
+./acme-docker.sh  |  acme docker 方式脚本
+./act.sh  |  GitHub Action 本地构建
+./act.sh  |  GitHub Action 本地构建
+./aliyunpan.sh  |  安装 aliyunpan
+./aliyunpan.sh  |  安装 aliyunpan
+./bore.sh  |  安装 bore 穿透工具
+./bore.sh  |  安装 bore 穿透工具
+./croc.sh  |  安装 croc
+./croc.sh  |  安装 croc
+./frp.sh  |  安装 frp
+./frp.sh  |  安装 frp
+./gitlab-runner.sh  |  安装 GitLab Runner
+./gitlab-runner.sh  |  安装 GitLab Runner
+./hugo.sh  |  安装 hugo
+./hugo.sh  |  安装 hugo
+./just.sh  |  安装 just 构建工具
+./just.sh  |  安装 just 构建工具
+./m3u8-downloader.sh  |  安装 m3u8 下载器
+./m3u8-downloader.sh  |  安装 m3u8 下载器
+./nginx.sh  |  安装 Nginx
+./nginx.sh  |  安装 Nginx
+./php-8.sh
+./php-8.sh
+./protoc.sh  |  安装 protobuf
+./protoc.sh  |  安装 protobuf
+./redis.sh  |  安装 redis
+./redis.sh  |  安装 redis
+./shellcheck.sh  |  安装 shellcheck
+./shellcheck.sh  |  安装 shellcheck
+./static-web-server.sh  |  安装 static-web-server
+./static-web-server.sh  |  安装 static-web-server
+./ttyd.sh  |  安装 ttyd
+./ttyd.sh  |  安装 ttyd
+./vsd.sh  |  安装 m3u8 下载器 （vsd）
+./vsd.sh  |  安装 m3u8 下载器 （vsd）
+./wush.sh  |  安装 wush 网络穿透工具
+./wush.sh  |  安装 wush 网络穿透工具
+./zed.sh  |  安装 Zed 编辑器
+./zed.sh  |  安装 Zed 编辑器
+./zoxide.sh  |  更智能的 CD 命令行工具
+./zoxide.sh  |  更智能的 CD 命令行工具
