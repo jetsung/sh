@@ -76,6 +76,26 @@ jq -n \
 
 echo "已写入 event.json：ref=$ref, full_name=$full_name"
 
+# 判断 .gitignore 如果没有忽略。则写入忽略
+if ! grep -q '# act' .gitignore; then
+    echo '# act' >> .gitignore
+fi
+if ! grep -q '.actrc' .gitignore; then
+    echo '.actrc' >> .gitignore
+fi
+if ! grep -q '.artifacts' .gitignore; then
+    echo '.artifacts' >> .gitignore
+fi
+if ! grep -q 'event.json' .gitignore; then
+    echo 'event.json' >> .gitignore
+fi
+if ! grep -q '.secrets' .gitignore; then
+    echo '.secrets' >> .gitignore
+fi
+if ! grep -q '.arcenv' .gitignore; then
+    echo '.arcenv' >> .gitignore
+fi
+
 ###
 #      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
 #      示例： curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
