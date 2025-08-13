@@ -71,6 +71,13 @@ jq -n \
       message: $commit_message,
       timestamp: $timestamp,
       author: { name: $author_name, email: $author_email }
+    },
+    "action": "created",
+    "release": {
+      "tag_name": "v0.0.99",
+      "name": "v0.0.99",
+      "draft": false,
+      "prerelease": false
     }
   }' > event.json
 
@@ -99,4 +106,7 @@ fi
 ###
 #      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
 #      示例： curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
+###
+#      触发分支：act push -e event.json --secret-file .secrets --env-file .env --artifact-server-path ./.artifacts
+#         发布：act release -e event.json
 ###
