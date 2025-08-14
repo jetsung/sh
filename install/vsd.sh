@@ -67,7 +67,11 @@ do_remove_https() {
 
 get_download_url() {
     repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
-    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '.assets[] | select(.name | test("\($os)_\($arch)")) | .browser_download_url'
+    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '
+        .assets[] 
+        | select(.name | test($os) and test($arch)) 
+        | .browser_download_url
+    '
 }
 
 download_exact() {
@@ -107,7 +111,7 @@ main() {
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
-    ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
+    ARCH="$(uname -m)"
 
     DOWNLOAD_URL="$(get_download_url forkdo/vsd)"
 
