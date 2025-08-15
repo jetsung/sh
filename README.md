@@ -5,15 +5,16 @@
 ## 目录列表
 
 ```bash
-├── Dockerfile # Dockerfile
+├── build      # 编译安装软件脚本
 ├── ci         # CI/CD脚本
+├── dockerfile # Dockerfile
 ├── conf       # 软件配置文件
 ├── init.d     # 软件启动文件
-├── install    # 软件安装脚本
+├── install    # 二进制软件安装脚本
 ├── origin     # 脚本源
 ├── scripts    # 本项目使用的，比如 pre-commit
 ├── shell      # 自己编写的脚本
-└── snippets   # 自己编写的脚本片段 
+└── softs      # 自己编写的一些提取软件版本号和下载地址的脚本 
 ```
 
 ## 先决条件

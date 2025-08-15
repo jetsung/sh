@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+if [[ -n "${DEBUG:-}" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
 
 do_install_list() {
-    pushd install > /dev/null 2>&1
+    pushd "$1" > /dev/null 2>&1
     rm -rf list.txt
     find . -maxdepth 1 -type f -name '*.sh' | sort | while read -r file; do
         title=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)
@@ -16,8 +20,8 @@ do_install_list() {
     popd > /dev/null 2>&1
 }
 
-do_install_readme() {
-    pushd install > /dev/null 2>&1
+update_readme() {
+    pushd "$1" > /dev/null 2>&1
     
     # 删除 |:---| 行之后的所有内容
     sed -i -n '1,/|:---|/p' README.md
@@ -42,10 +46,16 @@ do_install_readme() {
     popd > /dev/null 2>&1
 }
 
+do_dir() {
+    if [[ -d "$1" ]]; then
+        do_install_list "$1"
+        update_readme "$1"
+    fi
+}
+
 main() {
-    # 处理 install 文件夹
-    do_install_list
-    do_install_readme
+    do_dir "build"
+    do_dir "install"
 }
 
 main "$@"
