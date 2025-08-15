@@ -1,7 +1,4 @@
-# 编译安装库和软件
-
-1. 编译库或软件   
-2. 安装二进制软件
+# 安装二进制软件
 
 - [list.txt](list.txt)
 
@@ -34,10 +31,7 @@ done
 | [**hugo**](hugo.sh) | [https://s.fx4.cn/hugo](https://s.fx4.cn/hugo) | 安装 hugo |
 | [**just**](just.sh) | [https://s.fx4.cn/just](https://s.fx4.cn/just) | 安装 just 构建工具 |
 | [**m3u8-downloader**](m3u8-downloader.sh) | [https://s.fx4.cn/m3u8-downloader](https://s.fx4.cn/m3u8-downloader) | 安装 m3u8 下载器 |
-| [**nginx**](nginx.sh) |  | 安装 Nginx |
-| [**php-8**](php-8.sh) |  |  |
 | [**protoc**](protoc.sh) |  | 安装 protobuf |
-| [**redis**](redis.sh) |  | 安装 redis |
 | [**shellcheck**](shellcheck.sh) | [https://s.fx4.cn/shellcheck](https://s.fx4.cn/shellcheck) | 安装 shellcheck |
 | [**static-web-server**](static-web-server.sh) | [https://s.fx4.cn/sws](https://s.fx4.cn/sws) | 安装 static-web-server |
 | [**ttyd**](ttyd.sh) | [https://s.fx4.cn/ttyd](https://s.fx4.cn/ttyd) | 安装 ttyd |

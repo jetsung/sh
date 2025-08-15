@@ -1,0 +1,1 @@
+./squashfs.sh  |  编译安装 squashfs-tools

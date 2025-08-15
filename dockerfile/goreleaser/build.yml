@@ -1,0 +1,12 @@
+---
+goreleaser:
+  extends: .trigger_template
+  stage: build
+  artifacts:
+    expire_in: 1 d
+  script:
+  - |-
+    docker build -t jetsung/goreleaser-bookworm:latest \
+      -f Dockerfile/goreleaser/Dockerfile \
+      --build-arg GOPROXY=${GOPROXY:-https://proxy.golang.org} \
+      .

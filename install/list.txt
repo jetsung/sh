@@ -9,10 +9,7 @@
 ./hugo.sh  |  安装 hugo
 ./just.sh  |  安装 just 构建工具
 ./m3u8-downloader.sh  |  安装 m3u8 下载器
-./nginx.sh  |  安装 Nginx
-./php-8.sh
 ./protoc.sh  |  安装 protobuf
-./redis.sh  |  安装 redis
 ./shellcheck.sh  |  安装 shellcheck
 ./static-web-server.sh  |  安装 static-web-server
 ./ttyd.sh  |  安装 ttyd

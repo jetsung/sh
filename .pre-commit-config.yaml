@@ -16,10 +16,10 @@ repos:
     exclude: ^origin/.*
 
 # 自定义
-- repo: local
-  hooks:
-  - id: pre-commit-local
-    name: Run all custom script
-    entry: scripts/local-hook.sh
-    language: script
+# - repo: local
+#   hooks:
+#   - id: pre-commit-local
+#     name: Run all custom script
+#     entry: scripts/local-hook.sh
+#     language: script
     # files: ^scripts/.*$
