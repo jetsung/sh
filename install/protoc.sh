@@ -2,7 +2,7 @@
 
 #============================================================
 # File: protoc.sh
-# Description: 安装 protobuf
+# Description: protobuf 编译工具
 # URL: 
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

@@ -2,7 +2,7 @@
 
 #============================================================
 # File: bore.sh
-# Description: 安装 bore 穿透工具
+# Description: bore 网络穿透工具
 # URL: https://s.fx4.cn/bore
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1

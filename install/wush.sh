@@ -2,7 +2,7 @@
 
 #============================================================
 # File: wush.sh
-# Description: 安装 wush 网络穿透工具
+# Description: wush 网络穿透工具
 # URL: https://s.fx4.cn/wush
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

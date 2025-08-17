@@ -3,7 +3,7 @@
 #============================================================
 # File: squashfs.sh
 # Description: 编译安装 squashfs-tools
-# URL: https://s.fx4.cn/
+# URL: https://s.fx4.cn/squashfs
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-16

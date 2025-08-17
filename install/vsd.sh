@@ -2,7 +2,7 @@
 
 #============================================================
 # File: vsd.sh
-# Description: 安装 m3u8 下载器 （vsd）
+# Description: m3u8 下载器 （vsd）
 # URL: https://s.fx4.cn/vsd
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

@@ -2,7 +2,7 @@
 
 #============================================================
 # File: ttyd.sh
-# Description: 安装 ttyd
+# Description: ttyd SSH Web 终端
 # URL: https://s.fx4.cn/ttyd
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

@@ -1,19 +1,20 @@
 ./acme-docker.sh  |  acme docker 方式脚本
 ./act.sh  |  GitHub Action 本地构建
-./aliyunpan.sh  |  安装 aliyunpan
-./bore.sh  |  安装 bore 穿透工具
-./chromium.sh  |  安装 Ungoogled Chromium
-./croc.sh  |  安装 croc
-./frp.sh  |  安装 frp
-./gitlab-runner.sh  |  安装 GitLab Runner
-./hugo.sh  |  安装 hugo
-./just.sh  |  安装 just 构建工具
-./m3u8-downloader.sh  |  安装 m3u8 下载器
-./protoc.sh  |  安装 protobuf
-./shellcheck.sh  |  安装 shellcheck
-./static-web-server.sh  |  安装 static-web-server
-./ttyd.sh  |  安装 ttyd
-./vsd.sh  |  安装 m3u8 下载器 （vsd）
-./wush.sh  |  安装 wush 网络穿透工具
-./zed.sh  |  安装 Zed 编辑器
-./zoxide.sh  |  更智能的 CD 命令行工具
+./aliyunpan.sh  |  aliyunpan 阿里网盘命令行工具
+./bore.sh  |  bore 网络穿透工具
+./chromium.sh  |  Ungoogled Chromium
+./croc.sh  |  croc 文件传输工具
+./frp.sh  |  frp 网络穿透工具
+./gitlab-runner.sh  |  GitLab Runner
+./hugo.sh  |  hugo 静态网站生成器
+./just.sh  |  just 构建工具
+./m3u8-downloader.sh  |  m3u8 下载器 (m3u8-downloader)
+./protoc.sh  |  protobuf 编译工具
+./shellcheck.sh  |  shellcheck Shell 脚本分析工具
+./skim.sh  |  skim 命令行模糊查找器
+./static-web-server.sh  |  static-web-server 静态网站服务器
+./ttyd.sh  |  ttyd SSH Web 终端
+./vsd.sh  |  m3u8 下载器 （vsd）
+./wush.sh  |  wush 网络穿透工具
+./zed.sh  |  Zed 编辑器
+./zoxide.sh  |  zoxide 智能 CD 命令行工具

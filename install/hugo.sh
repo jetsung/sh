@@ -2,7 +2,7 @@
 
 #============================================================
 # File: hugo.sh
-# Description: 安装 hugo
+# Description: hugo 静态网站生成器
 # URL: https://s.fx4.cn/hugo
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
