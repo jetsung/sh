@@ -2,7 +2,7 @@
 
 #============================================================
 # File: gitlab-runner.sh
-# Description: 安装 GitLab Runner
+# Description: GitLab Runner
 # URL: https://s.fx4.cn/gitlab-runner
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

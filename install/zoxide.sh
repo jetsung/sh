@@ -2,7 +2,7 @@
 
 #============================================================
 # File: zoxide.sh
-# Description: 更智能的 CD 命令行工具
+# Description: zoxide 智能 CD 命令行工具
 # URL: https://s.fx4.cn/zoxide
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

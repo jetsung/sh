@@ -2,7 +2,7 @@
 
 #============================================================
 # File: aliyunpan.sh
-# Description: 安装 aliyunpan
+# Description: aliyunpan 阿里网盘命令行工具
 # URL: https://s.fx4.cn/aliyunpan
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

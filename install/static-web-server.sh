@@ -2,7 +2,7 @@
 
 #============================================================
 # File: static-web-server.sh
-# Description: 安装 static-web-server
+# Description: static-web-server 静态网站服务器
 # URL: https://s.fx4.cn/sws
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

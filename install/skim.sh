@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: just.sh
-# Description: just 构建工具
-# URL: https://s.fx4.cn/just
+# File: skim.sh
+# Description: skim 命令行模糊查找器
+# URL: https://s.fx4.cn/skim
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.1
-# CreatedAt: 2025-03-28
-# UpdatedAt: 2025-08-02
+# Version: 0.1.0
+# CreatedAt: 2025-08-18
+# UpdatedAt: 2025-08-18
 #============================================================
-
 
 if [[ -n "${DEBUG:-}" ]]; then
     set -eux
@@ -68,14 +67,19 @@ do_remove_https() {
 
 get_download_url() {
     repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
-    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg platform "$PLATFORM" --arg os "$OS" '.assets[] | select(.name | test("\($arch)-\($platform)-\($os)")) | .browser_download_url'
+    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '
+        .assets[] 
+        | select(.name | test($os) and test($arch)) 
+        | .browser_download_url
+    '
 }
 
 download_exact() {
     local download_file="tmp.tar.gz"
-    local file_bin="just"
-    TMP_DIR=$(mktemp -d /tmp/just.XXXXXX)
-    
+    local file_bin="sk"
+    TMP_DIR=$(mktemp -d /tmp/skim.XXXXXX)
+
+    # shellcheck disable=SC2329
     cleanup() {
         rm -rf -- "$TMP_DIR"
     }
@@ -95,10 +99,7 @@ download_exact() {
         exit 1
     fi  
 
-    sudo_exec mv "${file_bin}" "/usr/local/bin/${file_bin}"
-
-    sudo_exec mkdir -p "/usr/local/share/man/man1"
-    sudo_exec mv "${file_bin}.1" "/usr/local/share/man/man1/"
+    sudo_exec mv "$file_bin" /usr/local/bin/
 
     popd >/dev/null
 }
@@ -111,30 +112,27 @@ main() {
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
-    ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
-    PLATFORM="unknown"
-    if [[ "$OS" = "darwin" ]]; then
-        PLATFORM="apple"
-    fi
+    ARCH="$(uname -m)"
 
-    DOWNLOAD_URL="$(get_download_url casey/just)"
+    DOWNLOAD_URL="$(get_download_url skim-rs/skim)"
 
     download_exact
 
     echo ""
 
-    if ! check_is_command "just"; then
-        echo "just has not been installed successfully."
+    if ! check_is_command "sk"; then
+        echo "sk has not been installed successfully."
         echo ""
         exit 1
-    fi
+    fi       
 
-    echo "just has been installed successfully!"
     echo ""
-    just --help
+    echo "sk has been installed successfully!"
     echo ""
-    just --version
+    sk --help
     echo ""
+    sk --version
+    echo ""    
 }
 
 main "$@"

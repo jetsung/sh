@@ -2,7 +2,7 @@
 
 #============================================================
 # File: chromium.sh
-# Description: 安装 Ungoogled Chromium
+# Description: Ungoogled Chromium
 # URL: https://s.fx4.cn/chromium
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

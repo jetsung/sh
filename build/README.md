@@ -4,4 +4,4 @@
 
 | **标题** | **URL** | **描述** |
 |:---|:---|:---|
-| [**squashfs**](squashfs.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 编译安装 squashfs-tools |
+| [**squashfs**](squashfs.sh) | [https://s.fx4.cn/squashfs](https://s.fx4.cn/squashfs) | 编译安装 squashfs-tools |

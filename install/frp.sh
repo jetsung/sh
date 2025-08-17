@@ -2,7 +2,7 @@
 
 #============================================================
 # File: frp.sh
-# Description: 安装 frp
+# Description: frp 网络穿透工具
 # URL: https://s.fx4.cn/frp
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

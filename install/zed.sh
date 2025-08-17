@@ -2,7 +2,7 @@
 
 #============================================================
 # File: zed.sh
-# Description: 安装 Zed 编辑器
+# Description: Zed 编辑器
 # URL: https://s.fx4.cn/zed
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
