@@ -316,6 +316,8 @@ main() {
   fi
 }
 
+main "$@" || exit 1
+
 #
 # curl -L https://s.fx4.cn/56be48a8 -o backup-update.sh
 #
@@ -329,5 +331,3 @@ main() {
 #    该文件夹下,需要有 update.sh 文件
 # *4. 后期可通过 ./file.sh -b y -u y 来切换备份和更新
 # 5. 本脚本目录下的所有子目录,包含 cronrun.sh 脚本则会被执行
-
-main "$@" || exit 1

@@ -54,8 +54,15 @@ do_dir() {
 }
 
 main() {
-    do_dir "build"
-    do_dir "install"
+    dir_list=(
+        build
+        install
+        shell
+    )
+
+    for dir in "${dir_list[@]}"; do
+        do_dir "$dir"
+    done
 }
 
 main "$@"

@@ -1,1 +1,2 @@
+./skopeo.sh  |  编译安装 skopeo
 ./squashfs.sh  |  编译安装 squashfs-tools

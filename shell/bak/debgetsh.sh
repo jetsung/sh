@@ -2,7 +2,7 @@
 
 # ORIGIN: https://framagit.org/-/snippets/7181/raw/main/get.sh
 
-APT_URL="https://apt.skiy.net"
+APT_URL="https://apt.asfd.cn"
 APT_GPG="idev.gpg"
 GPG_PATH="/etc/apt/trusted.gpg.d/$APT_GPG"
 APT_PATH="/etc/apt/sources.list.d/idev.list"

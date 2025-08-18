@@ -1,2 +1,9 @@
 .marscode/
 **/tmp/
+
+# act
+.actrc
+.artifacts
+event.json
+.secrets
+.arcenv

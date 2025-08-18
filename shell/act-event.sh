@@ -3,7 +3,7 @@
 #============================================================
 # File: act-event.sh
 # Description: 生成 act 的 event.json 文件
-# URL: https://s.fx4.cn/JRlgxD
+# URL: https://s.fx4.cn/act-event
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-01
@@ -61,30 +61,39 @@ jq -n \
   --arg author_name "$author_name" \
   --arg author_email "$author_email" \
   '{
-    ref: $ref,
-    before: $before,
-    after: $after,
-    repository: { full_name: $full_name },
-    pusher: { name: $pusher_name },
-    head_commit: {
-      id: $commit_id,
-      message: $commit_message,
-      timestamp: $timestamp,
-      author: { name: $author_name, email: $author_email }
+    "ref": "$ref",
+    "before": "$before",
+    "after": "$after",
+    "inputs": {},
+    "repository": {
+        "full_name": "$full_name"
+    },
+    "pusher": {
+        "name": "$pusher_name"
+    },
+    "head_commit": {
+        "id": "$commit_id",
+        "message": "$commit_message",
+        "timestamp": "$timestamp",
+        "author": {
+            "name": "$author_name",
+            "email": "$author_email"
+        }
     },
     "action": "created",
     "release": {
-      "tag_name": "v0.0.99",
-      "name": "v0.0.99",
-      "draft": false,
-      "prerelease": false
+        "tag_name": "",
+        "name": "",
+        "draft": false,
+        "prerelease": false
     }
-  }' > event.json
+}' > event.json
 
 echo "已写入 event.json：ref=$ref, full_name=$full_name"
 
 # 判断 .gitignore 如果没有忽略。则写入忽略
 if ! grep -q '# act' .gitignore; then
+    echo "" >> .gitignore
     echo '# act' >> .gitignore
 fi
 if ! grep -q '.actrc' .gitignore; then
@@ -102,6 +111,7 @@ fi
 if ! grep -q '.arcenv' .gitignore; then
     echo '.arcenv' >> .gitignore
 fi
+echo "" >> .gitignore
 
 ###
 #      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
