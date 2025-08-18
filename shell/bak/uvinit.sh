@@ -59,7 +59,7 @@ configure_project() {
 init_project() {
     local toml_file="pyproject.toml"
     if [[ -f ${toml_file} ]]; then
-        read -p "pyproject.toml exists. Reset project? (y/n): " confirm
+        read -r -p "pyproject.toml exists. Reset project? (y/n): " confirm
         if [[ "${confirm,,}" == "y" ]]; then
             echo "Resetting project"
             rm -f "${toml_file}"

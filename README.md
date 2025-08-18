@@ -23,6 +23,12 @@
 sudo apt install -y jq
 ```
 
+## 从云端下载并更新对应的 `.sh` 脚本文件
+执行 `scripts/fetch.sh` 文件。若 `.sh` 的文件中包含下述注释，则拉取更新
+```bash
+# ORIGIN: https://myfiles.com/origin-file.sh
+```
+
 ## SHELL 文件格式
 ```shell
 #!/usr/bin/env bash

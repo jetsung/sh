@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+#============================================================
+# File: push_notify.sh
+# Description: 推送消息到钉钉、飞书、Lark
+# URL: https://s.fx4.cn/
+# ORIGIN: https://gist.asfd.cn/jetsung/3146f592ab2b4aff8d4cad3ae9911940/raw/HEAD/push_notify.sh
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2025-08-18
+# UpdatedAt: 2025-08-18
+#============================================================
+
+
+if [[ -n "${DEBUG:-}" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
 
 judgment_parameters() {
   while [[ "$#" -gt '0' ]]; do
@@ -99,12 +115,17 @@ signature() {
     data=""
   fi
 
-  TMP_PATH=$(mktemp)
+  TMPPATH=$(mktemp "/tmp/notify.XXXXXX")
+
+  clearup() {
+    rm -rf "$TMPPATH"
+  }
+  trap clearup EXIT
+
   # shellcheck disable=SC2059
-  printf "$sign_str" >"$TMP_PATH"
+  printf "$sign_str" >"$TMPPATH"
   # shellcheck disable=SC2059
-  SIGN=$(printf "$data" | openssl dgst -sha256 -hmac "$(cat "$TMP_PATH")" -binary | base64)
-  rm -rf "$TMP_PATH"
+  SIGN=$(printf "$data" | openssl dgst -sha256 -hmac "$(cat "$TMPPATH")" -binary | base64)
 }
 
 main() {

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: squashfs.sh
-# Description: 编译安装 squashfs-tools 压缩与解压工具
-# URL: https://s.fx4.cn/squashfs
+# File: skopeo.sh
+# Description: 编译安装 skopeo 镜像复制工具
+# URL: https://s.fx4.cn/skopeo
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
-# CreatedAt: 2025-08-16
-# UpdatedAt: 2025-08-16
+# CreatedAt: 2025-08-18
+# UpdatedAt: 2025-08-18
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -67,60 +67,45 @@ do_remove_https() {
 
 # 支持多个 Linux 平台的依赖安装
 install_deps() {
-    # 安装依赖包（包含各压缩算法支持）
     if check_is_command "apt-get"; then
         echo "检测到 Debian/Ubuntu 系统，安装依赖..."
         sudo_exec apt-get update
-        sudo_exec apt-get install -y build-essential wget git liblzma-dev liblzo2-dev liblz4-dev libzstd-dev zlib1g-dev
+        sudo_exec apt-get install -y git autoconf automake libtool gettext pkg-config libpng-dev libjpeg-dev
+    elif check_is_command "dnf"; then
+        echo "检测到 Fedora 系统，安装依赖..."
+        sudo_exec dnf install -y git autoconf automake libtool gettext pkgconf libpng-devel libjpeg-turbo-devel
     elif check_is_command "yum"; then
         echo "检测到 CentOS/RHEL 系统，安装依赖..."
-        sudo_exec yum install -y gcc make wget git xz-devel lzo-devel lz4-devel zstd-devel zlib-devel
+        sudo_exec yum install -y git autoconf automake libtool gettext pkgconf libpng-devel libjpeg-turbo-devel
     elif check_is_command "apk"; then
         echo "检测到 Alpine 系统，安装依赖..."
-        sudo_exec apk add build-base wget git lzo-dev lz4-dev xz-dev zstd-dev zlib-dev
+        sudo_exec apk add git autoconf automake libtool gettext-dev pkgconf libpng-dev jpeg-dev
     elif check_is_command "pacman"; then
         echo "检测到 Arch Linux 系统，安装依赖..."
-        sudo_exec pacman -Sy --noconfirm base-devel wget git lzo lz4 xz zstd zlib
+        sudo_exec pacman -Syu --noconfirm --needed git autoconf automake libtool gettext pkgconf libpng libjpeg-turbo
     else
-        echo "未检测到已知包管理器，请手动安装依赖：gcc make wget git lzo lz4 xz zstd zlib"
+        echo "未检测到已知包管理器，请手动安装依赖：git autoconf automake libtool gettext pkgconf libpng libjpeg"
         return 1
     fi
 }
 
-get_download_url() {
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases")
-    curl -fsSL "$repo_api_url" | grep "browser_download_url" | cut -d '"' -f 4 | grep "squashfs-tools" | head -n 1
-}
+clone_and_build() {
+    TMP_DIR=$(mktemp -u "/tmp/skopeo.XXXX")
 
-download_exact() {
-    local download_file="tmp.tar.gz"
-    TMP_DIR=$(mktemp -d /tmp/squashfs.XXXXXX)
-
-    # shellcheck disable=SC2329
     cleanup() {
-        rm -rf -- "$TMP_DIR"
+        rm -rf "$TMP_DIR"
     }
     trap cleanup EXIT
 
-    pushd "$TMP_DIR" >/dev/null
+    _repo_url=$(do_remove_https "${CDN_URL}https://github.com/containers/skopeo.git")
+    git clone "$_repo_url" "$TMP_DIR"
+    pushd "$TMP_DIR" > /dev/null
+    git fetch --tags
+    git checkout "$(git tag --sort=-v:refname | head -n 1)"
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
-    if ! curl -fsSL "$_download_url" -o "$download_file"; then
-        echo "Error: Failed to download $download_file"
-        exit 1
-    fi
-
-    if ! tar -xzf "$download_file" --strip-components=1; then 
-        echo "Error: Extraction failed"
-        rm -f "$download_file"
-        exit 1
-    fi
-
-    cd squashfs-tools
-    make
-    sudo_exec make install
-
-    popd >/dev/null
+    make bin/skopeo
+    sudo_exec install -Dm755 bin/skopeo /usr/local/bin/skopeo
+    popd > /dev/null
 }
 
 main() {
@@ -130,36 +115,30 @@ main() {
 
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
-    DOWNLOAD_URL="$(get_download_url plougher/squashfs-tools)"
-
-    if [[ -z "$DOWNLOAD_URL" ]]; then
-        echo "Error: Failed to get download url"
+    # 判断是否已安装 go 语言
+    if ! check_is_command "go"; then
+        echo "go must be installed."
+        echo ""
         exit 1
     fi
 
     install_deps
-
-    download_exact
+    clone_and_build
 
     echo ""
 
-    if ! check_is_command "mksquashfs"; then
-        echo "mksquashfs has not been installed successfully."
-        echo ""
-        exit 1
-    fi
-
-    if ! check_is_command "unsquashfs"; then
-        echo "unsquashfs has not been installed successfully."
+    if ! check_is_command "skopeo"; then
+        echo "skopeo has not been installed successfully."
         echo ""
         exit 1
     fi
 
     echo ""
-    echo "squashfs-tools has been installed successfully!"
+    echo "skopeo has been installed successfully!"
     echo ""
-
-    mksquashfs -version
+    skopeo --help
+    echo ""
+    skopeo --version
     echo ""
 }
 

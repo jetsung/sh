@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+#============================================================
+# File: remove_github_workflow_runs.sh
+# Description: 批量删除 GitHub 部署记录
+# URL: https://s.fx4.cn/
+# ORIGIN: https://gist.asfd.cn/jetsung/d90404cf06eb483b9ad3a858db79aba6/raw/HEAD/remove_github_deployments_run.sh
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2025-08-18
+# UpdatedAt: 2025-08-18
+#============================================================
+
+
+if [[ -n "${DEBUG:-}" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
 
 owner="$1"  # 替换为仓库所有者的用户名
 repo="$2"       # 替换为仓库名称
@@ -30,4 +46,3 @@ for ((i=1; i<num_deployments; i++)); do
 done
 
 echo "旧的部署记录已删除，仅保留最新的一个。"
-

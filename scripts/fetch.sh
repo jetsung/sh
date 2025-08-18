@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 
 #####
-###
 ### 从远程文件升级本文件夹下的所有脚本
 ###
-### 1. 每个需要更新的文件中添加源地址
+### 每个需要更新的文件中添加源地址
 ### # ORIGIN: https://myfiles.com/origin-file.sh
-###
-### 2. 执行本脚本：bash ./.upgrade.sh
 ###
 ####
 

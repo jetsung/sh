@@ -1,7 +1,21 @@
 #!/usr/bin/env bash
 
-# 通用镜像复制脚本
-# 用法: xxx.sh --import SOURCE_IMAGE --output TARGET_REGISTRY [--targets TARGET1,TARGET2...]
+#============================================================
+# File: docker-copy.sh
+# Description: Docker 镜像复制至新的注册表
+# URL: https://s.fx4.cn/
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2025-08-18
+# UpdatedAt: 2025-08-18
+#============================================================
+
+
+if [[ -n "${DEBUG:-}" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
 
 # 颜色定义
 RED='\033[0;31m'
@@ -37,15 +51,15 @@ print_help() {
 # 解析命令行参数
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --import)
+        -i|--import)
             SOURCE_IMAGE="$2"
             shift 2
             ;;
-        --output)
+        -o|--output)
             TARGET_REGISTRY="$2"
             shift 2
             ;;
-        --targets)
+        -t|--targets)
             IFS=',' read -ra TARGETS <<< "$2"
             shift 2
             ;;
@@ -62,7 +76,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # 检查必要参数
-if [[ -z "$SOURCE_IMAGE" || -z "$TARGET_REGISTRY" ]]; then
+if [[ -z "${SOURCE_IMAGE:-}" || -z "${TARGET_REGISTRY:-}" ]]; then
     echo -e "${RED}错误: 缺少必要参数${NC}"
     print_help
     exit 1
@@ -70,7 +84,7 @@ fi
 
 # 提取源镜像的仓库和标签
 if [[ "$SOURCE_IMAGE" =~ ^docker://([^/]+)/([^:]+)(:([^/]+))?$ ]]; then
-    SOURCE_REGISTRY=${BASH_REMATCH[1]}
+    # SOURCE_REGISTRY=${BASH_REMATCH[1]}
     SOURCE_REPO=${BASH_REMATCH[2]}
     SOURCE_TAG=${BASH_REMATCH[4]:-latest}
 else
@@ -79,7 +93,7 @@ else
 fi
 
 # 如果没有指定特定目标，则使用所有映射的目标
-if [[ -z "$TARGETS" ]]; then
+if [[ ${#TARGETS[@]} -eq 0 ]]; then
     if [[ "$TARGET_REGISTRY" == "all" ]]; then
         TARGETS=("${!REGISTRY_MAP[@]}")
     else
@@ -104,12 +118,12 @@ for target in "${TARGETS[@]}"; do
     echo -e "${BLUE}========================================${NC}\n"
     
     # 执行skopeo复制
-    skopeo copy --all "$SOURCE_IMAGE" "$TARGET_IMAGE"
-    
-    if [[ $? -eq 0 ]]; then
+    if skopeo copy --all "$SOURCE_IMAGE" "$TARGET_IMAGE"; then
         echo -e "\n${GREEN}✅ 成功复制到 $target${NC}\n"
     else
         echo -e "\n${RED}❌ 复制到 $target 失败${NC}\n"
     fi
 done
 
+# 通用镜像复制脚本
+# 用法: docker-copy.sh --import SOURCE_IMAGE --output TARGET_REGISTRY [--targets TARGET1,TARGET2...]
