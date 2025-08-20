@@ -101,23 +101,23 @@ jq -n \
   --arg author_name "$author_name" \
   --arg author_email "$author_email" \
   '{
-    "ref": "$ref",
-    "before": "$before",
-    "after": "$after",
+    "ref": $ref,
+    "before": $before,
+    "after": $after,
     "inputs": {},
     "repository": {
-        "full_name": "$full_name"
+        "full_name": $full_name
     },
     "pusher": {
-        "name": "$pusher_name"
+        "name": $pusher_name
     },
     "head_commit": {
-        "id": "$commit_id",
-        "message": "$commit_message",
-        "timestamp": "$timestamp",
+        "id": $commit_id,
+        "message": $commit_message,
+        "timestamp": $timestamp,
         "author": {
-            "name": "$author_name",
-            "email": "$author_email"
+            "name": $author_name,
+            "email": $author_email
         }
     },
     "action": "created",
