@@ -12,8 +12,9 @@
 ├── init.d     # 软件启动文件
 ├── install    # 二进制软件安装脚本
 ├── origin     # 脚本源
+├── pwsh       # 自己编写的 PowerShell 脚本
 ├── scripts    # 本项目使用的，比如 pre-commit
-├── shell      # 自己编写的脚本
+├── shell      # 自己编写的 Shell 脚本
 └── softs      # 自己编写的一些提取软件版本号和下载地址的脚本 
 ```
 
