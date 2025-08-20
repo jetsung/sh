@@ -28,6 +28,46 @@ if [ $# -lt 2 ]; then
   usage
 fi
 
+ACT_BASE_IMAGE_PRE="# -P ubuntu-24.04=ghcr.io/catthehacker/ubuntu"
+
+get_image_tags() {
+  local OWNER="catthehacker"
+  local PACKAGE="ubuntu"
+  local FILTER="24.04"
+
+  echo "Fetching ALL container image versions (this may take a while)..." >&2
+
+  gh api \
+    -H "Accept: application/vnd.github+json" \
+    "/users/$OWNER/packages/container/$PACKAGE/versions" \
+    --paginate \
+    --jq '.[].metadata.container.tags[]' 2>/dev/null | \
+    grep -E "\-$FILTER$" | \
+    awk -v pre="$ACT_BASE_IMAGE_PRE" '{print pre":"$0}' | \
+    sort -u >> .actrc
+  }
+
+save_image_tags() {
+  local tags=(
+    custom-24.04
+    js-24.04
+    java-tools-24.04
+    rust-24.04
+    pwsh-24.04
+    go-24.04
+    gh-24.04
+    dotnet-24.04
+    runner-24.04
+    act-24.04
+    full-24.04    
+  )
+
+  # -P ubuntu-24.04=ghcr.io/catthehacker/ubuntu:act-24.04
+  for tag in "${tags[@]}"; do
+    echo "${ACT_BASE_IMAGE_PRE}:${tag}" >> .actrc
+  done
+}
+
 branch=$1
 full_name=$2
 
@@ -91,6 +131,10 @@ jq -n \
 
 echo "已写入 event.json：ref=$ref, full_name=$full_name"
 
+if [[ ! -f .gitignore ]]; then
+  touch .gitignore
+fi
+
 # 判断 .gitignore 如果没有忽略。则写入忽略
 if ! grep -q '# act' .gitignore; then
     echo "" >> .gitignore
@@ -113,10 +157,20 @@ if ! grep -q '.arcenv' .gitignore; then
 fi
 echo "" >> .gitignore
 
-###
-#      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
-#      示例： curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
-###
-#      触发分支：act push -e event.json --secret-file .secrets --env-file .env --artifact-server-path ./.artifacts
-#         发布：act release -e event.json
-###
+# 判断若存在 .actrc 文件则不执行
+if [[ ! -f .actrc ]]; then
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    get_image_tags
+  else
+    save_image_tags
+  fi
+fi
+
+
+# ###
+# #      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
+# #      示例： curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
+# ###
+# #      触发分支：act push -e event.json --secret-file .secrets --env-file .arcenv --artifact-server-path ./.artifacts
+# #         发布：act release -e event.json
+# ###
