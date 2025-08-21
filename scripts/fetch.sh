@@ -29,7 +29,9 @@ download_and_replace() {
   fi
 }
 
-find . -type f -name "*.sh" -not -wholename "./.upgrade.sh" -exec awk '/^# ORIGIN:/ {print FILENAME, $3}' {} \; |
+find . -type f -name "*.sh" -o -name "*.ps1" -not -wholename "./.upgrade.sh" -exec awk '/^# ORIGIN:/ {print FILENAME, $3}' {} \; |
   while read -r filename url; do
     download_and_replace "$url" "$filename"
   done
+
+echo "All files have been updated."
