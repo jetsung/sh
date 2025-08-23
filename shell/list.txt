@@ -10,3 +10,4 @@
 ./remove_github_packages_untagged.sh  |  删除 GitHub Packages 悬空的镜像标签
 ./remove_github_workflow_runs.sh  |  批量删除 GitHub Action Workflows 流水线
 ./remove_gitlab_workflow_runs.sh  |  批量删除 GitLab CI 流水线
+./totp2md.sh  |  将 TOTP 二维码转换为 Markdown 表格

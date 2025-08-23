@@ -2,7 +2,7 @@
 
 #============================================================
 # File: skopeo.sh
-# Description: 编译安装 skopeo 镜像复制工具
+# Description: 镜像复制工具
 # URL: https://s.fx4.cn/skopeo
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
