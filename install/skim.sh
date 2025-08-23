@@ -2,7 +2,7 @@
 
 #============================================================
 # File: skim.sh
-# Description: skim 命令行模糊查找器
+# Description: 命令行模糊查找器
 # URL: https://s.fx4.cn/skim
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
