@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: hugo.sh
-# Description: 静态网站生成器
-# URL: https://s.fx4.cn/hugo
+# File: atuin.sh
+# Description: Shell 历史记录管理工具
+# URL: https://s.fx4.cn/atuin
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
-# CreatedAt: 2025-07-20
-# UpdatedAt: 2025-07-20
+# CreatedAt: 2025-08-23
+# UpdatedAt: 2025-08-23
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -67,13 +67,13 @@ do_remove_https() {
 
 get_download_url() {
     repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
-    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg os "$OS" '.assets[] | select(.name | test("\($os)-\($arch).tar.gz")) | .browser_download_url' | grep -E "${PKG_PREFIX}_[0-9.]+"
+    curl -fsSL "$repo_api_url" | jq -r --arg suffix "$SUFFIX" '.assets[] | select(.name | endswith($suffix)) | .browser_download_url'
 }
 
 download_exact() {
     local download_file="tmp.tar.gz"
-    local file_bin="hugo"
-    TMP_DIR=$(mktemp -d /tmp/hugo.XXXXXX)
+    local file_bin="atuin"
+    TMP_DIR=$(mktemp -d /tmp/atuin.XXXXXX)
     
     cleanup() {
         rm -rf -- "$TMP_DIR"
@@ -88,11 +88,11 @@ download_exact() {
         exit 1
     fi
 
-    if ! tar -xzf "$download_file"; then 
+    if ! tar -xzf "$download_file" --strip-components=1; then 
         echo "Error: Extraction failed"
         rm -f "$download_file"
         exit 1
-    fi  
+    fi 
 
     sudo_exec mv "$file_bin" /usr/local/bin/
 
@@ -106,54 +106,41 @@ main() {
 
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
-    PKG_PREFIX="hugo"
-
-    # 扩展版
-    if [[ -n "${1:-}" ]]; then
-        if [[ "$1" = "-w" || "$1" = "--ew" ]]; then
-            PKG_PREFIX="${PKG_PREFIX}_extended_withdeploy"
-        else
-            PKG_PREFIX="${PKG_PREFIX}_extended"
-        fi
-    fi    
-
+    ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
-    case "$(uname -m)" in
-        x86_64) 
-            ARCH="amd64" 
+    SUFFIX=""
+    
+    case "$OS" in
+        "darwin")
+            SUFFIX="${ARCH}-apple-darwin.tar.gz"
             ;;
-        aarch64) 
-            ARCH="arm64" 
+        "linux")
+            SUFFIX="${ARCH}-unknown-linux-musl.tar.gz"
             ;;
-        *) 
-            echo "Unsupported architecture"
+        *)
+            echo "Unsupported OS: $OS"
             exit 1
-            ;; 
     esac
 
-    DOWNLOAD_URL="$(get_download_url gohugoio/hugo)"
+    DOWNLOAD_URL="$(get_download_url atuinsh/atuin)"
 
     download_exact
 
     echo ""
 
-    if ! check_is_command "hugo"; then
-        echo "hugo has not been installed successfully."
+    if ! check_is_command "atuin"; then
+        echo "atuin has not been installed successfully."
         echo ""
         exit 1
     fi
 
     echo ""
-    echo "hugo has been installed successfully!"
+    echo "atuin has been installed successfully!"
     echo ""
-    hugo help
+    atuin --help
     echo ""
-    hugo version
+    atuin --version
     echo ""
 }
 
 main "$@"
-
-# 基础版: curl -L https://s.fx4.cn/iuyTvo | bash
-# 扩展版: curl -L https://s.fx4.cn/iuyTvo | bash -s -- -e
-# 扩展版+部署: curl -L https://s.fx4.cn/iuyTvo | bash -s -- -w

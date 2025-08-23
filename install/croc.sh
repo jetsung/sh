@@ -2,7 +2,7 @@
 
 #============================================================
 # File: croc.sh
-# Description: croc 文件传输工具
+# Description: 文件传输工具
 # URL: https://s.fx4.cn/croc
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
