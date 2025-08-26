@@ -7,10 +7,10 @@
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-01
-# UpdatedAt: 2025-08-01
+# UpdatedAt: 2025-08-26
 #============================================================
 
-if [[ -n "$DEBUG" ]]; then
+if [[ -n "${DEBUG:-}" ]]; then
     set -eux
 else
     set -euo pipefail
@@ -37,6 +37,12 @@ get_image_tags() {
 
   echo "Fetching ALL container image versions (this may take a while)..." >&2
 
+  # # 若不存在 gh 命令
+  # if ! command -v gh &> /dev/null; then
+  #   echo "Error: 'gh' command not found. Please install 'gh' first." >&2
+  #   exit 1
+  # fi
+
   gh api \
     -H "Accept: application/vnd.github+json" \
     "/users/$OWNER/packages/container/$PACKAGE/versions" \
@@ -44,7 +50,7 @@ get_image_tags() {
     --jq '.[].metadata.container.tags[]' 2>/dev/null | \
     grep -E "\-$FILTER$" | \
     awk -v pre="$ACT_BASE_IMAGE_PRE" '{print pre":"$0}' | \
-    sort -u >> .actrc
+    sort -u >> .actrcs
   }
 
 save_image_tags() {
@@ -64,7 +70,7 @@ save_image_tags() {
 
   # -P ubuntu-24.04=ghcr.io/catthehacker/ubuntu:act-24.04
   for tag in "${tags[@]}"; do
-    echo "${ACT_BASE_IMAGE_PRE}:${tag}" >> .actrc
+    echo "${ACT_BASE_IMAGE_PRE}:${tag}" >> .actrcs
   done
 }
 
@@ -81,6 +87,9 @@ timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 author_name="Jetsung Chan"
 author_email="jetsungchan@gmail.com"
 
+# 取出 name
+repo_name=$(echo "$full_name" | awk -F '/' '{print $2}')
+
 ref="refs/heads/${branch}"
 
 # 需要 jq 生成安全的 JSON
@@ -95,6 +104,7 @@ jq -n \
   --arg after "$after" \
   --arg full_name "$full_name" \
   --arg pusher_name "$pusher_name" \
+  --arg repo_name "$repo_name" \
   --arg commit_id "$commit_id" \
   --arg commit_message "$commit_message" \
   --arg timestamp "$timestamp" \
@@ -106,7 +116,11 @@ jq -n \
     "after": $after,
     "inputs": {},
     "repository": {
-        "full_name": $full_name
+      "full_name": $full_name,
+      "name": $repo_name,
+      "owner": {
+        "login": $pusher_name
+      }
     },
     "pusher": {
         "name": $pusher_name
@@ -140,37 +154,45 @@ if ! grep -q '# act' .gitignore; then
     echo "" >> .gitignore
     echo '# act' >> .gitignore
 fi
+if ! grep -q '.actenv' .gitignore; then
+    echo '.actenv' >> .gitignore
+fi
 if ! grep -q '.actrc' .gitignore; then
     echo '.actrc' >> .gitignore
+fi
+if ! grep -q '.actrcs' .gitignore; then
+    echo '.actrcs' >> .gitignore
 fi
 if ! grep -q '.artifacts' .gitignore; then
     echo '.artifacts' >> .gitignore
 fi
-if ! grep -q 'event.json' .gitignore; then
-    echo 'event.json' >> .gitignore
-fi
 if ! grep -q '.secrets' .gitignore; then
     echo '.secrets' >> .gitignore
 fi
-if ! grep -q '.arcenv' .gitignore; then
-    echo '.arcenv' >> .gitignore
+if ! grep -q 'event.json' .gitignore; then
+    echo 'event.json' >> .gitignore
 fi
 echo "" >> .gitignore
 
 # 判断若存在 .actrc 文件则不执行
-if [[ ! -f .actrc ]]; then
-  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+if [[ ! -f .actrcs ]]; then
+  if [[ -n "${GITHUB_TOKEN:-}" ]] && command -v gh; then
     get_image_tags
   else
     save_image_tags
   fi
 fi
 
+echo "GITHUB_REPOSITORY=$full_name" > .actenv
+echo "GITHUB_TOKEN=$GITHUB_TOKEN" >> .secrets
+
+echo "act -e event.json --secret-file .secrets --env-file .actenv --artifact-server-path ./.artifacts"
 
 # ###
 # #      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
 # #      示例： curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
 # ###
-# #      触发分支：act push -e event.json --secret-file .secrets --env-file .arcenv --artifact-server-path ./.artifacts
+# #      触发分支：act push -e event.json --secret-file .secrets --env-file .actenv --artifact-server-path ./.artifacts
 # #         发布：act release -e event.json
+# #               --env GITHUB_REPOSITORY=jetsung/rclone-backup
 # ###

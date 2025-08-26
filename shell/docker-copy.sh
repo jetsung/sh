@@ -3,7 +3,7 @@
 #============================================================
 # File: docker-copy.sh
 # Description: Docker 镜像复制至新的注册表
-# URL: https://s.fx4.cn/
+# URL: https://s.fx4.cn/dockercopy
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18

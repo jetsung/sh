@@ -3,11 +3,11 @@
 #============================================================
 # File: docker-pull.sh
 # Description: Docker 通过加速站拉取镜像
-# URL: https://s.fx4.cn/0435a789
+# URL: https://s.fx4.cn/dockerpull
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-02-22
-# UpdatedAt: 2025-03-05
+# UpdatedAt: 2025-08-26
 #============================================================
 
 if [[ -n "$DEBUG" ]]; then
@@ -16,12 +16,9 @@ else
     set -euo pipefail
 fi
 
-# MIRROR
-# MIRROR=nju.edu.cn
-
 # 默认镜像域名
-DEFAULT_MIRROR_DOMAIN="${MIRROR:-dockerproxy.net}"
-DEFAULT_MIRROR_DOMAIN="${M:-${DEFAULT_MIRROR_DOMAIN}}"
+DEFAULT_MIRROR_DOMAIN="${A:-dockerproxy.net}"
+DEFAULT_MIRROR_DOMAIN="${B:-${DEFAULT_MIRROR_DOMAIN}}"
 
 # 镜像名
 IMAGE_NAME=""
@@ -127,8 +124,8 @@ select_registry() {
         ;;
     esac
 
-    if [[ -n "${M:-}" ]]; then
-        IMAGE_MIRROR_URL="${M}/${IMAGE_URL}"
+    if [[ -n "${B:-}" ]]; then
+        IMAGE_MIRROR_URL="${B}/${IMAGE_URL}"
     fi
 }
 
@@ -270,3 +267,6 @@ main "$@"
 #   3.2 dockerpull -i alpine:latest # 从官方镜像站
 #   3.3 dockerpull -i xtls/xray-core:latest -r ghcr  # (docker,gcr,ghcr,k8s,quay,mcr) 从指定源的镜像站
 #   3.4 dockerpull -i docker.io/idevsig/filetas:latest # 完整的 URL 自动判断从指定源的镜像站
+#
+# A=nju.edu.cn        # ghcr.nju.edu.cn
+# B=abc.cn            # abc.cn/ghcr.io/
