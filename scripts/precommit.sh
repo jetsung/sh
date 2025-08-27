@@ -9,7 +9,7 @@ fi
 do_install_list() {
     pushd "$1" > /dev/null 2>&1
     rm -rf list.txt
-    find . -maxdepth 1 -type f -name '*.sh' | sort | while read -r file; do
+    find . -maxdepth 1 -type f -name '*.sh' -o -name '*.ps1' | sort | while read -r file; do
         title=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)
         if [[ -n "$title" ]]; then
             echo "$file  |  $title" >> list.txt
@@ -27,7 +27,7 @@ update_readme() {
     sed -i -n '1,/|:---|/p' README.md
 
     (
-    for file in *.sh; do
+    for file in *.sh *.ps1; do
         if [[ -f "$file" ]]; then
             _file_no_ext="${file%%.*}"
             _desc=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)  # 提取标题
@@ -58,6 +58,7 @@ main() {
         build
         install
         shell
+        pwsh
     )
 
     for dir in "${dir_list[@]}"; do
