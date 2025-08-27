@@ -17,8 +17,8 @@
 |:---|:---|:---|
 | [**act-event**](act-event.sh) | [https://s.fx4.cn/act-event](https://s.fx4.cn/act-event) | 生成 act 的 event.json 文件 |
 | [**backup-update**](backup-update.sh) | [https://s.fx4.cn/56be48a8](https://s.fx4.cn/56be48a8) | 更新服务器中的 Docker 镜像和备份数据 |
-| [**docker-copy**](docker-copy.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | Docker 镜像复制至新的注册表 |
-| [**docker-pull**](docker-pull.sh) | [https://s.fx4.cn/0435a789](https://s.fx4.cn/0435a789) | Docker 通过加速站拉取镜像 |
+| [**docker-copy**](docker-copy.sh) | [https://s.fx4.cn/dockercopy](https://s.fx4.cn/dockercopy) | Docker 镜像复制至新的注册表 |
+| [**docker-pull**](docker-pull.sh) | [https://s.fx4.cn/dockerpull](https://s.fx4.cn/dockerpull) | Docker 通过加速站拉取镜像 |
 | [**gitlab-backup**](gitlab-backup.sh) | [https://s.fx4.cn/4ddf9061](https://s.fx4.cn/4ddf9061) | GitLab 账号源码仓库备份 |
 | [**git-qcloud**](git-qcloud.sh) | [https://s.fx4.cn/7c2f52c8](https://s.fx4.cn/7c2f52c8) | 腾讯工峰 命令行工具 |
 | [**google-cloud-token**](google-cloud-token.sh) |  | 获取 google cloud token |
