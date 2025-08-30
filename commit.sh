@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+###
+#
+# git commit 前执行，更新对应脚本中的 list.txt 文件列表
+#
+###
+
 if [[ -n "${DEBUG:-}" ]]; then
     set -eux
 else
@@ -9,7 +15,8 @@ fi
 do_install_list() {
     pushd "$1" > /dev/null 2>&1
     rm -rf list.txt
-    find . -maxdepth 1 -type f -name '*.sh' -o -name '*.ps1' | sort | while read -r file; do
+    find . -maxdepth 1 -type f \( -name "*.sh" -o -name "*.ps1" -o -name "*.py" \) -not -wholename "./.upgrade.sh" -print0 | sort |
+    while IFS= read -r -d '' file; do    
         title=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)
         if [[ -n "$title" ]]; then
             echo "$file  |  $title" >> list.txt
@@ -27,9 +34,12 @@ update_readme() {
     sed -i -n '1,/|:---|/p' README.md
 
     (
-    for file in *.sh *.ps1; do
+    # 查找所有符合条件的脚本文件，支持空格和特殊字符
+    find . -maxdepth 1 -type f \( -name "*.sh" -o -name "*.ps1" -o -name "*.py" \) -print0 | sort |
+    while IFS= read -r -d '' file; do
         if [[ -f "$file" ]]; then
-            _file_no_ext="${file%%.*}"
+            _file_with_ext="${file##*/}"  # 提取文件名（包括扩展名）
+            _file_no_ext="${_file_with_ext%.*}"  # 去除扩展名
             _desc=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)  # 提取标题
             _url=$(grep -m1 '^# URL:' "$file" | cut -d':' -f2- | xargs)  # 提取标题
 
@@ -57,8 +67,9 @@ main() {
     dir_list=(
         build
         install
-        shell
         pwsh
+        python
+        shell
     )
 
     for dir in "${dir_list[@]}"; do

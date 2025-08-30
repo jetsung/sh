@@ -1,0 +1,1 @@
+./totp2md.py  |  将 TOTP 二维码转换为 Markdown 表格
