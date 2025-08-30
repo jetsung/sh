@@ -15,5 +15,5 @@
 
 | **标题** | **URL** | **描述** |
 |:---|:---|:---|
-| [**download_chrome_crx**](download_chrome_crx.ps1) | [https://s.fx4.cn/wdlcrx](https://s.fx4.cn/wdlcrx) | 从 Chomne 扩展 ID 列表中下载最新的扩展保存至本地文件夹 |
-| [**remove_github_workflow_runs**](remove_github_workflow_runs.ps1) | [https://s.fx4.cn/](https://s.fx4.cn/) | 批量删除 GitHub Action Workflows 流水线 |
+| [**download_chrome_crx**](./download_chrome_crx.ps1) | [https://s.fx4.cn/wdlcrx](https://s.fx4.cn/wdlcrx) | 从 Chomne 扩展 ID 列表中下载最新的扩展保存至本地文件夹 |
+| [**remove_github_workflow_runs**](./remove_github_workflow_runs.ps1) | [https://s.fx4.cn/](https://s.fx4.cn/) | 批量删除 GitHub Action Workflows 流水线 |

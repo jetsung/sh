@@ -8,6 +8,12 @@
 ###
 ####
 
+if [[ -n "${DEBUG:-}" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
+
 download_and_replace() {
   local url=$1
   local filename=$2
@@ -29,8 +35,9 @@ download_and_replace() {
   fi
 }
 
-find . -type f -name "*.sh" -o -name "*.ps1" -not -wholename "./.upgrade.sh" -exec awk '/^# ORIGIN:/ {print FILENAME, $3}' {} \; |
-  while read -r filename url; do
+find . -mindepth 2 -maxdepth 2 -type f \( -name "*.sh" -o -name "*.ps1" -o -name "*.py" \) -not -wholename "./.upgrade.sh" -print0 |
+  while IFS= read -r -d '' filename; do
+    url=$(awk '/^# ORIGIN:/ {print $3}' "$filename")
     download_and_replace "$url" "$filename"
   done
 

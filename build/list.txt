@@ -1,3 +1,3 @@
-./proxychains.sh  |  代理命令行工具
-./skopeo.sh  |  镜像复制工具
 ./squashfs.sh  |  压缩与解压工具
+./skopeo.sh  |  镜像复制工具
+./proxychains.sh  |  代理命令行工具
