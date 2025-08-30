@@ -111,14 +111,16 @@ run_restart_scripts() {
 # 设置 cron 任务
 setup_cron() {
     local script_path
-    script_path="$(realpath "$0")"
+    script_path="$(basename "$0")"
     local random_hour=$((RANDOM % 8))  # 0-7
     local random_min=$((RANDOM % 60))  # 0-59
     local cron_file="/etc/cron.d/ssl_reload"
 
-    echo "$random_min $random_hour * * * root $script_path" > "$cron_file"
+    echo "$random_min $random_hour * * * root cd $SCRIPT_DIR; bash $script_path" > "$cron_file"
     chmod 644 "$cron_file"
     echo "已设置 cron 任务：每天 $random_hour:$random_min 运行 $script_path (写入 $cron_file)"
+
+    systemctl restart cron.service
 }
 
 # 显示帮助信息
