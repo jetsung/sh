@@ -183,10 +183,10 @@ if [[ ! -f .actrcs ]]; then
   fi
 fi
 
-echo "GITHUB_REPOSITORY=$full_name" > .actenv
-echo "GITHUB_TOKEN=$GITHUB_TOKEN" >> .secrets
+echo "GITHUB_REPOSITORY=$full_name" >> .env
+echo "GITHUB_TOKEN=${GITHUB_TOKEN:-}" >> .secrets
 
-echo "act -e event.json --secret-file .secrets --env-file .actenv --artifact-server-path ./.artifacts"
+echo "act -e event.json --secret-file .secrets --env-file .env --artifact-server-path ./.artifacts"
 
 # ###
 # #      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
