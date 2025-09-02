@@ -4,7 +4,7 @@
 # File: push_notify.sh
 # Description: 推送消息到钉钉、飞书、Lark
 # URL: https://s.fx4.cn/
-# ORIGIN: https://gist.asfd.cn/jetsung/3146f592ab2b4aff8d4cad3ae9911940/raw/HEAD/push_notify.sh
+# ORIGIN: https://gist.asfd.cn/jetsung/notify/raw/HEAD/notify.sh
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18
@@ -84,11 +84,11 @@ send_message() {
 }'
 
   SEND_TEMPLATE_FEISHU='{
-		"msg_type": "text",
-		"content": {"text": "消息通知: %s "},
-		"sign": "%s",
-		"timestamp": %d
-	}'
+                "msg_type": "text",
+                "content": {"text": "消息通知: %s "},
+                "sign": "%s",
+                "timestamp": %d
+        }'
 
   # shellcheck disable=SC2059
   if [[ "$DOMAIN" == "oapi.dingtalk.com" ]]; then
@@ -105,7 +105,12 @@ send_message() {
 }
 
 signature() {
-  string_to_sign="$TIMESTAMP\n$SECRET"
+  if [[ -z "${SECRET:-}" ]]; then
+    SIGN=""
+    return
+  fi
+
+  string_to_sign="${TIMESTAMP}\n${SECRET}"
 
   if [[ "${1:-1}" == 1 ]]; then
     sign_str="$SECRET"

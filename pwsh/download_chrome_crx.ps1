@@ -2,7 +2,7 @@
 # File: download_chrome_crx.ps1
 # Description:从 Chomne 扩展 ID 列表中下载最新的扩展保存至本地文件夹
 # URL: https://s.fx4.cn/wdlcrx
-# ORIGIN: https://gist.asfd.cn/jetsung/5902db259e9a4113a64f29bf13a289be/raw/HEAD/download_chrome_crx.ps1
+# ORIGIN: https://gist.asfd.cn/jetsung/chromecrx/raw/HEAD/download_chrome_crx.ps1
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-21

@@ -4,7 +4,7 @@
 # File: remove_gitlab_workflow_runs.sh
 # Description: 批量删除 GitLab CI 流水线
 # URL: https://s.fx4.cn/
-# ORIGIN: https://gist.asfd.cn/jetsung/5f54ad63df9a4a09b9f181c6437af76a/raw/HEAD/remove_gitlab_workflow_runs.sh
+# ORIGIN: https://gist.asfd.cn/jetsung/gitlabci/raw/HEAD/remove_gitlab_workflow_runs.sh
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18

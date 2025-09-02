@@ -4,7 +4,7 @@
 # File: remove_github_workflow_runs.sh
 # Description: 批量删除 GitHub 部署记录
 # URL: https://s.fx4.cn/
-# ORIGIN: https://gist.asfd.cn/jetsung/d90404cf06eb483b9ad3a858db79aba6/raw/HEAD/remove_github_deployments_run.sh
+# ORIGIN: https://gist.asfd.cn/jetsung/githubci/raw/HEAD/remove_github_deployments_run.sh
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18

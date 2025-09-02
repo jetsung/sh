@@ -4,7 +4,7 @@
 # File: remove_github_packages_untagged.sh
 # Description: 删除 GitHub Packages 悬空的镜像标签
 # URL: https://s.fx4.cn/
-# ORIGIN: https://gist.asfd.cn/jetsung/4cc373dce28b48d6a8611a8c6eaec23e/raw/HEAD/remove_github_packages_untagged.sh
+# ORIGIN: https://gist.asfd.cn/jetsung/githubci/raw/HEAD/remove_github_packages_untagged.sh
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18

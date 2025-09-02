@@ -38,7 +38,9 @@ download_and_replace() {
 find . -mindepth 2 -maxdepth 2 -type f \( -name "*.sh" -o -name "*.ps1" -o -name "*.py" \) -not -wholename "./.upgrade.sh" -print0 |
   while IFS= read -r -d '' filename; do
     url=$(awk '/^# ORIGIN:/ {print $3}' "$filename")
-    download_and_replace "$url" "$filename"
+    if [[ -n "$url" ]]; then
+      download_and_replace "$url" "$filename"
+    fi
   done
 
 echo "All files have been updated."

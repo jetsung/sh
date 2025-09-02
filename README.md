@@ -13,9 +13,11 @@
 ├── install    # 二进制软件安装脚本
 ├── origin     # 脚本源
 ├── pwsh       # 自己编写的 PowerShell 脚本
-├── scripts    # 本项目使用的，比如 pre-commit
+├── python     # 自己编写的 Python 脚本
 ├── shell      # 自己编写的 Shell 脚本
 └── softs      # 自己编写的一些提取软件版本号和下载地址的脚本 
+└── commit.sh  # 提交前执行生成新的 list.txt
+└── fetch.sh   # 从云端更新脚本至本地
 ```
 
 ## 先决条件

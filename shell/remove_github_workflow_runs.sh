@@ -4,7 +4,7 @@
 # File: remove_github_workflow_runs.sh
 # Description: 批量删除 GitHub Action Workflows 流水线
 # URL: https://s.fx4.cn/
-# ORIGIN: https://gist.asfd.cn/jetsung/4b17ab324d82407a92157f0233b7d619/raw/HEAD/remove_github_workflow_runs.sh
+# ORIGIN: https://gist.asfd.cn/jetsung/githubci/raw/HEAD/remove_github_workflow_runs.sh
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18
