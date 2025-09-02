@@ -15,6 +15,7 @@
 
 | **标题** | **URL** | **描述** |
 |:---|:---|:---|
+| [**shell**](./shell.sh) | [https://s.fx4.cn/shell](https://s.fx4.cn/shell) | 将命令行组合成函数调用 |
 | [**remove_github_packages_untagged**](./remove_github_packages_untagged.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 删除 GitHub Packages 悬空的镜像标签 |
 | [**gitlab-backup**](./gitlab-backup.sh) | [https://s.fx4.cn/4ddf9061](https://s.fx4.cn/4ddf9061) | GitLab 账号源码仓库备份 |
 | [**remove_github_deployments_run**](./remove_github_deployments_run.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 批量删除 GitHub 部署记录 |
@@ -25,7 +26,7 @@
 | [**remove_github_workflow_runs**](./remove_github_workflow_runs.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 批量删除 GitHub Action Workflows 流水线 |
 | [**totp2md**](./totp2md.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 将 TOTP 二维码转换为 Markdown 表格 |
 | [**push_notify**](./push_notify.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 推送消息到钉钉、飞书、Lark |
-| [**ssl-reload**](./ssl-reload.sh) | [https://s.fx4.cn/ssl-reload](https://s.fx4.cn/ssl-reload) | 检查 ssl 证书是否过期，过期则重启服务 |
+| [**ssl-reload**](./ssl-reload.sh) | [https://s.fx4.cn/ssl-reload](https://s.fx4.cn/ssl-reload) | 检查 SSL 证书是否在指定时间范围内更新，更新则重启服务 |
 | [**docker-pull**](./docker-pull.sh) | [https://s.fx4.cn/dockerpull](https://s.fx4.cn/dockerpull) | Docker 通过加速站拉取镜像 |
 | [**remove_gitlab_workflow_runs**](./remove_gitlab_workflow_runs.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 批量删除 GitLab CI 流水线 |
 | [**git-qcloud**](./git-qcloud.sh) | [https://s.fx4.cn/7c2f52c8](https://s.fx4.cn/7c2f52c8) | 腾讯工峰 命令行工具 |

@@ -1,3 +1,4 @@
+./shell.sh  |  将命令行组合成函数调用
 ./remove_github_packages_untagged.sh  |  删除 GitHub Packages 悬空的镜像标签
 ./gitlab-backup.sh  |  GitLab 账号源码仓库备份
 ./remove_github_deployments_run.sh  |  批量删除 GitHub 部署记录
@@ -8,7 +9,7 @@
 ./remove_github_workflow_runs.sh  |  批量删除 GitHub Action Workflows 流水线
 ./totp2md.sh  |  将 TOTP 二维码转换为 Markdown 表格
 ./push_notify.sh  |  推送消息到钉钉、飞书、Lark
-./ssl-reload.sh  |  检查 ssl 证书是否过期，过期则重启服务
+./ssl-reload.sh  |  检查 SSL 证书是否在指定时间范围内更新，更新则重启服务
 ./docker-pull.sh  |  Docker 通过加速站拉取镜像
 ./remove_gitlab_workflow_runs.sh  |  批量删除 GitLab CI 流水线
 ./git-qcloud.sh  |  腾讯工峰 命令行工具

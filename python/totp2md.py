@@ -4,13 +4,12 @@
 # File: totp2md.py
 # Description: 将 TOTP 二维码转换为 Markdown 表格
 # URL: https://s.fx4.cn/
-# ORIGIN: https://gist.asfd.cn/jetsung/30f7cb75c6714359bbd9673f97c70781/raw/HEAD/totp2md.py
+# ORIGIN: https://gist.asfd.cn/jetsung/totp2md/raw/HEAD/totp2md.py
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18
 # UpdatedAt: 2025-08-18
 #============================================================
-
 
 import os
 import re
@@ -18,6 +17,7 @@ import subprocess
 import urllib.parse
 from pathlib import Path
 import argparse
+
 
 def decode_qr_image(file_path):
     """使用 zbarimg 读取二维码内容"""
