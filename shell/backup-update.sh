@@ -6,8 +6,8 @@
 # URL: https://s.fx4.cn/56be48a8
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1
-# CreatedAt: 
-# UpdatedAt: 2025-07-12
+# CreatedAt: 2025-07-12
+# UpdatedAt: 2025-09-07
 #============================================================
 
 if [[ -n "$DEBUG" ]]; then
@@ -35,9 +35,12 @@ cron_run_path="cronrun.sh"
 mindepth=2
 maxdepth=2
 
+# 备份的额外参数
+backup_arg_extra=""
+
 # 提取参数
 judgment_parameters() {
-  while getopts "id:p:b:s:u:h" opt; do
+  while getopts "id:p:b:s:u:h:e:" opt; do
     case "$opt" in
       i)
         # 安装
@@ -75,6 +78,10 @@ judgment_parameters() {
           update_arg="no"
         fi
         ;;    
+      e)
+        # 备份的额外参数
+        backup_arg_extra="${OPTARG:? 必须指定额外参数}"
+        ;;
       h)
         # 帮助
         echo "Usage: $0 [-i] [-d <day>] [-p <path>] [-b <yes/no>] [-u <yes/no>] [-h]"
@@ -83,6 +90,7 @@ judgment_parameters() {
         echo "  -p: Docker 路径"
         echo "  -b: 备份"
         echo "  -s: 子目录运行"
+        echo "  -e: 备份的额外参数"
         echo "  -u: 更新"
         echo "  -h: 帮助"
         exit 0
@@ -115,22 +123,14 @@ update_list() {
   done < "$list_file"
 }
 
-# 备份所有数据(Docker)
+# 备份所有数据
 backup_all() {
-  echo "backup all data"
-
-  if [[ "$interval_day" = '*' ]]; then
-    cronday=1
-  else
-    cronday="$interval_day"
-  fi
-
-  echo "cronday: $cronday"
   while read -r line; do
     folder_path=$(dirname "$line")
     pushd "$folder_path" > /dev/null 2>&1
       echo "badkup $folder_path"
-      bash "$backup_file" "$cronday" < /dev/null
+      # shellcheck disable=SC2086
+      bash "$backup_file" $backup_arg_extra < /dev/null
     popd > /dev/null 2>&1
   done < <(find "$docker_path" -mindepth "$mindepth" -maxdepth "$maxdepth" -type f -name "$backup_file")
 }
@@ -156,8 +156,8 @@ setup_setting() {
     # 设置脚本运行路径
     sed -i "s#^cron_run_path=.*#cron_run_path=\"$cron_file_path\"#" "$cron_file_path"
     
-    # 设置运行间隔
-    sed -i "s#^interval_day=.*#interval_day=\"$interval_day\"#" "$cron_file_path"
+    # 备份的额外参数
+    sed -i "s^backup_arg_extra=.*#backup_arg_extra=\"$backup_arg_extra\"#" "$cron_file_path"
 
     # 注释掉 setup 行
     sed -i '/^\s*setup\s*$/s/^/#/' "$cron_file_path"    
