@@ -10,7 +10,7 @@
 # UpdatedAt: 2025-09-07
 #============================================================
 
-if [[ -n "$DEBUG" ]]; then
+if [[ -n "${DEBUG:-}" ]]; then
     set -eux
 else
     set -euo pipefail
@@ -40,7 +40,7 @@ backup_arg_extra=""
 
 # 提取参数
 judgment_parameters() {
-  while getopts "id:p:b:s:u:h:e:" opt; do
+  while getopts "d:p:b:s:u:m:e:hi" opt; do
     case "$opt" in
       i)
         # 安装
@@ -63,7 +63,7 @@ judgment_parameters() {
         fi
         ;;   
       s)
-        # 子目录运行
+        # 子目录脚本运行
         if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
           subrun_arg="yes"
         else
@@ -80,24 +80,50 @@ judgment_parameters() {
         ;;    
       e)
         # 备份的额外参数
-        backup_arg_extra="${OPTARG:? 必须指定额外参数}"
+        if [[ -z "${OPTARG:-}" ]]; then
+          echo "Error: -e requires a non-empty argument" >&2
+          exit 1
+        fi
+        backup_arg_extra="$OPTARG"
+        ;;
+      m)
+        # 文件夹深度
+        if [[ -z "${OPTARG:-}" ]]; then
+          echo "Error: -i requires a non-empty argument" >&2
+          exit 1
+        fi
+        mindepth=$(echo "${OPTARG:-}" | cut -d '-' -f 1)
+        maxdepth=$(echo "${OPTARG:-}" | cut -d '-' -f 2)
+        if [[ -z "$mindepth" ]]; then
+          echo "Error: -i requires a non-empty argument" >&2
+          exit 1
+        fi
+        if [[ -z "$maxdepth" ]]; then
+          maxdepth="$mindepth"
+        fi
         ;;
       h)
         # 帮助
-        echo "Usage: $0 [-i] [-d <day>] [-p <path>] [-b <yes/no>] [-u <yes/no>] [-h]"
-        echo "  -i: 安装"
-        echo "  -d: 每隔多少天备份一次"
-        echo "  -p: Docker 路径"
-        echo "  -b: 备份"
-        echo "  -s: 子目录运行"
+        echo "Usage: $0 [-i] [-d <days>] [-p <path>] [-b <yes/no>] [-s <yes/no>] [-u <yes/no>] [-e <extra>] [-h]"
+        echo "  -i: 安装 crontab 任务"
+        echo "  -d: 每隔多少天备份一次，默认每天备份一次"
+        echo "  -m: 文件夹深度(mindepth-maxdepth)，默认值 2-2"
+        echo "  -p: Docker 项目路径"
+        echo "  -b: 启用备份数据功能"
+        echo "  -u: 启用更新 Docker 镜像功能"
+        echo "  -s: 子目录脚本运行"
         echo "  -e: 备份的额外参数"
-        echo "  -u: 更新"
         echo "  -h: 帮助"
         exit 0
         ;;            
       \?)
         # 无效选项
         echo "Invalid option: -$OPTARG" >&2
+        exit 1
+        ;;
+      :)
+        # 缺少选项参数
+        echo "Option -$OPTARG requires an argument" >&2
         exit 1
         ;;
     esac
@@ -128,7 +154,7 @@ backup_all() {
   while read -r line; do
     folder_path=$(dirname "$line")
     pushd "$folder_path" > /dev/null 2>&1
-      echo "badkup $folder_path"
+      echo "badkup folder: $folder_path"
       # shellcheck disable=SC2086
       bash "$backup_file" $backup_arg_extra < /dev/null
     popd > /dev/null 2>&1
@@ -157,10 +183,14 @@ setup_setting() {
     sed -i "s#^cron_run_path=.*#cron_run_path=\"$cron_file_path\"#" "$cron_file_path"
     
     # 备份的额外参数
-    sed -i "s^backup_arg_extra=.*#backup_arg_extra=\"$backup_arg_extra\"#" "$cron_file_path"
+    sed -i "s#^backup_arg_extra=.*#backup_arg_extra=\"$backup_arg_extra\"#" "$cron_file_path"
 
     # 注释掉 setup 行
-    sed -i '/^\s*setup\s*$/s/^/#/' "$cron_file_path"    
+    sed -i '/^\s*setup\s*$/s/^/#/' "$cron_file_path"
+
+    # 更新深度
+    sed -i "s#^mindepth=.*#mindepth=\"$mindepth\"#" "$cron_file_path"
+    sed -i "s#^maxdepth=.*#maxdepth=\"$maxdepth\"#" "$cron_file_path"
 }
 
 # 生成 crontab 任务
@@ -178,7 +208,7 @@ setup_crontab() {
 
   cron_dir="/etc/cron.d/"
 
-  cron_str="$random_minute $random_hour $every_day * * $(whoami) cd $script_path; bash $cron_file_path"
+  cron_str="$random_minute $random_hour $every_day * * $(whoami) cd $script_path; ./$cron_file_path"
   cron_path="${cron_dir}${cron_file_path%.*}"
 
   echo "$cron_str" > "$cron_path"
