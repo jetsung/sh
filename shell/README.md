@@ -23,6 +23,7 @@
 | [**docker-copy**](./docker-copy.sh) | [https://s.fx4.cn/dockercopy](https://s.fx4.cn/dockercopy) | Docker 镜像复制至新的注册表 |
 | [**act-event**](./act-event.sh) | [https://s.fx4.cn/act-event](https://s.fx4.cn/act-event) | 生成 act 的 event.json 文件 |
 | [**backup-update**](./backup-update.sh) | [https://s.fx4.cn/56be48a8](https://s.fx4.cn/56be48a8) | 更新服务器中的 Docker 镜像和备份数据 |
+| [**backup**](./backup.sh) | [https://s.fx4.cn/sWlt0d](https://s.fx4.cn/sWlt0d) | 备份数据库、文件夹、文件的脚本 |
 | [**remove_github_workflow_runs**](./remove_github_workflow_runs.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 批量删除 GitHub Action Workflows 流水线 |
 | [**totp2md**](./totp2md.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 将 TOTP 二维码转换为 Markdown 表格 |
 | [**push_notify**](./push_notify.sh) | [https://s.fx4.cn/](https://s.fx4.cn/) | 推送消息到钉钉、飞书、Lark |
