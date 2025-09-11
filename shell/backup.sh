@@ -153,29 +153,19 @@ load_env_config() {
     local env_file="$1"
     [[ ! -f "$env_file" ]] && return 0
 
-    env_project_name=$(grep '# project_name=' "$env_file" | cut -d= -f2 | xargs)
-    env_targetdir=$(grep '# targetdir=' "$env_file" | cut -d= -f2 | xargs)
-    env_backdir=$(grep '# backdir=' "$env_file" | cut -d= -f2 | xargs)
+    # # 或 echo ""
+    env_project_name=$(grep '# project_name=' "$env_file" | cut -d= -f2 | xargs 2>/dev/null || true) 
+    env_targetdir=$(grep '# targetdir=' "$env_file" | cut -d= -f2 | xargs 2>/dev/null || true)
+    env_backdir=$(grep '# backdir=' "$env_file" | cut -d= -f2 | xargs 2>/dev/null || true)
 }
 
-# 前置执行脚本
-prepare() {
+# 执行脚本
+do_exec() {
     pushd "${1:-}" > /dev/null 2>&1
-    if [[ -f prepare.sh ]]; then
-        if ! ./prepare.sh; then
-            log "错误：执行 ./prepare.sh 失败"
-            exit 1
-        fi
-    fi
-    popd > /dev/null 2>&1
-}
-
-# 后置执行脚本
-post() {
-    pushd "${1:-}" > /dev/null 2>&1
-    if [[ -f post.sh ]]; then
-        if ! ./post.sh; then
-            log "错误：执行 ./post.sh 失败"
+    local exec_file="./exec_${2:-}.sh"
+    if [[ -f "$exec_file" ]]; then
+        if ! "$exec_file"; then
+            log "错误：执行 $exec_file 失败"
             exit 1
         fi
     fi
@@ -200,7 +190,8 @@ main() {
     script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
     local env_file="$script_dir/.env"
 
-    prepare "$script_dir"
+    # 前置执行
+    do_exec "$script_dir" pre
 
     # 初始化环境变量（默认值）
     local env_project_name="" env_targetdir="data" env_backdir=""
@@ -314,7 +305,8 @@ main() {
         tar_source="$backdir"
     fi
 
-    if tar -Jcf "$current_tar" "$tar_source"; then
+    # shellcheck disable=SC2086
+    if tar -Jcf "$current_tar" $tar_source; then
         log "已创建压缩包：$current_tar"
     else
         log "错误：创建压缩包失败：$current_tar"
@@ -377,7 +369,8 @@ main() {
 
     log "项目 '$project_name' 备份成功同步至所有远程存储"
 
-    post "$script_dir"
+    # 后置操作
+    do_exec "$script_dir" post
 
     # 返回原始目录（失败仅记录警告）
     cd "$original_dir" 2>/dev/null || log "警告：无法返回原始目录：$original_dir"
@@ -396,5 +389,9 @@ main "$@"
 # project_name=project
 # targetdir=/path/to/backup
 # backdir=/path/to/backup
+#
+# 扩展脚本：
+# ./exec_?.sh （? 为 pre 或 post）
+# 使之支持先打包再备份，或备份完成后发送 PUSH 通知
 #
 ##
