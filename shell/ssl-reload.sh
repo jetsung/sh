@@ -3,7 +3,7 @@
 #============================================================
 # File: ssl-reload.sh
 # Description: 检查 SSL 证书是否在指定时间范围内更新，更新则重启服务
-# URL: https://s.fx4.cn/ssl-reload
+# URL: https://fx4.cn/ssl-reload
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.3.0
 # CreatedAt: 2025-08-30

@@ -3,7 +3,7 @@
 #============================================================
 # File: push_notify.sh
 # Description: 推送消息到钉钉、飞书、Lark
-# URL: https://s.fx4.cn/
+# URL: https://fx4.cn/
 # ORIGIN: https://gist.asfd.cn/jetsung/notify/raw/HEAD/notify.sh
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

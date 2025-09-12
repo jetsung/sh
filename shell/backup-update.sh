@@ -3,7 +3,7 @@
 #============================================================
 # File: backup-update.sh
 # Description: 更新服务器中的 Docker 镜像和备份数据
-# URL: https://s.fx4.cn/56be48a8
+# URL: https://fx4.cn/56be48a8
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1
 # CreatedAt: 2025-07-12
@@ -349,7 +349,7 @@ main() {
 main "$@" || exit 1
 
 #
-# curl -L https://s.fx4.cn/56be48a8 -o backup-update.sh
+# curl -L https://fx4.cn/56be48a8 -o backup-update.sh
 #
 # 查看帮助: bash backup-update.sh -h
 # 安装定时计划,每5天执行备份和更新: bash backup-update.sh -i -p ~/dockers -d 5 -b y -u y

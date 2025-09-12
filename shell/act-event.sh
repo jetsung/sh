@@ -3,7 +3,7 @@
 #============================================================
 # File: act-event.sh
 # Description: 生成 act 的 event.json 文件
-# URL: https://s.fx4.cn/act-event
+# URL: https://fx4.cn/act-event
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-01
@@ -190,7 +190,7 @@ echo "act -e event.json --secret-file .secrets --env-file .env --artifact-server
 
 # ###
 # #      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
-# #      示例： curl -L https://s.fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
+# #      示例： curl -L https://fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
 # ###
 # #      触发分支：act push -e event.json --secret-file .secrets --env-file .actenv --artifact-server-path ./.artifacts
 # #         发布：act release -e event.json

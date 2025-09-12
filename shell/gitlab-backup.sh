@@ -3,7 +3,7 @@
 #============================================================
 # File: gitlab-backup.sh
 # Description: GitLab 账号源码仓库备份
-# URL: https://s.fx4.cn/4ddf9061
+# URL: https://fx4.cn/4ddf9061
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-04

@@ -3,7 +3,7 @@
 #============================================================
 # File: backup.sh
 # Description: 备份数据库、文件夹、文件的脚本
-# URL: https://s.fx4.cn/sWlt0d
+# URL: https://fx4.cn/sWlt0d
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-09-07
