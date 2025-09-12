@@ -80,9 +80,17 @@ main() {
     fi
 
     # echo "nohttps: $NO_HTTPS"
-    source_url=$(remove_second_https "${CDN_URL}${source_url}")
-    # echo "source_url: $source_url"
+    # source_url=$(remove_second_https "${CDN_URL}${source_url}")
+    echo "source_url: $source_url"
     # echo ""
+
+    # 支持多级跳转
+    final_url=$(curl -L -s -o /dev/null -w "%{url_effective}" "$source_url")
+    if [ -z "$final_url" ]; then
+        echo "Error: 无法获取最终 URL"
+        exit 1
+    fi
+    source_url=$(remove_second_https "${CDN_URL}${final_url}")
 
     source=$(curl -fsSL "$source_url")
     if [[ "$METHOD" = "github" ]]; then
