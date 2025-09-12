@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: xcurl.sh
+# File: x.sh
 # Description: 替换脚本中的字符串为加速网址
-# URL: https://s.fx4.cn/xcurl
+# URL: https://s.fx4.cn/x
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.1.1
 # CreatedAt: 2025-03-05
-# UpdatedAt: 2025-03-17
+# UpdatedAt: 2025-09-12
 #============================================================
 
 if [[ -n "$DEBUG" ]]; then
@@ -103,14 +103,14 @@ main "$@"
 
 ###
 # 本地使用示例
-# ./shell/xcurl.sh https://get.docker.com | bash
-# CDN=https://fastfile.asfd.cn/ ./shell/xcurl.sh https://get.docker.com | bash
+# ./shell/x.sh https://get.docker.com | bash
+# CDN=https://fastfile.asfd.cn/ ./shell/x.sh https://get.docker.com | bash
 # 
 # 网络使用示例
-# curl -L https://s.fx4.cn/514b875c | bash -s -- https://get.docker.com | bash
-# curl -L https://s.fx4.cn/514b875c | CDN=https://fastfile.asfd.cn/ bash -s -- https://get.docker.com | bash
+# curl -L https://s.fx4.cn/x | bash -s -- https://get.docker.com | bash
+# curl -L https://s.fx4.cn/x | CDN=https://fastfile.asfd.cn/ bash -s -- https://get.docker.com | bash
 # 
 # 先保存至本地再操作（适合交互式）
-# curl -L https://s.fx4.cn/514b875c | bash -s -- https://get.docker.com | tee /tmp/docker.sh
+# curl -L https://s.fx4.cn/x | bash -s -- https://get.docker.com | tee /tmp/docker.sh
 # bash /tmp/docker.sh
 ###
