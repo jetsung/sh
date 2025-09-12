@@ -6,8 +6,8 @@
 # URL: https://s.fx4.cn/shell
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
-# CreatedAt: 2025-
-# UpdatedAt: 2025-
+# CreatedAt: 2025-09-12
+# UpdatedAt: 2025-09-12
 #============================================================
 
 
@@ -48,6 +48,11 @@ editor() {
     else
         echo "vim.basic not found in alternatives."
     fi
+}
+
+# 安装 uv
+uv() {
+    curl -L https://s.fx4.cn/x | bash -s -- https://s.fx4.cn/uv | bash
 }
 
 main "$@"
