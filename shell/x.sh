@@ -3,7 +3,7 @@
 #============================================================
 # File: x.sh
 # Description: 替换脚本中的字符串为加速网址
-# URL: https://s.fx4.cn/x
+# URL: https://fx4.cn/x
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1
 # CreatedAt: 2025-03-05
@@ -51,10 +51,10 @@ remove_second_https() {
 }
 
 replace_github() {
-    echo "$1" | sed -e "s#https://github.com#//${CDN}https://github.com#g" \
-       -e "s#https://api.github.com#//${CDN}https://api.github.com#g" \
-       -e "s#https://gist.github.com#//${CDN}https://gist.github.com#g" \
-       -e "s#https://raw.githubusercontent.com#//${CDN}https://raw.githubusercontent.com#g"
+    echo "$1" | sed -e "s#https://github.com#//${CDN_URL}https://github.com#g" \
+       -e "s#https://api.github.com#//${CDN_URL}https://api.github.com#g" \
+       -e "s#https://gist.github.com#//${CDN_URL}https://gist.github.com#g" \
+       -e "s#https://raw.githubusercontent.com#//${CDN_URL}https://raw.githubusercontent.com#g"
 }
 
 main() {
@@ -81,7 +81,7 @@ main() {
 
     # echo "nohttps: $NO_HTTPS"
     # source_url=$(remove_second_https "${CDN_URL}${source_url}")
-    echo "source_url: $source_url"
+    # echo "source_url: $source_url"
     # echo ""
 
     # 支持多级跳转
@@ -97,7 +97,6 @@ main() {
         source_sh=$(replace_github "$source")
     else
         source_sh="${source//https:\/\//${CDN_URL}https://}"
-
     fi
 
     if [[ -n "$NO_HTTPS" ]]; then
@@ -115,10 +114,10 @@ main "$@"
 # CDN=https://fastfile.asfd.cn/ ./shell/x.sh https://get.docker.com | bash
 # 
 # 网络使用示例
-# curl -L https://s.fx4.cn/x | bash -s -- https://get.docker.com | bash
-# curl -L https://s.fx4.cn/x | CDN=https://fastfile.asfd.cn/ bash -s -- https://get.docker.com | bash
+# curl -L https://fx4.cn/x | bash -s -- https://get.docker.com | bash
+# curl -L https://fx4.cn/x | CDN=https://fastfile.asfd.cn/ bash -s -- https://get.docker.com | bash
 # 
 # 先保存至本地再操作（适合交互式）
-# curl -L https://s.fx4.cn/x | bash -s -- https://get.docker.com | tee /tmp/docker.sh
+# curl -L https://fx4.cn/x | bash -s -- https://get.docker.com | tee /tmp/docker.sh
 # bash /tmp/docker.sh
 ###

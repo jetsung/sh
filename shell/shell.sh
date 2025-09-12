@@ -3,7 +3,7 @@
 #============================================================
 # File: shell.sh
 # Description: 将命令行组合成函数调用
-# URL: https://s.fx4.cn/shell
+# URL: https://fx4.cn/shell
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-09-12
@@ -52,7 +52,7 @@ editor() {
 
 # 安装 uv
 uv() {
-    curl -L https://s.fx4.cn/x | bash -s -- https://s.fx4.cn/uv | bash
+    curl -L https://fx4.cn/x | bash -s -- https://fx4.cn/uv | bash -s -- github
 }
 
 main "$@"
