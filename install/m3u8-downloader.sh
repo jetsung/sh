@@ -3,7 +3,7 @@
 #============================================================
 # File: m3u8-downloader.sh
 # Description: m3u8 下载器 (m3u8-downloader)
-# URL: https://s.fx4.cn/m3u8-downloader
+# URL: https://fx4.cn/m3u8-downloader
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-15

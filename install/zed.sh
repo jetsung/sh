@@ -3,7 +3,7 @@
 #============================================================
 # File: zed.sh
 # Description: Zed 编辑器
-# URL: https://s.fx4.cn/zed
+# URL: https://fx4.cn/zed
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-03-17

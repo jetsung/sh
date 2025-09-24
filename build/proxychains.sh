@@ -3,7 +3,7 @@
 #============================================================
 # File: proxychains.sh
 # Description: 代理命令行工具
-# URL: https://s.fx4.cn/proxychains
+# URL: https://fx4.cn/proxychains
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-23

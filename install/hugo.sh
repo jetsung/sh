@@ -3,7 +3,7 @@
 #============================================================
 # File: hugo.sh
 # Description: 静态网站生成器
-# URL: https://s.fx4.cn/hugo
+# URL: https://fx4.cn/hugo
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-07-20
@@ -154,6 +154,6 @@ main() {
 
 main "$@"
 
-# 基础版: curl -L https://s.fx4.cn/iuyTvo | bash
-# 扩展版: curl -L https://s.fx4.cn/iuyTvo | bash -s -- -e
-# 扩展版+部署: curl -L https://s.fx4.cn/iuyTvo | bash -s -- -w
+# 基础版: curl -L https://fx4.cn/iuyTvo | bash
+# 扩展版: curl -L https://fx4.cn/iuyTvo | bash -s -- -e
+# 扩展版+部署: curl -L https://fx4.cn/iuyTvo | bash -s -- -w

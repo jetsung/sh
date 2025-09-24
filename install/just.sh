@@ -3,7 +3,7 @@
 #============================================================
 # File: just.sh
 # Description: 构建工具
-# URL: https://s.fx4.cn/just
+# URL: https://fx4.cn/just
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1
 # CreatedAt: 2025-03-28

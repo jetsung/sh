@@ -3,7 +3,7 @@
 #============================================================
 # File: static-web-server.sh
 # Description: 静态网站服务器
-# URL: https://s.fx4.cn/sws
+# URL: https://fx4.cn/sws
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-07-28

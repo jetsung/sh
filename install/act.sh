@@ -3,7 +3,7 @@
 #============================================================
 # File: act.sh
 # Description: GitHub Action 本地构建
-# URL: https://s.fx4.cn/act
+# URL: https://fx4.cn/act
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-09

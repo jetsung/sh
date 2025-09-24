@@ -3,7 +3,7 @@
 #============================================================
 # File: skopeo.sh
 # Description: 镜像复制工具
-# URL: https://s.fx4.cn/skopeo
+# URL: https://fx4.cn/skopeo
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18
