@@ -163,8 +163,8 @@ main() {
         echo "     pip"
     fi
 
-    # if ! check_in_china; then
-    if check_in_china; then
+    if ! check_in_china; then
+    # if check_in_china; then
         echo "非中国网络，无需配置镜像源"
         exit 0
     fi
