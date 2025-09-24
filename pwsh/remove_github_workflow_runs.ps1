@@ -1,7 +1,7 @@
 #============================================================
 # File: Remove-GitHubWorkflowRuns.ps1
 # Description: 批量删除 GitHub Action Workflows 流水线
-# URL: https://s.fx4.cn/
+# URL: https://fx4.cn/
 # ORIGIN: https://gist.asfd.cn/jetsung/githubci/raw/HEAD/remove_github_workflow_runs.ps1
 # Author: Jetsung Chan <i@jetsung.com>
 # Ported to PowerShell by: Jetsung Chan

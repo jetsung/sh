@@ -10,8 +10,9 @@
 ./backup.sh  |  备份数据库、文件夹、文件的脚本
 ./remove_github_workflow_runs.sh  |  批量删除 GitHub Action Workflows 流水线
 ./totp2md.sh  |  将 TOTP 二维码转换为 Markdown 表格
-./push_notify.sh  |  推送消息到钉钉、飞书、Lark
 ./ssl-reload.sh  |  检查 SSL 证书是否在指定时间范围内更新，更新则重启服务
 ./docker-pull.sh  |  Docker 通过加速站拉取镜像
 ./remove_gitlab_workflow_runs.sh  |  批量删除 GitLab CI 流水线
+./push-notify.sh  |  推送消息到钉钉、飞书、Lark
 ./git-qcloud.sh  |  腾讯工峰 命令行工具
+./cn-mirror.sh  |  中国镜像信息配置

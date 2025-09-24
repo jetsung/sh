@@ -1,7 +1,7 @@
 #============================================================
 # File: download_chrome_crx.ps1
 # Description:从 Chomne 扩展 ID 列表中下载最新的扩展保存至本地文件夹
-# URL: https://s.fx4.cn/wdlcrx
+# URL: https://fx4.cn/wdlcrx
 # ORIGIN: https://gist.asfd.cn/jetsung/chromecrx/raw/HEAD/download_chrome_crx.ps1
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
@@ -35,6 +35,6 @@ Get-Content $ListFile | ForEach-Object {
     }
 }
 
-# Invoke-WebRequest -Uri "https://s.fx4.cn/wdlcrx" -OutFile "download-crx.ps1"
+# Invoke-WebRequest -Uri "https://fx4.cn/wdlcrx" -OutFile "download-crx.ps1"
 # 本地： .\download-crx.ps1 E:\chromium.txt http://127.0.0.1:1088
-# 网络： & ([scriptblock]::Create((irm https://s.fx4.cn/wdlcrx))) E:\chromium.txt http://127.0.0.1:1088
+# 网络： & ([scriptblock]::Create((irm https://fx4.cn/wdlcrx))) E:\chromium.txt http://127.0.0.1:1088

@@ -3,7 +3,7 @@
 #============================================================
 # File: frp.sh
 # Description: 网络穿透工具
-# URL: https://s.fx4.cn/frp
+# URL: https://fx4.cn/frp
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-02-11

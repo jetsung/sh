@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: push_notify.sh
+# File: push-notify.sh
 # Description: 推送消息到钉钉、飞书、Lark
 # URL: https://fx4.cn/
 # ORIGIN: https://gist.asfd.cn/jetsung/notify/raw/HEAD/notify.sh

@@ -3,7 +3,7 @@
 #============================================================
 # File: ttyd.sh
 # Description: ttyd SSH Web 终端
-# URL: https://s.fx4.cn/ttyd
+# URL: https://fx4.cn/ttyd
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-02-11

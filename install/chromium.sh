@@ -3,7 +3,7 @@
 #============================================================
 # File: chromium.sh
 # Description: Ungoogled Chromium
-# URL: https://s.fx4.cn/chromium
+# URL: https://fx4.cn/chromium
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-10
