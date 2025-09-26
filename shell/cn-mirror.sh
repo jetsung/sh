@@ -155,12 +155,18 @@ switch_pip() {
     fi
 }
 
+# 切换 NPM
+switch_npm() {
+    npm config set registry "https://registry.npmmirror.com"
+}
+
 main() {
     if [[ "${1:-}" = "-h" ]]; then
         echo "args:"
         echo "     os"
         echo "     uv"
         echo "     pip"
+        echo "     npm"
     fi
 
     if ! check_in_china; then
