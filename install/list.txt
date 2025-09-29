@@ -17,5 +17,6 @@
 ./vsd.sh  |  m3u8 下载器 （vsd）
 ./shellcheck.sh  |  Shell 脚本分析工具
 ./acme-docker.sh  |  acme docker 方式脚本
+./goreleaser.sh  |  Go语言程序构建工具
 ./atuin.sh  |  Shell 历史记录管理工具
 ./zed.sh  |  Zed 编辑器

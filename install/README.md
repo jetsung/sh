@@ -39,5 +39,6 @@ done
 | [**vsd**](./vsd.sh) | [https://fx4.cn/vsd](https://fx4.cn/vsd) | m3u8 下载器 （vsd） |
 | [**shellcheck**](./shellcheck.sh) | [https://fx4.cn/shellcheck](https://fx4.cn/shellcheck) | Shell 脚本分析工具 |
 | [**acme-docker**](./acme-docker.sh) | [https://fx4.cn/acme](https://fx4.cn/acme) | acme docker 方式脚本 |
+| [**goreleaser**](./goreleaser.sh) | [https://fx4.cn/goreleaser](https://fx4.cn/goreleaser) | Go语言程序构建工具 |
 | [**atuin**](./atuin.sh) | [https://fx4.cn/atuin](https://fx4.cn/atuin) | Shell 历史记录管理工具 |
 | [**zed**](./zed.sh) | [https://fx4.cn/zed](https://fx4.cn/zed) | Zed 编辑器 |
