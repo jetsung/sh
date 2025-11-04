@@ -50,7 +50,7 @@ get_image_tags() {
     --jq '.[].metadata.container.tags[]' 2>/dev/null | \
     grep -E "\-$FILTER$" | \
     awk -v pre="$ACT_BASE_IMAGE_PRE" '{print pre":"$0}' | \
-    sort -u >> .actrcs
+    sort -u >> .actimages
   }
 
 save_image_tags() {
@@ -70,7 +70,7 @@ save_image_tags() {
 
   # -P ubuntu-24.04=ghcr.io/catthehacker/ubuntu:act-24.04
   for tag in "${tags[@]}"; do
-    echo "${ACT_BASE_IMAGE_PRE}:${tag}" >> .actrcs
+    echo "${ACT_BASE_IMAGE_PRE}:${tag}" >> .actimages
   done
 }
 
@@ -149,19 +149,25 @@ if [[ ! -f .gitignore ]]; then
   touch .gitignore
 fi
 
+echo "GITHUB_REPOSITORY=$full_name" >> .actenv
+
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  echo "GITHUB_TOKEN=${GITHUB_TOKEN:-}" >> .secrets
+fi
+
 # 判断 .gitignore 如果没有忽略。则写入忽略
 if ! grep -q '# act' .gitignore; then
     echo "" >> .gitignore
     echo '# act' >> .gitignore
 fi
-if ! grep -q '.actenv' .gitignore; then
-    echo '.actenv' >> .gitignore
-fi
 if ! grep -q '.actrc' .gitignore; then
     echo '.actrc' >> .gitignore
 fi
-if ! grep -q '.actrcs' .gitignore; then
-    echo '.actrcs' >> .gitignore
+if ! grep -q '.actenv' .gitignore; then
+    echo '.actenv' >> .gitignore
+fi
+if ! grep -q '.actimages' .gitignore; then
+    echo '.actimages' >> .gitignore
 fi
 if ! grep -q '.artifacts' .gitignore; then
     echo '.artifacts' >> .gitignore
@@ -174,8 +180,7 @@ if ! grep -q 'event.json' .gitignore; then
 fi
 echo "" >> .gitignore
 
-# 判断若存在 .actrc 文件则不执行
-if [[ ! -f .actrcs ]]; then
+if [[ ! -f .actimages ]]; then
   if [[ -n "${GITHUB_TOKEN:-}" ]] && command -v gh; then
     get_image_tags
   else
@@ -183,16 +188,37 @@ if [[ ! -f .actrcs ]]; then
   fi
 fi
 
-echo "GITHUB_REPOSITORY=$full_name" >> .env
-echo "GITHUB_TOKEN=${GITHUB_TOKEN:-}" >> .secrets
+# 判断若存在 .actrc 文件则不执行
+# 写入 .actrc 文件
+cat <<EOF > .actrc
+# 1. 事件文件
+-e event.json
+
+# 2. Secrets 文件
+--secret-file .secrets
+
+# 3. 环境变量文件
+--env-file .actenv
+
+# 4. Artifact 服务器路径
+--artifact-server-path ./.artifacts
+
+## 待更新
+
+# 镜像文件
+# -P ubuntu-24.04=ghcr.io/catthehacker/ubuntu:act-24.04
+
+# 工作流文件
+# -W -W .github/workflows/docs.yml
+EOF
 
 echo "act -e event.json --secret-file .secrets --env-file .env --artifact-server-path ./.artifacts"
 
 # ###
 # #      基础镜像：https://github.com/catthehacker/docker_images/pkgs/container/ubuntu
-# #      示例： curl -L https://fx4.cn/JRlgxD | bash -s -- dev forkdo/vsd
+# #      示例： curl -L https://fx4.cn/act-event | bash -s -- dev forkdo/vsd
 # ###
-# #      触发分支：act push -e event.json --secret-file .secrets --env-file .actenv --artifact-server-path ./.artifacts
-# #         发布：act release -e event.json
+# #      触发分支：act push @.actrc
+# #         发布：act release @.actrc
 # #               --env GITHUB_REPOSITORY=jetsung/rclone-backup
 # ###
