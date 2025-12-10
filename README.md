@@ -105,7 +105,4 @@ do_remove_https() {
 
 ## 仓库镜像
 
-- https://git.jetsung.com/jetsung/sh
-- https://framagit.org/jetsung/sh
-- https://gitcode.com/jetsung/sh
-- https://github.com/jetsung/sh
+ [**MyCode**](https://git.jetsung.com/jetsung/sh) ● [**Framagit**](https://framagit.org/jetsung/sh) ● [**GitCode**](https://gitcode.com/jetsung/sh) ● [**GitHub**](https://github.com/jetsung/sh)
