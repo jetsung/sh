@@ -75,27 +75,73 @@ download_file() {
 }
 
 settings() {
-    cp ferretdb.compose.yaml compose.yml
-    cp compose.env .env
+    local target_dir="$1"
+    local komodo_host="$2"
 
-    sed -i "s#./compose.env#./.env#g" compose.yml
+    cp "${target_dir}/ferretdb.compose.yaml" "${target_dir}/compose.yml"
+    cp "${target_dir}/compose.env" "${target_dir}/.env"
 
-    sed -i "s#Etc/UTC#Asia/Shanghai#g" .env
+    sed -i "s#./compose.env#./.env#g" "${target_dir}/compose.yml"
 
-    PASSWORD=$(openssl rand -hex 8)
-    sed -i "s#changeme#${PASSWORD}#g" .env
-    echo "Password: $PASSWORD"
+    sed -i "s#Etc/UTC#Asia/Shanghai#g" "${target_dir}/.env"
+
+    echo
     
+    if [[ -n "$komodo_host" ]]; then
+        # she-secure-online-storage-and-collaboration-in-the-workplace
+        escaped_host=$(printf '%s\n' "$komodo_host" | sed 's:[\\/&]:\\&:g')
+        if grep -q "^KOMODO_HOST=" "${target_dir}/.env"; then
+            sed -i "s#^KOMODO_HOST=.*#KOMODO_HOST=${escaped_host}#g" "${target_dir}/.env"
+        else
+            echo "KOMODO_HOST=${komodo_host}" >> "${target_dir}/.env"
+        fi
+        echo "KOMODO_HOST: $komodo_host"
+    fi
+
+    KOMODO_PASSKEY=$(openssl rand -hex 16)
+    sed -i "s#^KOMODO_PASSKEY=.*#KOMODO_PASSKEY=${KOMODO_PASSKEY}#g" "${target_dir}/.env"
+    echo "KOMODO_PASSKEY: $KOMODO_PASSKEY"
+
     KOMODO_WEBHOOK_SECRET=$(openssl rand -hex 16)
-    sed -i "s#KOMODO_WEBHOOK_SECRET=.*#KOMODO_WEBHOOK_SECRET=${KOMODO_WEBHOOK_SECRET}#g" .env
+    sed -i "s#^KOMODO_WEBHOOK_SECRET=.*#KOMODO_WEBHOOK_SECRET=${KOMODO_WEBHOOK_SECRET}#g" "${target_dir}/.env"
     echo "KOMODO_WEBHOOK_SECRET: $KOMODO_WEBHOOK_SECRET"
 
     KOMODO_JWT_SECRET=$(openssl rand -hex 16)
-    sed -i "s#KOMODO_JWT_SECRET=.*#KOMODO_JWT_SECRET=${KOMODO_JWT_SECRET}#g" .env
+    sed -i "s#^KOMODO_JWT_SECRET=.*#KOMODO_JWT_SECRET=${KOMODO_JWT_SECRET}#g" "${target_dir}/.env"
     echo "KOMODO_JWT_SECRET: $KOMODO_JWT_SECRET"
+
+    echo
+
+    PASSWORD=$(openssl rand -hex 8)
+    sed -i "s#changeme#${PASSWORD}#g" "${target_dir}/.env"
+    echo "User: admin"
+    echo "Password: $PASSWORD"
 }
 
 main() {
+    DOWNLOAD_DIR="."
+    KOMODO_HOST_VALUE=""
+
+    while getopts "d:h:" opt; do
+        case ${opt} in
+            d) DOWNLOAD_DIR=$OPTARG ;;
+            h) KOMODO_HOST_VALUE=$OPTARG ;;
+            \?) echo "Invalid option: -$OPTARG" >&2; exit 1;;
+            :) echo "Invalid option: -$OPTARG requires an argument" >&2; exit 1;;
+        esac
+    done
+    shift $((OPTIND -1))
+
+    if [[ ! -d "$DOWNLOAD_DIR" ]]; then
+        mkdir -p "$DOWNLOAD_DIR"
+    fi
+
+    if [[ -n "$KOMODO_HOST_VALUE" ]]; then
+        if [[ ! "$KOMODO_HOST_VALUE" =~ ^https?:// ]]; then
+            KOMODO_HOST_VALUE="http://$KOMODO_HOST_VALUE"
+        fi
+    fi
+    
     if ! check_in_china; then
         CDN_URL=""
     fi
@@ -108,15 +154,15 @@ main() {
     COMPOSE_FILE_URL=$(do_remove_https "${CDN_URL}${COMPOSE_FILE_URL}")
     ENV_FILE_URL=$(do_remove_https "${CDN_URL}${ENV_FILE_URL}")
 
-    download_file "ferretdb.compose.yaml" "$COMPOSE_FILE_URL"
-    download_file "compose.env" "$ENV_FILE_URL"
+    download_file "${DOWNLOAD_DIR}/ferretdb.compose.yaml" "$COMPOSE_FILE_URL"
+    download_file "${DOWNLOAD_DIR}/compose.env" "$ENV_FILE_URL"
 
-    if [[ ! -f "ferretdb.compose.yaml" || ! -f "compose.env" ]]; then
+    if [[ ! -f "${DOWNLOAD_DIR}/ferretdb.compose.yaml" || ! -f "${DOWNLOAD_DIR}/compose.env" ]]; then
         echo "Error: Failed to download ferretdb.compose.yaml or compose.env"
         exit 1
     fi
 
-    settings
+    settings "$DOWNLOAD_DIR" "$KOMODO_HOST_VALUE"
 }
 
 main "$@"
