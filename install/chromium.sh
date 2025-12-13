@@ -5,9 +5,9 @@
 # Description: Ungoogled Chromium
 # URL: https://fx4.cn/chromium
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.4.0
 # CreatedAt: 2025-08-10
-# UpdatedAt: 2025-08-10
+# UpdatedAt: 2025-12-13
 #============================================================
 
 
@@ -132,7 +132,39 @@ EOF
     update-desktop-database ~/.local/share/applications/ 2>/dev/null || true
 }
 
+usage() {
+    echo "Usage: $0 [-d <dir>] [-n] [-h]"
+    echo ""
+    echo "Options:"
+    echo "  -d <dir>    Set the installation directory (default: /opt/chromium)."
+    echo "  -n          Disable creation of .desktop file."
+    echo "  -h          Show this help message."
+}
+
 main() {
+    SAVE_DIR="/opt/chromium"
+    CREATE_DESKTOP=true
+
+    while getopts "d:nh" opt; do
+        case ${opt} in
+        d)
+            SAVE_DIR=${OPTARG}
+            ;;
+        n)
+            CREATE_DESKTOP=false
+            ;;
+        h)
+            usage
+            exit 0
+            ;;
+        \?)
+            usage
+            exit 1
+            ;;
+        esac
+    done
+    shift $((OPTIND - 1))
+
     if ! check_in_china; then
         CDN_URL=""
     fi
@@ -143,7 +175,6 @@ main() {
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
 
     DOWNLOAD_URL="$(get_download_url ungoogled-software/ungoogled-chromium-portablelinux)"
-    SAVE_DIR="/opt/chromium"
 
     download_exact
 
@@ -156,7 +187,7 @@ main() {
     fi
 
     # 判断为桌面环境
-    if [[ -n "$DISPLAY" ]] || [[ -n "$WAYLAND_DISPLAY" ]]; then
+    if [[ "$CREATE_DESKTOP" == "true" && ( -n "$DISPLAY" || -n "$WAYLAND_DISPLAY" ) ]]; then
         set_desktop
     fi
 
