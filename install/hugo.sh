@@ -66,7 +66,17 @@ do_remove_https() {
 ########################## 以上为通用函数 #########################
 
 get_download_url() {
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    local version="${2:-}"
+    if [[ -n "$version" ]]; then
+        # Ensure version starts with v
+        if [[ "$version" != v* ]]; then
+            version="v$version"
+        fi
+        repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/tags/${version}")
+    else
+        repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    fi
+    
     curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg os "$OS" '.assets[] | select(.name | test("\($os)-\($arch).tar.gz")) | .browser_download_url' | grep -E "${PKG_PREFIX}_[0-9.]+"
 }
 
@@ -83,6 +93,7 @@ download_exact() {
     pushd "$TMP_DIR" >/dev/null
 
     _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    echo "Downloading: $_download_url"
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -107,15 +118,45 @@ main() {
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
     PKG_PREFIX="hugo"
+    VERSION=""
 
-    # 扩展版
-    if [[ -n "${1:-}" ]]; then
-        if [[ "$1" = "-w" || "$1" = "--ew" ]]; then
-            PKG_PREFIX="${PKG_PREFIX}_extended_withdeploy"
-        else
-            PKG_PREFIX="${PKG_PREFIX}_extended"
-        fi
-    fi    
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -v|--version)
+                VERSION="$2"
+                shift 2
+                ;;
+            -e|--extended)
+                PKG_PREFIX="${PKG_PREFIX}_extended"
+                shift
+                ;;
+            -w|--ew)
+                PKG_PREFIX="${PKG_PREFIX}_extended_withdeploy"
+                shift
+                ;;
+            -h|--help)
+                echo "Usage: $0 [-v <version>] [-e] [-w]"
+                echo "  -v, --version <version>  Specify the version to install (e.g. 0.115.4)"
+                echo "  -e, --extended           Install extended edition"
+                echo "  -w, --ew                 Install extended edition with deploy"
+                echo "  -h, --help               Show this help message"
+                exit 0
+                ;;
+            *)
+                # Backward compatibility for positional args implies extended
+                # If first arg is not a flag, assume it's requesting extended (old behavior)
+                # But since we are looping, this might catch arguments to flags if not careful.
+                # The old script just checked $1.
+                if [[ "$1" == "-"* ]]; then
+                    echo "Unknown option: $1"
+                    exit 1
+                else
+                     PKG_PREFIX="${PKG_PREFIX}_extended"
+                fi
+                shift
+                ;;
+        esac
+    done
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     case "$(uname -m)" in
@@ -131,7 +172,12 @@ main() {
             ;; 
     esac
 
-    DOWNLOAD_URL="$(get_download_url gohugoio/hugo)"
+    DOWNLOAD_URL="$(get_download_url gohugoio/hugo "$VERSION")"
+
+    if [[ -z "$DOWNLOAD_URL" ]]; then
+        echo "Error: Could not find download URL for version '${VERSION:-latest}'."
+        exit 1
+    fi
 
     download_exact
 
