@@ -44,7 +44,8 @@ show_help() {
   可在脚本目录下的 .env 文件中定义以下变量（命令行参数优先）：
     # project_name=your_project_name   # 覆盖 MODE（除非命令行传字面值）
     # targetdir=data                   # 云端路径名
-    # backdir=./data                   # 本地要备份的路径
+    # backdir=./data                   # 本地要备份的主要路径
+    # morefile=file1 file2 dir1        # 额外要备份的文件和目录（用空格分隔）
 
 优先级：命令行字面值 > .env 配置 > 命令行模式 > 自动推导
 
@@ -53,6 +54,12 @@ show_help() {
   $0 myproject 7        # 使用字面值 "myproject"，保留7天（覆盖 .env）
   $0 1 7 '-' 2          # 使用当前目录名（若无 .env 则计算），按'-'切割取第2段
   $0 -h                 # 显示帮助
+
+.env 配置示例:
+  # project_name=project
+  # targetdir=/path/to/backup
+  # backdir=/path/to/backup
+  # morefile=a b.txt c/d/1.txt
 
 EOF
     exit 0
@@ -148,15 +155,16 @@ get_date_days_ago() {
     echo "$result"
 }
 
-# 从 .env 文件加载配置（只读取你需要的三项：project_name, targetdir, backdir）
+# 从 .env 文件加载配置（支持 project_name, targetdir, backdir, morefile）
 load_env_config() {
     local env_file="$1"
     [[ ! -f "$env_file" ]] && return 0
 
-    # # 或 echo ""
-    env_project_name=$(grep '# project_name=' "$env_file" | cut -d= -f2 | xargs 2>/dev/null || true) 
-    env_targetdir=$(grep '# targetdir=' "$env_file" | cut -d= -f2 | xargs 2>/dev/null || true)
-    env_backdir=$(grep '# backdir=' "$env_file" | cut -d= -f2 | xargs 2>/dev/null || true)
+    # 读取配置项，支持注释格式（含 "# "）
+    env_project_name=$(grep -E '^\s*# project_name=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
+    env_targetdir=$(grep -E '^\s*# targetdir=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
+    env_backdir=$(grep -E '^\s*# backdir=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
+    env_morefile=$(grep -E '^\s*# morefile=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
 }
 
 # 执行脚本
@@ -285,7 +293,7 @@ main() {
     fi
 
     # 清理本地旧备份（忽略错误，仅记录警告）
-    if rm -f "${project_name}"*.tar.xz; then 
+    if rm -f "$project_name"*.tar.xz; then 
         log "已清理本地旧备份"
     else
         log "警告：清理本地旧备份时部分失败"
@@ -297,17 +305,12 @@ main() {
         exit 1
     fi
 
-    # 创建新压缩包（统一处理目录和文件）
-    local tar_source
-    if [[ -d "$backdir" ]]; then
-        tar_source="-C $(dirname "$backdir") $(basename "$backdir")"
-    else
-        tar_source="$backdir"
-    fi
+    # 创建新压缩包（包含 backdir 和 morefile 指定的文件/目录）
+    local tar_source="$backdir $env_morefile"
 
     # shellcheck disable=SC2086
     if tar -Jcf "$current_tar" $tar_source; then
-        log "已创建压缩包：$current_tar"
+        log "已创建压缩包：$current_tar（包含：$tar_source）"
     else
         log "错误：创建压缩包失败：$current_tar"
         exit 1
@@ -389,6 +392,7 @@ main "$@"
 # project_name=project
 # targetdir=/path/to/backup
 # backdir=/path/to/backup
+# morefile=a b.txt c/d/1.txt
 #
 # 扩展脚本：
 # ./exec_?.sh （? 为 pre 或 post）
