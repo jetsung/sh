@@ -18,7 +18,6 @@ fi
 
 # 默认镜像域名
 DEFAULT_MIRROR_DOMAIN="${A:-dockerproxy.net}"
-DEFAULT_MIRROR_DOMAIN="${B:-${DEFAULT_MIRROR_DOMAIN}}"
 
 # 镜像名
 IMAGE_NAME=""
@@ -87,31 +86,26 @@ show_help() {
 
 # 处理加速站信息
 select_registry() {
+    # 1. Determine standard IMAGE_URL (Source)
     case "${IMAGE_REGISTRY:-}" in
     'g' | 'gcr')
         IMAGE_URL="gcr.io/${IMAGE_NAME}"
-        IMAGE_MIRROR_URL="gcr.${DEFAULT_MIRROR_DOMAIN}/${IMAGE_NAME}"
         ;;
 
     'h' | 'ghcr')
         IMAGE_URL="ghcr.io/${IMAGE_NAME}"
-        IMAGE_MIRROR_URL="ghcr.${DEFAULT_MIRROR_DOMAIN}/${IMAGE_NAME}"
-        # IMAGE_MIRROR_URL="ghcr.nju.edu.cn/${IMAGE_NAME}"
         ;;
 
     'k' | 'k8s')
         IMAGE_URL="registry.k8s.io/${IMAGE_NAME}"
-        IMAGE_MIRROR_URL="k8s.${DEFAULT_MIRROR_DOMAIN}/${IMAGE_NAME}"
         ;;
 
     'q' | 'quay')
         IMAGE_URL="quay.io/${IMAGE_NAME}"
-        IMAGE_MIRROR_URL="quay.${DEFAULT_MIRROR_DOMAIN}/${IMAGE_NAME}"
         ;;
 
     'm' | 'mcr')
         IMAGE_URL="mcr.microsoft.com/${IMAGE_NAME}"
-        IMAGE_MIRROR_URL="mcr.${DEFAULT_MIRROR_DOMAIN}/${IMAGE_NAME}"
         ;;
 
     'd' | 'docker' | *)
@@ -120,12 +114,44 @@ select_registry() {
         else # 根镜像
             IMAGE_URL="library/${IMAGE_NAME}"
         fi
-        IMAGE_MIRROR_URL="${DEFAULT_MIRROR_DOMAIN}/${IMAGE_URL}"
         ;;
     esac
 
-    if [[ -n "${B:-}" ]]; then
-        IMAGE_MIRROR_URL="${B}/${IMAGE_URL}"
+    # 2. Determine IMAGE_MIRROR_URL based on C, B, A priority
+    if [[ -n "${C:-}" ]]; then
+        # C Mode: Replace Domain (e.g., C=abc.cn -> abc.cn/my/nginx)
+        local PATH_PART="${IMAGE_NAME}"
+        if [[ "${IMAGE_REGISTRY:-}" == "d" ]] || [[ "${IMAGE_REGISTRY:-}" == "docker" ]] || [[ -z "${IMAGE_REGISTRY:-}" ]]; then
+             PATH_PART="${IMAGE_URL}"
+        fi
+        IMAGE_MIRROR_URL="${C}/${PATH_PART}"
+
+    elif [[ -n "${B:-}" ]]; then
+        # B Mode: Path Prefix (e.g., B=abc.cn -> abc.cn/docker/my/nginx)
+        if [[ "${IMAGE_REGISTRY:-}" == "d" ]] || [[ "${IMAGE_REGISTRY:-}" == "docker" ]] || [[ -z "${IMAGE_REGISTRY:-}" ]]; then
+             IMAGE_MIRROR_URL="${B}/docker/${IMAGE_URL}"
+        else
+             IMAGE_MIRROR_URL="${B}/${IMAGE_URL}"
+        fi
+
+    else
+        # A Mode: Domain Prefix (e.g., A=abc.cn -> docker.abc.cn/my/nginx)
+        local DOMAIN="${DEFAULT_MIRROR_DOMAIN}"
+        local PREFIX="docker"
+        
+        case "${IMAGE_REGISTRY:-}" in
+            'g' | 'gcr')  PREFIX="gcr" ;;
+            'h' | 'ghcr') PREFIX="ghcr" ;;
+            'k' | 'k8s')  PREFIX="k8s" ;;
+            'q' | 'quay') PREFIX="quay" ;;
+            'm' | 'mcr')  PREFIX="mcr" ;;
+        esac
+
+        if [[ "${IMAGE_REGISTRY:-}" == "d" ]] || [[ "${IMAGE_REGISTRY:-}" == "docker" ]] || [[ -z "${IMAGE_REGISTRY:-}" ]]; then
+             IMAGE_MIRROR_URL="${PREFIX}.${DOMAIN}/${IMAGE_URL}"
+        else
+             IMAGE_MIRROR_URL="${PREFIX}.${DOMAIN}/${IMAGE_NAME}"
+        fi
     fi
 }
 
