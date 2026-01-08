@@ -4,6 +4,7 @@
 ./bore.sh  |  网络穿透工具
 ./wush.sh  |  wush 网络穿透工具
 ./gitlab-runner.sh  |  GitLab Runner
+./aitr.sh  |  AI 文档翻译工具
 ./protoc.sh  |  protobuf 编译工具
 ./static-web-server.sh  |  静态网站服务器
 ./ttyd.sh  |  ttyd SSH Web 终端

@@ -26,6 +26,7 @@ done
 | [**bore**](./bore.sh) | [https://fx4.cn/bore](https://fx4.cn/bore) | 网络穿透工具 |
 | [**wush**](./wush.sh) | [https://fx4.cn/wush](https://fx4.cn/wush) | wush 网络穿透工具 |
 | [**gitlab-runner**](./gitlab-runner.sh) | [https://fx4.cn/gitlab-runner](https://fx4.cn/gitlab-runner) | GitLab Runner |
+| [**aitr**](./aitr.sh) | [https://fx4.cn/aitr](https://fx4.cn/aitr) | AI 文档翻译工具 |
 | [**protoc**](./protoc.sh) |  | protobuf 编译工具 |
 | [**static-web-server**](./static-web-server.sh) | [https://fx4.cn/sws](https://fx4.cn/sws) | 静态网站服务器 |
 | [**ttyd**](./ttyd.sh) | [https://fx4.cn/ttyd](https://fx4.cn/ttyd) | ttyd SSH Web 终端 |
