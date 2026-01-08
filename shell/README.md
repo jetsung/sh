@@ -27,6 +27,7 @@
 | [**backup**](./backup.sh) | [https://fx4.cn/sWlt0d](https://fx4.cn/sWlt0d) | 备份数据库、文件夹、文件的脚本 |
 | [**remove_github_workflow_runs**](./remove_github_workflow_runs.sh) | [https://fx4.cn/](https://fx4.cn/) | 批量删除 GitHub Action Workflows 流水线 |
 | [**totp2md**](./totp2md.sh) | [https://fx4.cn/](https://fx4.cn/) | 将 TOTP 二维码转换为 Markdown 表格 |
+| [**komodo**](./komodo.sh) | [https://fx4.cn/komodo](https://fx4.cn/komodo) |  |
 | [**ssl-reload**](./ssl-reload.sh) | [https://fx4.cn/ssl-reload](https://fx4.cn/ssl-reload) | 检查 SSL 证书是否在指定时间范围内更新，更新则重启服务 |
 | [**docker-pull**](./docker-pull.sh) | [https://fx4.cn/dockerpull](https://fx4.cn/dockerpull) | Docker 通过加速站拉取镜像 |
 | [**remove_gitlab_workflow_runs**](./remove_gitlab_workflow_runs.sh) | [https://fx4.cn/](https://fx4.cn/) | 批量删除 GitLab CI 流水线 |
