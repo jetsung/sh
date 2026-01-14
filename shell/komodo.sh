@@ -74,7 +74,34 @@ download_file() {
     fi
 }
 
-settings() {
+# 配置覆盖模式
+settings_override() {
+    local target_dir="$1"
+    local komodo_host="$2"
+
+    {
+        echo "TZ=Asia/Shanghai"
+        if [[ -n "$komodo_host" ]]; then
+            echo "KOMODO_HOST=${komodo_host}"
+        fi
+        
+        echo "KOMODO_PASSKEY=$(openssl rand -hex 16)"
+        echo "KOMODO_WEBHOOK_SECRET=$(openssl rand -hex 16)"
+        echo "KOMODO_JWT_SECRET=$(openssl rand -hex 16)"
+        echo "KOMODO_INIT_ADMIN_PASSWORD=$(openssl rand -hex 8)"
+
+        if [[ -n "$PERIPHERY_ROOT_DIRECTORY" ]]; then
+            echo "PERIPHERY_ROOT_DIRECTORY=$PERIPHERY_ROOT_DIRECTORY"
+        fi        
+    } > "${target_dir}/.env"
+
+    cat "${target_dir}/.env"
+    echo
+    echo "docker compose -p komodo -f ferretdb.compose.yaml --env-file compose.env --env-file .env up -d"
+}
+
+# 新文件配置模式
+settings_newfile() {
     local target_dir="$1"
     local komodo_host="$2"
 
@@ -110,6 +137,11 @@ settings() {
     sed -i "s#^KOMODO_JWT_SECRET=.*#KOMODO_JWT_SECRET=${KOMODO_JWT_SECRET}#g" "${target_dir}/.env"
     echo "KOMODO_JWT_SECRET: $KOMODO_JWT_SECRET"
 
+    if [[ -n "$PERIPHERY_ROOT_DIRECTORY" ]]; then
+        sed -i "s#^PERIPHERY_ROOT_DIRECTORY=.*#PERIPHERY_ROOT_DIRECTORY=${PERIPHERY_ROOT_DIRECTORY}#g" "${target_dir}/.env"
+        echo "PERIPHERY_ROOT_DIRECTORY: $PERIPHERY_ROOT_DIRECTORY"
+    fi
+
     echo
 
     PASSWORD=$(openssl rand -hex 8)
@@ -121,11 +153,15 @@ settings() {
 main() {
     DOWNLOAD_DIR="."
     KOMODO_HOST_VALUE=""
+    OVERRIDE_SETTINGS=""
+    PERIPHERY_ROOT_DIRECTORY=""
 
-    while getopts "d:h:" opt; do
+    while getopts "d:h:s:o" opt; do
         case ${opt} in
-            d) DOWNLOAD_DIR=$OPTARG ;;
+            s) DOWNLOAD_DIR=$OPTARG ;;
             h) KOMODO_HOST_VALUE=$OPTARG ;;
+            d) PERIPHERY_ROOT_DIRECTORY=$OPTARG ;;
+            o) OVERRIDE_SETTINGS="1" ;;
             \?) echo "Invalid option: -$OPTARG" >&2; exit 1;;
             :) echo "Invalid option: -$OPTARG requires an argument" >&2; exit 1;;
         esac
@@ -162,7 +198,11 @@ main() {
         exit 1
     fi
 
-    settings "$DOWNLOAD_DIR" "$KOMODO_HOST_VALUE"
+    if [[ -n "$OVERRIDE_SETTINGS" ]]; then
+        settings_override "$DOWNLOAD_DIR" "$KOMODO_HOST_VALUE"
+        exit 0
+    fi
+    settings_newfile "$DOWNLOAD_DIR" "$KOMODO_HOST_VALUE"
 }
 
 main "$@"
