@@ -97,7 +97,29 @@ settings_override() {
 
     cat "${target_dir}/.env"
     echo
-    echo "docker compose -p komodo -f ferretdb.compose.yaml --env-file compose.env --env-file .env up -d"
+
+    {
+        echo "services:"
+        echo "  core:"
+        echo "    env_file: ./.env"
+        echo ""
+        echo "  periphery:"
+        echo "    env_file: ./.env"        
+    } > "${target_dir}/compose.override.yaml"
+
+    {
+        cat > "${target_dir}/deploy.sh" <<-'EOF'
+#!/usr/bin/env bash
+
+docker compose -p komodo -f ferretdb.compose.yaml -f compose.override.yaml --env-file compose.env --env-file .env $@
+
+EOF
+        sudo_exec chmod +x "${target_dir}/deploy.sh"
+    }
+
+    echo
+    echo "docker compose -p komodo -f ferretdb.compose.yaml -f compose.override.yaml --env-file compose.env --env-file .env up -d"
+    echo "./deploy.sh up -d"
 }
 
 # 新文件配置模式
