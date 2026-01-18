@@ -18,6 +18,7 @@
 | [**shell**](./shell.sh) | [https://fx4.cn/shell](https://fx4.cn/shell) | 将命令行组合成函数调用 |
 | [**remove_github_packages_untagged**](./remove_github_packages_untagged.sh) | [https://fx4.cn/](https://fx4.cn/) | 删除 GitHub Packages 悬空的镜像标签 |
 | [**gitlab-backup**](./gitlab-backup.sh) | [https://fx4.cn/4ddf9061](https://fx4.cn/4ddf9061) | GitLab 账号源码仓库备份 |
+| [**code-migrate**](./code-migrate.sh) | [https://fx4.cn/JKjOWe](https://fx4.cn/JKjOWe) | Git 裸仓库多平台自动备份推送脚本 |
 | [**remove_github_deployments_run**](./remove_github_deployments_run.sh) | [https://fx4.cn/](https://fx4.cn/) | 批量删除 GitHub 部署记录 |
 | [**google-cloud-token**](./google-cloud-token.sh) |  | 获取 google cloud token |
 | [**docker-copy**](./docker-copy.sh) | [https://fx4.cn/dockercopy](https://fx4.cn/dockercopy) | Docker 镜像复制至新的注册表 |
