@@ -2,12 +2,12 @@
 
 #============================================================
 # File: backup.sh
-# Description: 备份数据库、文件夹、文件的脚本
+# Description: 备份数据库、文件夹、文件的脚本（保留每月1日的数据）
 # URL: https://fx4.cn/sWlt0d
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.1.1
 # CreatedAt: 2025-09-07
-# UpdatedAt: 2025-09-07
+# UpdatedAt: 2026-01-20
 #============================================================
 
 # 启用严格模式（根据 DEBUG 环境变量决定是否打印命令）
@@ -180,6 +180,37 @@ do_exec() {
     popd > /dev/null 2>&1
 }
 
+# 判断文件名中的日期是否为每月1号
+# 返回值：0 = 是1号（应该跳过），1 = 不是1号（可以继续处理）
+#if is_first_day_of_month "$filename"; then
+#    echo "日期是每月1号，跳过处理：$filename"
+#    # exit 0          # 如果整个脚本要跳过，可以在这里退出
+#    # continue        # 如果在循环里
+#    # return          # 如果在函数里
+#else
+#    echo "日期不是1号，开始处理：$filename"
+#    # 在这里放你原本要对文件做的操作
+#    # 例如：tar -xf "$filename"  或 mv、rm、上传 等
+#fi
+is_first_day_of_month() {
+    local filename="$1"
+    
+    # 提取日期部分：hoppscotch_20260120.tar.xz → 20260120
+    if [[ $filename =~ _([0-9]{8})\. ]]; then
+        local date_part="${BASH_REMATCH[1]}"
+        local day="${date_part:6:2}"   # 从第6个字符开始取2位（年月日 → 日）
+        
+        if [ "$day" = "01" ]; then
+            return 0   # 是1号 → 建议跳过
+        else
+            return 1   # 不是1号 → 可以处理
+        fi
+    else
+        echo "警告：文件名格式不符合预期，无法提取日期" >&2
+        return 1   # 格式不对，当作“可以处理”或根据需求改成退出
+    fi
+}
+
 # 主函数
 main() {
     # 检查帮助参数
@@ -343,6 +374,10 @@ main() {
 
         # 删除远程旧备份（如果存在）
         if rclone lsf "$remote_path" --files-only --include "${delete_tar}" >/dev/null 2>&1; then
+            if is_first_day_of_month "$delete_tar"; then
+                log "跳过删除远程旧备份（每月1号保留）：$remote_delete_tar"
+                continue
+            fi
             if rclone delete "$remote_delete_tar" >/dev/null 2>&1; then
                 log "已删除远程旧备份：$remote_delete_tar"
             else
