@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: shellcheck.sh
-# Description: Shell 脚本分析工具
-# URL: https://fx4.cn/shellcheck
+# File: prek.sh
+# Description: Git 钩子管理工具
+# URL: https://fx4.cn/prek
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1
-# CreatedAt: 2025-08-02
+# CreatedAt: 2026-02-17
 # UpdatedAt: 2026-02-17
 #============================================================
+
 
 if [[ -n "${DEBUG:-}" ]]; then
     set -eux
@@ -67,13 +68,16 @@ do_remove_https() {
 
 get_download_url() {
     repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
-    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '.assets[] | select(.name | test("\($os).\($arch).tar.xz$")) | .browser_download_url'
+    # 尝试匹配 musl 或 gnu，优先 musl 以获得更好的静态兼容性
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$_ARCH" --arg os "$_OS" '
+        .assets[] | select(.name | (test("prek-\($arch)-\($os).tar.gz$") or test("prek-\($arch)-unknown-linux-gnu.tar.gz$"))) | .browser_download_url
+    ' | head -n 1
 }
 
 download_exact() {
-    local download_file="tmp.tar.xz"
-    local file_bin="shellcheck"
-    TMP_DIR=$(mktemp -d /tmp/shellcheck.XXXXXX)
+    local download_file="tmp.tar.gz"
+    local file_bin="prek"
+    TMP_DIR=$(mktemp -d /tmp/prek.XXXXXX)
     
     cleanup() {
         rm -rf -- "$TMP_DIR"
@@ -83,18 +87,27 @@ download_exact() {
     pushd "$TMP_DIR" >/dev/null
 
     _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    echo "Downloading from: $_download_url"
+    
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
     fi
 
-    if ! tar -xJf "$download_file" --strip-components=1; then 
+    if ! tar -xzf "$download_file" --strip-components=1; then 
         echo "Error: Extraction failed"
         rm -f "$download_file"
         exit 1
     fi  
 
-    sudo_exec mv "$file_bin" /usr/local/bin/
+    if [[ ! -f "${file_bin}" ]]; then
+        echo "Error: Binary ${file_bin} not found after extraction"
+        ls -la
+        exit 1
+    fi
+
+    sudo_exec mv "${file_bin}" "/usr/local/bin/${file_bin}"
+    sudo_exec chmod +x "/usr/local/bin/${file_bin}"
 
     popd >/dev/null
 }
@@ -109,10 +122,20 @@ main() {
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m)"
 
-    DOWNLOAD_URL="$(get_download_url koalaman/shellcheck)"
+    _OS="unknown-linux-musl"
+    if [[ "$OS" == "darwin" ]]; then
+        _OS="apple-darwin"
+    fi
+
+    _ARCH="$ARCH"
+    if [[ "$ARCH" == "arm64" ]]; then
+        _ARCH="aarch64"
+    fi
+    
+    DOWNLOAD_URL="$(get_download_url j178/prek)"
 
     if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
-        echo "Error: Could not find a download URL for $OS-$ARCH"
+        echo "Error: Could not find a download URL for $ARCH on $OS"
         exit 1
     fi
 
@@ -120,19 +143,18 @@ main() {
 
     echo ""
 
-    if ! check_is_command "shellcheck"; then
-        echo "shellcheck has not been installed successfully."
+    if ! check_is_command "prek"; then
+        echo "prek has not been installed successfully."
         echo ""
         exit 1
     fi
 
+    echo "prek has been installed successfully!"
     echo ""
-    echo "shellcheck has been installed successfully!"
+    prek --version
     echo ""
-    shellcheck --version
+    prek --help
     echo ""    
-    shellcheck --help
-    echo ""        
 }
 
 main "$@"

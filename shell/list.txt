@@ -8,7 +8,7 @@
 ./x.sh  |  替换脚本中的字符串为加速网址
 ./act-event.sh  |  生成 act 的 event.json 文件
 ./backup-update.sh  |  更新服务器中的 Docker 镜像和备份数据
-./backup.sh  |  备份数据库、文件夹、文件的脚本
+./backup.sh  |  备份数据库、文件夹、文件的脚本（保留每月1日的数据）
 ./remove_github_workflow_runs.sh  |  批量删除 GitHub Action Workflows 流水线
 ./totp2md.sh  |  将 TOTP 二维码转换为 Markdown 表格
 ./komodo.sh
