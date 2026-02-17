@@ -109,13 +109,18 @@ main() {
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     SUFFIX=""
+
+    PREFIX="atuin"
+    if [[ -n "${1:-}" ]];then
+        PREFIX="$PREFIX-server"
+    fi
     
     case "$OS" in
         "darwin")
-            SUFFIX="atuin-${ARCH}-apple-darwin.tar.gz"
+            SUFFIX="${PREFIX}-${ARCH}-apple-darwin.tar.gz"
             ;;
         "linux")
-            SUFFIX="atuin-${ARCH}-unknown-linux-musl.tar.gz"
+            SUFFIX="${PREFIX}-${ARCH}-unknown-linux-musl.tar.gz"
             ;;
         *)
             echo "Unsupported OS: $OS"
