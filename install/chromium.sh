@@ -111,8 +111,10 @@ download_exact() {
 }
 
 set_desktop() {
-    _desktop_file="$HOME/.local/share/applications/chromium.desktop"
+    _appdesk_dir="$HOME/.local/share/applications"
+    _desktop_file="$_appdesk_dir/chromium.desktop"
     _icon_path="$SAVE_DIR/product_logo_48.png"
+    mkdir -p "$_appdesk_dir"
 
     cat > "$_desktop_file" <<EOF
 [Desktop Entry]

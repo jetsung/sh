@@ -146,8 +146,10 @@ main() {
 
     echo "nvim has been installed successfully!"
     echo ""
-    "${BIN_DIR}/nvim" --version | head -n 5
+    nvim --help
     echo ""
+    nvim --version
+    echo
 }
 
 main "$@"

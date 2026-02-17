@@ -5,9 +5,9 @@
 # Description: Shell 历史记录管理工具
 # URL: https://fx4.cn/atuin
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.1.1
 # CreatedAt: 2025-08-23
-# UpdatedAt: 2025-08-23
+# UpdatedAt: 2026-02-17
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -112,10 +112,10 @@ main() {
     
     case "$OS" in
         "darwin")
-            SUFFIX="${ARCH}-apple-darwin.tar.gz"
+            SUFFIX="atuin-${ARCH}-apple-darwin.tar.gz"
             ;;
         "linux")
-            SUFFIX="${ARCH}-unknown-linux-musl.tar.gz"
+            SUFFIX="atuin-${ARCH}-unknown-linux-musl.tar.gz"
             ;;
         *)
             echo "Unsupported OS: $OS"
