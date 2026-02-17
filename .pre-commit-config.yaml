@@ -1,25 +1,15 @@
----
 repos:
-# 格式化 yaml
-- repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
-  rev: 0.2.1   # or other specific tag
+- repo: local
   hooks:
-  - id: yamlfmt
-    args: [--mapping, '2', --sequence, '2', --offset, '0', --colons, --width, '150']
+  - id: update-list
+    name: update-list
+    entry: bash commit.sh
+    language: system
+    pass_filenames: false
 
-# 格式化 shell
-- repo: https://github.com/shellcheck-py/shellcheck-py
-  rev: v0.10.0.1
-  hooks:
   - id: shellcheck
+    name: shellcheck
+    entry: bash -c 'shellcheck shell/*.sh install/*.sh build/*.sh --exclude=SC1091,SC1090'
+    language: system
     files: \.sh$
-    exclude: ^origin/.*
-
-# 自定义
-# - repo: local
-#   hooks:
-#   - id: pre-commit-local
-#     name: Run all custom script
-#     entry: scripts/local-hook.sh
-#     language: script
-    # files: ^scripts/.*$
+    pass_filenames: false

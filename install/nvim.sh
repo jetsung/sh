@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: shellcheck.sh
-# Description: Shell 脚本分析工具
-# URL: https://fx4.cn/shellcheck
+# File: nvim.sh
+# Description: Neovim 编辑器
+# URL: https://fx4.cn/nvim
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.1
-# CreatedAt: 2025-08-02
+# Version: 0.1.0
+# CreatedAt: 2026-02-17
 # UpdatedAt: 2026-02-17
 #============================================================
+
 
 if [[ -n "${DEBUG:-}" ]]; then
     set -eux
@@ -67,13 +68,12 @@ do_remove_https() {
 
 get_download_url() {
     repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
-    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '.assets[] | select(.name | test("\($os).\($arch).tar.xz$")) | .browser_download_url'
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$_ARCH" --arg os "$_OS" '.assets[] | select(.name | test("nvim-\($os)-\($arch).tar.gz$")) | .browser_download_url'
 }
 
 download_exact() {
-    local download_file="tmp.tar.xz"
-    local file_bin="shellcheck"
-    TMP_DIR=$(mktemp -d /tmp/shellcheck.XXXXXX)
+    local download_file="tmp.tar.gz"
+    TMP_DIR=$(mktemp -d /tmp/nvim.XXXXXX)
     
     cleanup() {
         rm -rf -- "$TMP_DIR"
@@ -88,13 +88,17 @@ download_exact() {
         exit 1
     fi
 
-    if ! tar -xJf "$download_file" --strip-components=1; then 
+    sudo_exec rm -rf "$INSTALL_DIR"
+    sudo_exec mkdir -p "$INSTALL_DIR"
+    
+    if ! sudo_exec tar -xzf "$download_file" -C "$INSTALL_DIR" --strip-components=1; then 
         echo "Error: Extraction failed"
         rm -f "$download_file"
         exit 1
     fi  
 
-    sudo_exec mv "$file_bin" /usr/local/bin/
+    sudo_exec mkdir -p "$BIN_DIR"
+    sudo_exec ln -sf "${INSTALL_DIR}/bin/nvim" "${BIN_DIR}/nvim"
 
     popd >/dev/null
 }
@@ -107,12 +111,26 @@ main() {
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
-    ARCH="$(uname -m)"
+    ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
+    
+    _OS="$OS"
+    if [[ "$OS" == "darwin" ]]; then
+        _OS="macos"
+    fi
+    
+    _ARCH="$ARCH"
+    if [[ "$ARCH" == "aarch64" ]]; then
+        _ARCH="arm64"
+    fi
 
-    DOWNLOAD_URL="$(get_download_url koalaman/shellcheck)"
+    # 统一使用全局安装路径
+    INSTALL_DIR="/opt/nvim"   
+    BIN_DIR="/usr/local/bin"   
+
+    DOWNLOAD_URL="$(get_download_url neovim/neovim)"
 
     if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
-        echo "Error: Could not find a download URL for $OS-$ARCH"
+        echo "Error: Could not find a download URL for $_OS-$_ARCH"
         exit 1
     fi
 
@@ -120,19 +138,16 @@ main() {
 
     echo ""
 
-    if ! check_is_command "shellcheck"; then
-        echo "shellcheck has not been installed successfully."
+    if ! check_is_command "nvim" && [[ ! -f "${BIN_DIR}/nvim" ]]; then
+        echo "nvim has not been installed successfully."
         echo ""
         exit 1
     fi
 
+    echo "nvim has been installed successfully!"
     echo ""
-    echo "shellcheck has been installed successfully!"
+    "${BIN_DIR}/nvim" --version | head -n 5
     echo ""
-    shellcheck --version
-    echo ""    
-    shellcheck --help
-    echo ""        
 }
 
 main "$@"

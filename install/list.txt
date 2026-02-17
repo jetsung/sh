@@ -2,11 +2,13 @@
 ./m3u8-downloader.sh  |  m3u8 下载器 (m3u8-downloader)
 ./zoxide.sh  |  zoxide 智能 CD 命令行工具
 ./bore.sh  |  网络穿透工具
+./nvim.sh  |  Neovim 编辑器
 ./wush.sh  |  wush 网络穿透工具
 ./gitlab-runner.sh  |  GitLab Runner
 ./aitr.sh  |  AI 文档翻译工具
 ./protoc.sh  |  protobuf 编译工具
 ./static-web-server.sh  |  静态网站服务器
+./prek.sh  |  Git 钩子管理工具
 ./ttyd.sh  |  ttyd SSH Web 终端
 ./hugo.sh  |  静态网站生成器
 ./croc.sh  |  文件传输工具
