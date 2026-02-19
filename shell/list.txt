@@ -1,6 +1,7 @@
 ./shell.sh  |  将命令行组合成函数调用
 ./remove_github_packages_untagged.sh  |  删除 GitHub Packages 悬空的镜像标签
 ./gitlab-backup.sh  |  GitLab 账号源码仓库备份
+./deb2rpm.sh  |  将 deb 包转换为 rpm 包
 ./code-migrate.sh  |  Git 裸仓库多平台自动备份推送脚本
 ./remove_github_deployments_run.sh  |  批量删除 GitHub 部署记录
 ./google-cloud-token.sh  |  获取 google cloud token
