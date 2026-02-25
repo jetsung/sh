@@ -24,7 +24,6 @@
 | [**google-cloud-token**](./google-cloud-token.sh) |  | 获取 google cloud token |
 | [**docker-copy**](./docker-copy.sh) | [https://fx4.cn/dockercopy](https://fx4.cn/dockercopy) | Docker 镜像复制至新的注册表 |
 | [**x**](./x.sh) | [https://fx4.cn/x](https://fx4.cn/x) | 替换脚本中的字符串为加速网址 |
-| [**ssh-reload**](./ssh-reload.sh) | [https://fx4.cn/ssl-reload](https://fx4.cn/ssl-reload) | 检查 SSL 证书是否在指定时间范围内更新，更新则重启服务 |
 | [**act-event**](./act-event.sh) | [https://fx4.cn/act-event](https://fx4.cn/act-event) | 生成 act 的 event.json 文件 |
 | [**backup-update**](./backup-update.sh) | [https://fx4.cn/56be48a8](https://fx4.cn/56be48a8) | 更新服务器中的 Docker 镜像和备份数据 |
 | [**backup**](./backup.sh) | [https://fx4.cn/sWlt0d](https://fx4.cn/sWlt0d) | 备份数据库、文件夹、文件的脚本（保留每月1日的数据） |

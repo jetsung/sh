@@ -7,7 +7,6 @@
 ./google-cloud-token.sh  |  获取 google cloud token
 ./docker-copy.sh  |  Docker 镜像复制至新的注册表
 ./x.sh  |  替换脚本中的字符串为加速网址
-./ssh-reload.sh  |  检查 SSL 证书是否在指定时间范围内更新，更新则重启服务
 ./act-event.sh  |  生成 act 的 event.json 文件
 ./backup-update.sh  |  更新服务器中的 Docker 镜像和备份数据
 ./backup.sh  |  备份数据库、文件夹、文件的脚本（保留每月1日的数据）

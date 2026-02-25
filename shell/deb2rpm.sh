@@ -30,6 +30,8 @@ if [[ -z "$extract_dir" ]]; then
 fi
 
 mkdir -p "$extract_dir"
+# 获取提取目录的绝对路径
+extract_dir=$(cd "$extract_dir" && pwd)
 
 # 提取 deb 包内容
 echo "Extracting deb package..."
@@ -50,12 +52,36 @@ fi
 
 # 读取包信息
 pkg_name=$(grep -i "^Package:" "$control_file" | cut -d: -f2 | tr -d ' ')
-pkg_version=$(grep -i "^Version:" "$control_file" | cut -d: -f2 | tr -d ' ')
+pkg_version_raw=$(grep -i "^Version:" "$control_file" | cut -d: -f2 | tr -d ' ')
 pkg_arch=$(grep -i "^Architecture:" "$control_file" | cut -d: -f2 | tr -d ' ')
 pkg_maintainer=$(grep -i "^Maintainer:" "$control_file" | cut -d: -f2- | sed 's/^ *//')
 pkg_homepage=$(grep -i "^Homepage:" "$control_file" | cut -d: -f2- | sed 's/^ *//' | tr -d ' ')
 # Description 可能有多行，只取第一行作为摘要
 pkg_summary=$(grep -i "^Description:" "$control_file" | sed 's/^[Dd]escription:[[:space:]]*//' | head -1)
+
+# 处理版本信息以符合 RPM 规范 (RPM 版本号不能包含横杠)
+# 1. 提取 Epoch (如果有)
+if [[ "$pkg_version_raw" == *:* ]]; then
+    rpm_epoch="${pkg_version_raw%%:*}"
+    pkg_version_no_epoch="${pkg_version_raw#*:}"
+else
+    rpm_epoch=""
+    pkg_version_no_epoch="$pkg_version_raw"
+fi
+
+# 2. 分离 Version 和 Release
+if [[ "$pkg_version_no_epoch" == *-* ]]; then
+    # 以最后一个横杠作为分隔符
+    rpm_version="${pkg_version_no_epoch%-*}"
+    rpm_release="${pkg_version_no_epoch##*-}"
+else
+    rpm_version="$pkg_version_no_epoch"
+    rpm_release="1"
+fi
+
+# 3. 替换剩余的非法字符
+rpm_version="${rpm_version//-/.}"
+rpm_release="${rpm_release//-/.}"
 
 # 架构映射 (deb -> rpm)
 case "$pkg_arch" in
@@ -67,7 +93,7 @@ case "$pkg_arch" in
 esac
 
 echo "Package: $pkg_name"
-echo "Version: $pkg_version"
+echo "Version: $pkg_version_raw -> $rpm_version (Release: $rpm_release${rpm_epoch:+, Epoch: $rpm_epoch})"
 echo "Architecture: $pkg_arch -> $rpm_arch"
 
 # 创建 RPM 构建目录
@@ -88,10 +114,16 @@ files_list=""
 while IFS= read -r file; do
     # 将绝对路径转换为 RPM 路径
     rpm_path="${file#"$build_root"}"
+    # 跳过基础系统目录，这些由 filesystem 包提供
+    case "$rpm_path" in
+        /usr|/bin|/lib|/lib64|/etc|/var|/sys|/proc|/usr/bin|/usr/lib|/usr/lib64) 
+            continue
+            ;;
+    esac
     if [[ -d "$file" ]]; then
-        files_list+="%dir $rpm_path"$'\n'
+        files_list+="%dir \"$rpm_path\""$'\n'
     else
-        files_list+="$rpm_path"$'\n'
+        files_list+="\"$rpm_path\""$'\n'
     fi
 done < <(find "$build_root" -mindepth 1 | sort)
 
@@ -100,13 +132,16 @@ spec_file="$rpm_build_dir/SPECS/$pkg_name.spec"
 changelog_date=$(LC_TIME=C date +"%a %b %d %Y")
 cat > "$spec_file" << EOF
 Name:           $pkg_name
-Version:        $pkg_version
-Release:        1%{?dist}
+Version:        $rpm_version
+Release:        $rpm_release%{?dist}
+${rpm_epoch:+Epoch:           $rpm_epoch}
 Summary:        $pkg_summary
 License:        Unknown
 URL:            ${pkg_homepage:-https://example.com}
 Source0:        %{name}-%{version}.tar.gz
 BuildArch:      $rpm_arch
+# 禁用依赖自动检测
+AutoReqProv:    no
 # 禁用 debuginfo 包
 %global debug_package %{nil}
 
@@ -125,7 +160,7 @@ cp -r * %{buildroot}/
 $files_list
 
 %changelog
-* $changelog_date ${pkg_maintainer:-Unknown} - $pkg_version
+* $changelog_date ${pkg_maintainer:-Unknown} - $rpm_version-$rpm_release
 - Initial package
 EOF
 
@@ -138,19 +173,21 @@ spec_file="$rpm_build_dir_abs/SPECS/$pkg_name.spec"
 # 创建源码包
 echo "Creating source tarball..."
 cd "$rpm_build_dir_abs/BUILD"
-tar czf "$rpm_build_dir_abs/SOURCES/$pkg_name-$pkg_version.tar.gz" "$pkg_name"
+tar czf "$rpm_build_dir_abs/SOURCES/$pkg_name-$rpm_version.tar.gz" "$pkg_name"
 
 # 构建 RPM
 echo "Building RPM package..."
 cd "$rpm_build_dir_abs"
-rpmbuild -bb --define "_topdir $rpm_build_dir_abs" "$spec_file"
+QA_RPATHS=$(( 0x0002 | 0x0004 )) rpmbuild -bb --define "_topdir $rpm_build_dir_abs" "$spec_file"
 
 # 输出结果
 rpm_file=$(find "$rpm_build_dir_abs/RPMS" -name "*.rpm" -type f | head -1)
 if [[ -n "$rpm_file" && -f "$rpm_file" ]]; then
+    cp "$rpm_file" "$extract_dir/"
+    final_rpm="$extract_dir/$(basename "$rpm_file")"
     echo ""
     echo "RPM package created successfully!"
-    echo "Output: $rpm_file"
+    echo "Output: $final_rpm"
 else
     echo "Error: RPM build failed"
     exit 1
