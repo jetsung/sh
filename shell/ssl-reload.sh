@@ -5,9 +5,9 @@
 # Description: 检查 SSL 证书是否在指定时间范围内更新，更新则重启服务
 # URL: https://fx4.cn/ssl-reload
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.3.0
+# Version: 0.4.0
 # CreatedAt: 2025-08-30
-# UpdatedAt: 2025-08-30
+# UpdatedAt: 2026-02-19
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -17,10 +17,12 @@ else
 fi
 
 # 脚本功能：
-# - 从可配置目录（如 /etc/angie/wildcard/*.conf）中提取 ssl_certificate 的路径，
+# - 从配置文件列表中提取证书路径：
+#   1. 优先从 CERTS_FILE 指定的文件中读取（每行一个证书路径）
+#   2. 其次从 CONF_DIR 目录（如 /etc/angie/wildcard/*.conf）中提取 ssl_certificate 的路径
 # - 使用 openssl 检查证书的申请时间（notBefore）是否在指定小时数内，
 # - 如果有，则执行 restart_scripts/ 目录下所有 .sh 文件来重启服务。
-# - 支持配置：脚本所在目录下的 config.sh 定义 CONF_DIR 和 CHECK_HOURS。
+# - 支持配置：脚本所在目录下的 config.sh 定义 CONF_DIR、CERTS_FILE 和 CHECK_HOURS。
 # - 支持 init 参数：设置随机凌晨0-8点的 cron 任务来运行本脚本（检查模式）。
 # - 支持 --help 参数：显示帮助信息。
 
@@ -32,6 +34,7 @@ load_config() {
     CONFIG_FILE="$SCRIPT_DIR/config.sh"
     if [ ! -f "$CONFIG_FILE" ]; then
         echo "CONF_DIR=/etc/angie/wildcard" > "$CONFIG_FILE"
+        echo "CERTS_FILE=" >> "$CONFIG_FILE"
         echo "CHECK_HOURS=24" >> "$CONFIG_FILE"
         echo "创建配置文件：$CONFIG_FILE 使用默认值"
         chmod 644 "$CONFIG_FILE"
@@ -39,6 +42,7 @@ load_config() {
     # shellcheck disable=SC1090
     source "$CONFIG_FILE"
     : "${CONF_DIR:=/etc/angie/wildcard}"
+    : "${CERTS_FILE:=}"
     : "${CHECK_HOURS:=24}"
 }
 
@@ -54,12 +58,34 @@ setup_restart_dir() {
 # 提取证书路径
 extract_cert_paths() {
     local cert_paths=()
-    for conf_file in "$CONF_DIR"/*.conf; do
-        if [ -f "$conf_file" ]; then
-            mapfile -t certs < <(grep -oP 'ssl_certificate\s+\K[^;]+' "$conf_file")
-            cert_paths+=("${certs[@]}")
-        fi
-    done
+    local conf_count=0
+
+    # 如果配置了 CERTS_FILE，优先从文件中读取证书路径
+    if [ -n "$CERTS_FILE" ] && [ -f "$CERTS_FILE" ]; then
+        while IFS= read -r line; do
+            # 跳过空行和注释行
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+            # 去除首尾空白字符
+            line="${line#"${line%%[![:space:]]*}"}"
+            line="${line%"${line##*[![:space:]]}"}"
+            [ -n "$line" ] && cert_paths+=("$line")
+        done < "$CERTS_FILE"
+        echo "从 $CERTS_FILE 读取了 ${#cert_paths[@]} 个证书路径。" >&2
+    fi
+
+    # 从配置文件目录提取证书路径
+    if [ -d "$CONF_DIR" ]; then
+        for conf_file in "$CONF_DIR"/*.conf; do
+            if [ -f "$conf_file" ]; then
+                conf_count=$((conf_count + 1))
+                mapfile -t certs < <(grep -oP 'ssl_certificate\s+\K[^;]+' "$conf_file")
+                cert_paths+=("${certs[@]}")
+            fi
+        done
+        echo "从 $CONF_DIR 扫描了 $conf_count 个配置文件。" >&2
+    else
+        echo "警告：配置目录 $CONF_DIR 不存在。" >&2
+    fi
     printf "%s\n" "${cert_paths[@]}" | sort -u
 }
 
@@ -131,14 +157,46 @@ show_help() {
     echo "  检查 SSL 证书是否在指定时间范围内（默认24小时）申请，如果是，则执行重启脚本。"
     echo ""
     echo "Options:"
-    echo "  init     设置随机凌晨0-8点的 cron 任务来运行本脚本（检查模式）。"
-    echo "  --help   显示此帮助信息。"
+    echo "  init         设置随机凌晨0-8点的 cron 任务来运行本脚本（检查模式）。"
+    echo "  --help       显示此帮助信息。"
     echo ""
-    echo "配置："
-    echo "  在脚本目录下的 config.sh 中定义以下变量（直接赋值，无需 export）："
-    echo "    CONF_DIR=/path/to/config/dir   # 配置文件目录（默认：/etc/angie/wildcard）"
-    echo "    CHECK_HOURS=24                 # 检查证书更新的时间范围，单位为小时（默认：24）"
-    echo "  如果 config.sh 不存在，将自动创建并写入默认值。"
+    echo "配置文件: $SCRIPT_DIR/config.sh"
+    echo ""
+    echo "支持的配置变量（直接赋值，无需 export）："
+    echo ""
+    echo "  CONF_DIR=/path/to/config/dir"
+    echo "      配置文件所在目录，脚本会扫描该目录下所有 .conf 文件"
+    echo "      从中提取 ssl_certificate 关键字指定的证书路径。"
+    echo "      默认值: /etc/angie/wildcard"
+    echo ""
+    echo "  CERTS_FILE=/path/to/certs.list"
+    echo "      证书路径列表文件，每行一个证书路径。"
+    echo "      如果配置此文件，将优先从中读取证书路径。"
+    echo "      支持注释行（以 # 开头）和空行。"
+    echo "      默认值: 空（不使用）"
+    echo ""
+    echo "  CHECK_HOURS=24"
+    echo "      检查证书更新的时间范围，单位为小时。"
+    echo "      脚本会检查证书的 notBefore 时间是否在此时长之前有更新。"
+    echo "      默认值: 24"
+    echo ""
+    echo "工作流程："
+    echo "  1. 加载配置文件（如不存在则自动创建）"
+    echo "  2. 收集证书路径："
+    echo "     - 优先从 CERTS_FILE 文件读取（每行一个路径）"
+    echo "     - 其次扫描 CONF_DIR 目录下的 .conf 文件提取 ssl_certificate"
+    echo "  3. 使用 openssl 检查每个证书的 notBefore 时间"
+    echo "  4. 如果发现证书在 CHECK_HOURS 小时内申请，执行重启脚本"
+    echo "  5. 重启脚本位于 restart_scripts/ 目录，执行所有 .sh 文件"
+    echo ""
+    echo "示例："
+    echo "  $0                    # 运行检查"
+    echo "  $0 init               # 设置定时任务"
+    echo ""
+    echo "示例 certs.list 文件："
+    echo "  /etc/ssl/certs/example.com.crt"
+    echo "  /etc/ssl/certs/sub.domain.com.crt"
+    echo "  # 注释行会被忽略"
     exit 0
 }
 
