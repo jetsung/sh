@@ -5,7 +5,7 @@
 # Description: 替换脚本中的字符串为加速网址
 # URL: https://fx4.cn/x
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.1
+# Version: 0.1.2
 # CreatedAt: 2025-03-05
 # UpdatedAt: 2025-09-12
 #============================================================
@@ -58,6 +58,30 @@ replace_github() {
 }
 
 main() {
+    # 处理帮助选项
+    case "${1:-}" in
+        -h|--help)
+            echo "Usage: x.sh [OPTIONS] [URL]"
+            echo ""
+            echo "替换脚本中的字符串为加速网址"
+            echo ""
+            echo "Options:"
+            echo "  -h, --help     显示帮助信息"
+            echo "  g, github     使用 GitHub 专用加速模式"
+            echo ""
+            echo "Environment Variables:"
+            echo "  CDN            设置加速 CDN 地址 (默认: https://fastfile.asfd.cn/)"
+            echo ""
+            echo "Examples:"
+            echo "  x.sh https://get.docker.com | bash"
+            echo "  x.sh g https://get.docker.com | bash"
+            echo "  CDN=https://cdn.example.com/ x.sh https://get.docker.com | bash"
+            echo ""
+            echo "URL: https://fx4.cn/x"
+            exit 0
+            ;;
+    esac
+
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
     CDN_URL=$(keep_a_slash "$CDN_URL")
@@ -85,7 +109,7 @@ main() {
     # echo ""
 
     # 支持多级跳转
-    final_url=$(curl -L -s -o /dev/null -w "%{url_effective}" "$source_url")
+    final_url=$(curl -L -s -o /dev/null -w "%{url_effective}" --max-time 15 "$source_url")
     if [ -z "$final_url" ]; then
         echo "Error: 无法获取最终 URL"
         exit 1
