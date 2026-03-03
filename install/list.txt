@@ -13,6 +13,7 @@
 ./hugo.sh  |  静态网站生成器
 ./croc.sh  |  文件传输工具
 ./act.sh  |  GitHub Action 本地构建
+./android-studio.sh  |  Android Studio
 ./frp.sh  |  网络穿透工具
 ./aliyunpan.sh  |  阿里网盘命令行工具
 ./just.sh  |  构建工具

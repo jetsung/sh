@@ -35,6 +35,7 @@ done
 | [**hugo**](./hugo.sh) | [https://fx4.cn/hugo](https://fx4.cn/hugo) | 静态网站生成器 |
 | [**croc**](./croc.sh) | [https://fx4.cn/croc](https://fx4.cn/croc) | 文件传输工具 |
 | [**act**](./act.sh) | [https://fx4.cn/act](https://fx4.cn/act) | GitHub Action 本地构建 |
+| [**android-studio**](./android-studio.sh) | [https://developer.android.com/studio](https://developer.android.com/studio) | Android Studio |
 | [**frp**](./frp.sh) | [https://fx4.cn/frp](https://fx4.cn/frp) | 网络穿透工具 |
 | [**aliyunpan**](./aliyunpan.sh) | [https://fx4.cn/aliyunpan](https://fx4.cn/aliyunpan) | 阿里网盘命令行工具 |
 | [**just**](./just.sh) | [https://fx4.cn/just](https://fx4.cn/just) | 构建工具 |

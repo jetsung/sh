@@ -3,7 +3,7 @@ repos:
   hooks:
   - id: update-list
     name: update-list
-    entry: bash commit.sh
+    entry: bash commit.sh && git add ./*/*.md ./*/list.txt
     language: system
     pass_filenames: false
 
