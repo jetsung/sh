@@ -9,6 +9,7 @@
 ./protoc.sh  |  protobuf 编译工具
 ./static-web-server.sh  |  静态网站服务器
 ./prek.sh  |  Git 钩子管理工具
+./asciinema.sh  |  录制和直播终端会话的命令行工具
 ./ttyd.sh  |  ttyd SSH Web 终端
 ./hugo.sh  |  静态网站生成器
 ./croc.sh  |  文件传输工具

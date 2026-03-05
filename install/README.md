@@ -31,6 +31,7 @@ done
 | [**protoc**](./protoc.sh) |  | protobuf 编译工具 |
 | [**static-web-server**](./static-web-server.sh) | [https://fx4.cn/sws](https://fx4.cn/sws) | 静态网站服务器 |
 | [**prek**](./prek.sh) | [https://fx4.cn/prek](https://fx4.cn/prek) | Git 钩子管理工具 |
+| [**asciinema**](./asciinema.sh) | [https://fx4.cn/asciinema](https://fx4.cn/asciinema) | 录制和直播终端会话的命令行工具 |
 | [**ttyd**](./ttyd.sh) | [https://fx4.cn/ttyd](https://fx4.cn/ttyd) | ttyd SSH Web 终端 |
 | [**hugo**](./hugo.sh) | [https://fx4.cn/hugo](https://fx4.cn/hugo) | 静态网站生成器 |
 | [**croc**](./croc.sh) | [https://fx4.cn/croc](https://fx4.cn/croc) | 文件传输工具 |
