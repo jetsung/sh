@@ -3,12 +3,12 @@
 #============================================================
 # File: remove_gitlab_workflow_runs.sh
 # Description: 批量删除 GitLab CI 流水线
-# URL: https://fx4.cn/
+# URL: 
 # ORIGIN: https://gist.asfd.cn/jetsung/gitlabci/raw/HEAD/remove_gitlab_workflow_runs.sh
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18
-# UpdatedAt: 2025-08-18
+# UpdatedAt: 2026-03-08
 #============================================================
 
 
@@ -70,3 +70,7 @@ while true; do
   # 可选：等待几秒再继续循环，避免频繁调用 API
   # sleep 2
 done
+
+# Install: https://gitlab.com/gitlab-org/cli/-/releases
+# Login: glab auth login --hostname <HOSTNAME>
+# GITLAB_HOST=framagit.org

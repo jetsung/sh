@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: prek.sh
-# Description: Git 钩子管理工具
-# URL: https://fx4.cn/prek
+# File: websocat.sh
+# Description: WebSocket 客户端工具，用于在终端进行 WebSocket 通信
+# URL: https://fx4.cn/websocat
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.1
-# CreatedAt: 2026-02-17
-# UpdatedAt: 2026-02-17
+# Version: 0.1.0
+# CreatedAt: 2026-03-10
+# UpdatedAt: 2026-03-10
 #============================================================
-
 
 if [[ -n "${DEBUG:-}" ]]; then
     set -eux
@@ -68,17 +67,18 @@ do_remove_https() {
 
 get_download_url() {
     repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
-    # 尝试匹配 musl 或 gnu，优先 musl 以获得更好的静态兼容性
-    curl -fsSL "$repo_api_url" | jq -r --arg arch "$_ARCH" --arg os "$_OS" '
-        .assets[] | select(.name | (test("prek-\($arch)-\($os).tar.gz$") or test("prek-\($arch)-unknown-linux-gnu.tar.gz$"))) | .browser_download_url
-    ' | head -n 1
+    curl -fsSL "$repo_api_url" | jq -r --arg os "$OS" --arg arch "$ARCH" '
+        .assets[] 
+        | select(.name | test($os) and test($arch)) 
+        | .browser_download_url
+    '
 }
 
 download_exact() {
-    local download_file="tmp.tar.gz"
-    local file_bin="prek"
-    TMP_DIR=$(mktemp -d /tmp/prek.XXXXXX)
-    
+    local download_file="websocat"
+    local file_bin="websocat"
+    TMP_DIR=$(mktemp -d /tmp/websocat.XXXXXX)
+
     cleanup() {
         rm -rf -- "$TMP_DIR"
     }
@@ -87,27 +87,13 @@ download_exact() {
     pushd "$TMP_DIR" >/dev/null
 
     _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
-    echo "Downloading from: $_download_url"
-    
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
     fi
 
-    if ! tar -xzf "$download_file" --strip-components=1; then 
-        echo "Error: Extraction failed"
-        rm -f "$download_file"
-        exit 1
-    fi  
-
-    if [[ ! -f "${file_bin}" ]]; then
-        echo "Error: Binary ${file_bin} not found after extraction"
-        ls -la
-        exit 1
-    fi
-
-    sudo_exec mv "${file_bin}" "/usr/local/bin/${file_bin}"
-    sudo_exec chmod +x "/usr/local/bin/${file_bin}"
+    chmod +x "$file_bin"
+    sudo_exec mv "$file_bin" /usr/local/bin/
 
     popd >/dev/null
 }
@@ -122,38 +108,28 @@ main() {
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m)"
 
-    _OS="unknown-linux-musl"
-    if [[ "$OS" == "darwin" ]]; then
-        _OS="apple-darwin"
+    if [[ "$ARCH" = "x86_64" && "$OS" = "linux" ]]; then
+        OS="linux-musl"
     fi
 
-    _ARCH="$ARCH"
-    if [[ "$ARCH" == "arm64" ]]; then
-        _ARCH="aarch64"
-    fi
-    
-    DOWNLOAD_URL="$(get_download_url j178/prek)"
-
-    if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
-        echo "Error: Could not find a download URL for $ARCH on $OS"
-        exit 1
-    fi
+    DOWNLOAD_URL="$(get_download_url vi/websocat)"
 
     download_exact
 
     echo ""
 
-    if ! check_is_command "prek"; then
-        echo "prek has not been installed successfully."
+    if ! check_is_command "websocat"; then
+        echo "websocat has not been installed successfully."
         echo ""
         exit 1
-    fi
+    fi       
 
-    echo "prek has been installed successfully!"
     echo ""
-    prek --version
+    echo "websocat has been installed successfully!"
     echo ""
-    prek --help
+    websocat --help
+    echo ""
+    websocat --version
     echo ""    
 }
 

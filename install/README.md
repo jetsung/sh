@@ -23,6 +23,7 @@ done
 | [**chromium**](./chromium.sh) | [https://fx4.cn/chromium](https://fx4.cn/chromium) | Ungoogled Chromium |
 | [**m3u8-downloader**](./m3u8-downloader.sh) | [https://fx4.cn/m3u8-downloader](https://fx4.cn/m3u8-downloader) | m3u8 下载器 (m3u8-downloader) |
 | [**zoxide**](./zoxide.sh) | [https://fx4.cn/zoxide](https://fx4.cn/zoxide) | zoxide 智能 CD 命令行工具 |
+| [**websocat**](./websocat.sh) | [https://fx4.cn/websocat](https://fx4.cn/websocat) | WebSocket 客户端工具，用于在终端进行 WebSocket 通信 |
 | [**bore**](./bore.sh) | [https://fx4.cn/bore](https://fx4.cn/bore) | 网络穿透工具 |
 | [**nvim**](./nvim.sh) | [https://fx4.cn/nvim](https://fx4.cn/nvim) | Neovim 编辑器 |
 | [**wush**](./wush.sh) | [https://fx4.cn/wush](https://fx4.cn/wush) | wush 网络穿透工具 |

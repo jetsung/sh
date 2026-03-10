@@ -1,6 +1,7 @@
 ./chromium.sh  |  Ungoogled Chromium
 ./m3u8-downloader.sh  |  m3u8 下载器 (m3u8-downloader)
 ./zoxide.sh  |  zoxide 智能 CD 命令行工具
+./websocat.sh  |  WebSocket 客户端工具，用于在终端进行 WebSocket 通信
 ./bore.sh  |  网络穿透工具
 ./nvim.sh  |  Neovim 编辑器
 ./wush.sh  |  wush 网络穿透工具

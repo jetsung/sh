@@ -32,7 +32,7 @@
 | [**komodo**](./komodo.sh) | [https://fx4.cn/komodo](https://fx4.cn/komodo) |  |
 | [**ssl-reload**](./ssl-reload.sh) | [https://fx4.cn/ssl-reload](https://fx4.cn/ssl-reload) | 检查 SSL 证书是否在指定时间范围内更新，更新则重启服务 |
 | [**docker-pull**](./docker-pull.sh) | [https://fx4.cn/dockerpull](https://fx4.cn/dockerpull) | Docker 通过加速站拉取镜像 |
-| [**remove_gitlab_workflow_runs**](./remove_gitlab_workflow_runs.sh) | [https://fx4.cn/](https://fx4.cn/) | 批量删除 GitLab CI 流水线 |
+| [**remove_gitlab_workflow_runs**](./remove_gitlab_workflow_runs.sh) |  | 批量删除 GitLab CI 流水线 |
 | [**push-notify**](./push-notify.sh) | [https://fx4.cn/](https://fx4.cn/) | 推送消息到钉钉、飞书、Lark |
 | [**git-qcloud**](./git-qcloud.sh) | [https://fx4.cn/7c2f52c8](https://fx4.cn/7c2f52c8) | 腾讯工峰 命令行工具 |
 | [**cn-mirror**](./cn-mirror.sh) | [https://fx4.cn/cnmirror](https://fx4.cn/cnmirror) | 中国镜像信息配置 |
