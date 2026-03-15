@@ -5,9 +5,9 @@
 # Description: Ungoogled Chromium
 # URL: https://fx4.cn/chromium
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.4.0
+# Version: 0.4.1
 # CreatedAt: 2025-08-10
-# UpdatedAt: 2025-12-13
+# UpdatedAt: 2026-03-15
 #============================================================
 
 
@@ -112,7 +112,7 @@ download_exact() {
 
 set_desktop() {
     _appdesk_dir="$HOME/.local/share/applications"
-    _desktop_file="$_appdesk_dir/chromium.desktop"
+    _desktop_file="$_appdesk_dir/ungoogled-chromium.desktop"
     _icon_path="$SAVE_DIR/product_logo_48.png"
     mkdir -p "$_appdesk_dir"
 
@@ -123,7 +123,7 @@ Type=Application
 Name=Chromium
 GenericName=Web Browser
 Comment=Access the Internet
-Exec=/usr/local/bin/chrome %U
+Exec=/opt/ungoogled-chromium/chrome %U
 Icon=$_icon_path
 Terminal=false
 Categories=Network;WebBrowser;
@@ -138,13 +138,13 @@ usage() {
     echo "Usage: $0 [-d <dir>] [-n] [-h]"
     echo ""
     echo "Options:"
-    echo "  -d <dir>    Set the installation directory (default: /opt/chromium)."
+    echo "  -d <dir>    Set the installation directory (default: /opt/ungoogled-chromium)."
     echo "  -n          Disable creation of .desktop file."
     echo "  -h          Show this help message."
 }
 
 main() {
-    SAVE_DIR="/opt/chromium"
+    SAVE_DIR="/opt/ungoogled-chromium)"
     CREATE_DESKTOP=true
 
     while getopts "d:nh" opt; do
