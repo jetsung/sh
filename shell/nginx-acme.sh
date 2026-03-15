@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #============================================================
-# File: nginx.sh
+# File: nginx-acme.sh
 # Description: 编译 nginx-acme 模块并集成到当前系统 Nginx
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
