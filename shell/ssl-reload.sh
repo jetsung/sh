@@ -3,11 +3,11 @@
 #============================================================
 # File: ssl-reload.sh
 # Description: 检查 SSL 证书是否在指定时间范围内更新，更新则重启服务
-# URL: https://fx4.cn/ssl-reload
+# URL: https://fx4.cn/sslreload
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.4.0
+# Version: 0.4.1
 # CreatedAt: 2025-08-30
-# UpdatedAt: 2026-02-19
+# UpdatedAt: 2026-03-24
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -22,7 +22,7 @@ fi
 #   2. 其次从 CONF_DIR 目录（如 /etc/angie/wildcard/*.conf）中提取 ssl_certificate 的路径
 # - 使用 openssl 检查证书的申请时间（notBefore）是否在指定小时数内，
 # - 如果有，则执行 restart_scripts/ 目录下所有 .sh 文件来重启服务。
-# - 支持配置：脚本所在目录下的 config.sh 定义 CONF_DIR、CERTS_FILE 和 CHECK_HOURS。
+# - 支持配置：脚本所在目录下的 .env 定义 CONF_DIR、CERTS_FILE 和 CHECK_HOURS。
 # - 支持 init 参数：设置随机凌晨0-8点的 cron 任务来运行本脚本（检查模式）。
 # - 支持 --help 参数：显示帮助信息。
 
@@ -31,11 +31,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
 # 加载配置
 load_config() {
-    CONFIG_FILE="$SCRIPT_DIR/config.sh"
+    CONFIG_FILE="$SCRIPT_DIR/.env"
     if [ ! -f "$CONFIG_FILE" ]; then
         echo "CONF_DIR=/etc/angie/wildcard" > "$CONFIG_FILE"
         echo "CERTS_FILE=" >> "$CONFIG_FILE"
-        echo "CHECK_HOURS=24" >> "$CONFIG_FILE"
+        echo "CHECK_HOURS=48" >> "$CONFIG_FILE"
         echo "创建配置文件：$CONFIG_FILE 使用默认值"
         chmod 644 "$CONFIG_FILE"
     fi
@@ -43,7 +43,7 @@ load_config() {
     source "$CONFIG_FILE"
     : "${CONF_DIR:=/etc/angie/wildcard}"
     : "${CERTS_FILE:=}"
-    : "${CHECK_HOURS:=24}"
+    : "${CHECK_HOURS:=48}"
 }
 
 # 创建重启脚本目录
@@ -151,16 +151,16 @@ setup_cron() {
 
 # 显示帮助信息
 show_help() {
-    echo "Usage: $(basename "$0") [init] [--help]"
+    echo "Usage: $(basename "$0") [init] [-h|--help]"
     echo ""
     echo "Description:"
-    echo "  检查 SSL 证书是否在指定时间范围内（默认24小时）申请，如果是，则执行重启脚本。"
+    echo "  检查 SSL 证书是否在指定时间范围内（默认48小时）申请，如果是，则执行重启脚本。"
     echo ""
     echo "Options:"
     echo "  init         设置随机凌晨0-8点的 cron 任务来运行本脚本（检查模式）。"
-    echo "  --help       显示此帮助信息。"
+    echo "  -h, --help   显示此帮助信息。"
     echo ""
-    echo "配置文件: $SCRIPT_DIR/config.sh"
+    echo "配置文件: $SCRIPT_DIR/.env"
     echo ""
     echo "支持的配置变量（直接赋值，无需 export）："
     echo ""
@@ -175,10 +175,10 @@ show_help() {
     echo "      支持注释行（以 # 开头）和空行。"
     echo "      默认值: 空（不使用）"
     echo ""
-    echo "  CHECK_HOURS=24"
+    echo "  CHECK_HOURS=48"
     echo "      检查证书更新的时间范围，单位为小时。"
     echo "      脚本会检查证书的 notBefore 时间是否在此时长之前有更新。"
-    echo "      默认值: 24"
+    echo "      默认值: 48"
     echo ""
     echo "工作流程："
     echo "  1. 加载配置文件（如不存在则自动创建）"
@@ -202,13 +202,13 @@ show_help() {
 
 # 主函数
 main() {
-    while [[ $# -gt 0 ]]; do
+    if [[ $# -gt 0 ]]; then
         case "$1" in
             init)
                 setup_cron
                 exit 0
                 ;;
-            --help)
+            -h|--help)
                 show_help
                 ;;
             *)
@@ -216,7 +216,7 @@ main() {
                 show_help
                 ;;
         esac
-    done
+    fi
 
     load_config
     setup_restart_dir
