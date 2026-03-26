@@ -5,9 +5,9 @@
 # Description: 替换脚本中的字符串为加速网址
 # URL: https://fx4.cn/x
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.2
+# Version: 0.1.3
 # CreatedAt: 2025-03-05
-# UpdatedAt: 2025-09-12
+# UpdatedAt: 2026-03-26
 #============================================================
 
 if [[ -n "$DEBUG" ]]; then
@@ -108,12 +108,14 @@ main() {
     # echo "source_url: $source_url"
     # echo ""
 
-    # 支持多级跳转
-    final_url=$(curl -L -s -o /dev/null -w "%{url_effective}" --max-time 15 "$source_url")
-    if [ -z "$final_url" ]; then
-        echo "Error: 无法获取最终 URL"
-        exit 1
+    # 获取最终跳转后的 URL（如果没有跳转，curl 输出通常为空）
+    final_url=$(curl -L -s -o /dev/null -w "%{url_effective}" --max-time 10 "$source_url" || true)
+
+    # 关键修复：如果为空，就使用原始 URL
+    if [[ -z "$final_url" ]] || [[ "$final_url" = "" ]]; then
+        final_url="$source_url"
     fi
+
     source_url=$(remove_second_https "${CDN_URL}${final_url}")
 
     source=$(curl -fsSL "$source_url")
