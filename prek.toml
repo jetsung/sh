@@ -1,0 +1,17 @@
+[[repos]]
+repo = "local"
+
+  [[repos.hooks]]
+  id = "update-list"
+  name = "update-list"
+  entry = "bash -c 'bash commit.sh && git add ./*/*.md ./*/list.txt'"
+  language = "system"
+  pass_filenames = false
+
+  [[repos.hooks]]
+  id = "shellcheck"
+  name = "shellcheck"
+  entry = "bash -c 'shellcheck shell/*.sh install/*.sh build/*.sh --exclude=SC1091,SC1090'"
+  language = "system"
+  files = '\.sh$'
+  pass_filenames = false
