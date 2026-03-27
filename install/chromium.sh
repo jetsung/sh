@@ -98,11 +98,6 @@ download_exact() {
 
     popd >/dev/null
 
-    # 若存在转链接则删除
-    if [[ -f "/usr/local/bin/${file_bin}" ]]; then
-        sudo_exec rm -f "/usr/local/bin/${file_bin}"
-    fi
-
     # 添加软链接
     if ! sudo_exec ln -sf "${SAVE_DIR}/${file_bin}" "/usr/local/bin/${file_bin}"; then
         printf "\033[31mInstall %s failed, Please Contact the author! \033[0m" "$file_bin"
