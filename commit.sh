@@ -15,7 +15,7 @@ fi
 do_install_list() {
     pushd "$1" > /dev/null 2>&1
     rm -rf list.txt
-    find . -maxdepth 1 -type f \( -name "*.sh" -o -name "*.ps1" -o -name "*.py" \) -not -wholename "./.upgrade.sh" -print0 | sort |
+    find . -maxdepth 1 -type f \( -name "*.sh" -o -name "*.ps1" -o -name "*.py" \) -not -wholename "./.upgrade.sh" -print0 | LC_ALL=C sort -z |
     while IFS= read -r -d '' file; do    
         title=$(grep -m1 '^# Description:' "$file" | cut -d':' -f2- | xargs)
         if [[ -n "$title" ]]; then
@@ -35,7 +35,7 @@ update_readme() {
 
     (
     # 查找所有符合条件的脚本文件，支持空格和特殊字符
-    find . -maxdepth 1 -type f \( -name "*.sh" -o -name "*.ps1" -o -name "*.py" \) -print0 | sort |
+    find . -maxdepth 1 -type f \( -name "*.sh" -o -name "*.ps1" -o -name "*.py" \) -print0 | LC_ALL=C sort -z |
     while IFS= read -r -d '' file; do
         if [[ -f "$file" ]]; then
             _file_with_ext="${file##*/}"  # 提取文件名（包括扩展名）

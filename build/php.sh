@@ -489,7 +489,7 @@ EOF
 
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
-    DOWNLOAD_URL="$(get_download_url $PHP_VERSION)"
+    DOWNLOAD_URL=$(get_download_url "$PHP_VERSION")
 
     if [[ -z "$DOWNLOAD_URL" ]]; then
         echo "Error: Failed to get download url"
