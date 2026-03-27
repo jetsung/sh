@@ -4,7 +4,7 @@ repo = "local"
   [[repos.hooks]]
   id = "update-list"
   name = "update-list"
-  entry = "bash -c 'bash commit.sh && git add ./*/*.md ./*/list.txt'"
+  entry = "bash -c 'bash commit.sh'"
   language = "system"
   pass_filenames = false
 
