@@ -102,7 +102,7 @@ download_exact() {
 install_for_linux() {
     local download_file="tmp.tar.gz"
     local zed_prefix="zed${PRE_VERSION:+-preview}.app"
-    local desktop_path="${zed_prefix}/share/applications/dev.zed.Zed${PRE_VERSION:+-Preview}.desktop"
+    local desktop_name="dev.zed.Zed${PRE_VERSION:+-Preview}.desktop"
     TMP_DIR=$(mktemp -d /tmp/zed.XXXXXX)
 
     cleanup() {
@@ -135,9 +135,9 @@ install_for_linux() {
     # 删除并重建软链接
     ln -sf "${_install_dir_path}${zed_prefix}/bin/zed" "$_run_path/zed"
 
-    install -D "$HOME/.local/${desktop_path}" -t ~/.local/share/applications
-    sed -i "s|Icon=zed|Icon=$HOME/.local/${zed_prefix}/share/icons/hicolor/512x512/apps/zed.png|g" ~/.local/share/applications/dev.zed.Zed.desktop
-    sed -i "s|Exec=zed|Exec=$HOME/.local/${zed_prefix}/bin/zed|g" ~/.local/share/applications/dev.zed.Zed.desktop
+    install -D "$HOME/.local/${zed_prefix}/share/applications/${desktop_name}" -t ~/.local/share/applications
+    sed -i "s|Icon=zed|Icon=$HOME/.local/${zed_prefix}/share/icons/hicolor/512x512/apps/zed.png|g" ~/.local/share/applications/"${desktop_name}"
+    sed -i "s|Exec=zed|Exec=$HOME/.local/${zed_prefix}/bin/zed|g" ~/.local/share/applications/"${desktop_name}"
 
     popd >/dev/null
 }
