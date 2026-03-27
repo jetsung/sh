@@ -113,6 +113,7 @@ install_deps() {
             libxslt1-dev \
             libargon2-dev \
             libtidy-dev \
+            libbz2-dev \
             procps
     elif check_is_command "dnf"; then
         echo "检测到 Fedora 系统，安装依赖..."
@@ -148,7 +149,11 @@ download_and_build() {
 
 download_exact() {
     local download_file="php.tar.xz"
+    local local_file="php-${PHP_VERSION}.tar.xz"
     TMP_DIR=$(mktemp -d /tmp/php.XXXXXX)
+    if [[ -f "$local_file" ]]; then
+        cp "$local_file" "${TMP_DIR}/${download_file}"
+    fi
 
     # shellcheck disable=SC2329
     cleanup() {
@@ -157,11 +162,7 @@ download_exact() {
     trap cleanup EXIT
 
     pushd "$TMP_DIR" >/dev/null
-
-    local local_file="php-${PHP_VERSION}.tar.xz"
-    if [[ -f "$local_file" ]]; then
-        cp "$local_file" "$download_file"
-    else
+    if [[ ! -f "$download_file" ]]; then
         _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
         if ! curl -fsSL "$_download_url" -o "$download_file"; then
             echo "Error: Failed to download $download_file"
@@ -236,8 +237,8 @@ build() {
         --enable-intl \
         ${CONFIGURE_ARGS:-}
 
-    # make "-j$(nproc)"
-    make -j6
+    # make -j6
+    make "-j$(nproc)"
     make install
 }
 
