@@ -72,12 +72,35 @@ china_mirror() {
 
     case "${1:-}" in
         deb)
+            # Debian
             if [[ -f "/etc/apt/sources.list.d/debian.sources" ]]; then
                 sed -i.bak 's#deb.debian.org#mirrors.aliyun.com#g' /etc/apt/sources.list.d/debian.sources
             fi
+
+            # Ubuntu
+            if [[ -f "/etc/apt/sources.list.d/ubuntu.sources" ]]; then
+                sed -i.bak 's#//.*archive.ubuntu.com#//mirrors.ustc.edu.cn#g' /etc/apt/sources.list.d/ubuntu.sources
+                sed -i.bak 's#security.ubuntu.com#mirrors.aliyun.com#g' /etc/apt/sources.list.d/ubuntu.sources
+            fi
+
+            # Debian / Ubuntu
             if [[ -f "/etc/apt/sources.list" ]]; then
                 sed -i.bak 's#deb.debian.org#mirrors.aliyun.com#g' /etc/apt/sources.list
+
+                sed -i.bak 's#//.*archive.ubuntu.com#//mirrors.ustc.edu.cn#g' /etc/apt/sources.list
+                sed -i.bak 's#security.ubuntu.com#mirrors.aliyun.com#g' /etc/apt/sources.list
             fi
+            ;;
+
+        dnf|yum)
+            # AlmaLinux
+              sed -e 's|^mirrorlist=|#mirrorlist=|g' \
+                -e 's|^# baseurl=https://repo.almalinux.org|baseurl=https://mirrors.aliyun.com|g' \
+                -i.bak \
+                /etc/yum.repos.d/almalinux*.repo
+            ;;
+        apk)
+            sed -i.bak 's#dl-cdn.alpinelinux.org#mirrors.aliyun.com#g' /etc/apk/repositories
             ;;
         *)
             echo "未检测到已知包管理器，请手动安装依赖：curl xz build-essential"
@@ -92,9 +115,9 @@ install_deps() {
         echo "检测到 Debian/Ubuntu 系统，安装依赖..."
         apt-get update
         apt-get install -y \
+            build-essential \
             curl \
             xz-utils \
-            build-essential \
             pkg-config \
             autoconf \
             libxml2-dev \
@@ -116,14 +139,58 @@ install_deps() {
             libbz2-dev \
             procps
     elif check_is_command "dnf"; then
-        echo "检测到 Fedora 系统，安装依赖..."
-        dnf install -y curl
+        china_mirror dnf
+        echo "检测到 RHEL 系列系统，安装依赖..."
+        # dnf makecache
+        dnf update -y
+        dnf install -y epel-release
+        dnf groupinstall -y "Development Tools"
+        dnf install -y \
+            curl \
+            libxml2-devel \
+            openssl-devel \
+            sqlite-devel \
+            bzip2-devel \
+            libcurl-devel \
+            libpng-devel \
+            libjpeg-turbo-devel \
+            freetype-devel \
+            oniguruma-devel \
+            postgresql-devel \
+            libsodium-devel \
+            libargon2-devel \
+            libtidy-devel \
+            libxslt-devel \
+            libzip-devel
     elif check_is_command "yum"; then
-        echo "检测到 CentOS/RHEL 系统，安装依赖..."
+        china_mirror yum
+        echo "检测到 RHEL 系列系统，安装依赖..."
         yum install -y curl
     elif check_is_command "apk"; then
+        china_mirror apk
         echo "检测到 Alpine 系统，安装依赖..."
-        apk add curl
+        apk update
+        apk add build-base linux-headers autoconf shadow
+        apk add \
+            curl \
+            pkgconfig \
+            libxml2-dev \
+            openssl-dev \
+            sqlite-dev \
+            bzip2-dev \
+            curl-dev \
+            libpng-dev \
+            libjpeg-turbo-dev \
+            freetype-dev \
+            gettext-dev \
+            icu-dev \
+            oniguruma-dev \
+            postgresql-dev \
+            libsodium-dev \
+            argon2-dev \
+            tidyhtml-dev \
+            libxslt-dev \
+            libzip-dev
     elif check_is_command "pacman"; then
         echo "检测到 Arch Linux 系统，安装依赖..."
         pacman -Syu --noconfirm --needed curl
@@ -237,8 +304,8 @@ build() {
         --enable-intl \
         ${CONFIGURE_ARGS:-}
 
-    # make -j6
-    make "-j$(nproc)"
+    make -j6
+    # make "-j$(nproc)"
     make install
 }
 
@@ -271,8 +338,10 @@ setting_env() {
     # 使用 grep 检查文件内容，如果返回非 0（即没找到），则执行写入
     grep -qF "$LINE" /etc/profile || echo "$LINE" >> /etc/profile
 
+    set +u
     # shellcheck disable=SC1091
-    source /etc/profile    
+    source /etc/profile
+    set -u
 }
 
 setting_ext_opcache() {
@@ -377,7 +446,6 @@ optimized() {
 
     echo "PHP.ini optimized, memory_limit: $NEW_MEM"
 
-    
     # 优化 php-fpm
     # 获取 CPU 核心数
     CPU_CORES=$(nproc)
@@ -413,11 +481,13 @@ setting_phpfpm() {
 
     sed -i 's|^;pid = .*|pid = /usr/local/php/var/run/php-fpm.pid|' /usr/local/php/etc/php-fpm.conf
 
-    if ! check_is_command systemctl; then
-        echo "Notice: systemctl not found. To start PHP-FPM manually:"
+    if [[ -f /.dockerenv ]]; then
+        echo "Notice: Running inside a Docker container.. To start PHP-FPM manually:"
         echo "  /usr/local/php/sbin/php-fpm --nodaemonize --fpm-config /usr/local/php/etc/php-fpm.conf"
         return 0
     fi
+
+    echo "Running on a Host/VM."
 
     cat <<EOF | tee /etc/systemd/system/php-fpm.service
 [Unit]
@@ -461,6 +531,7 @@ main() {
 Usage: $0 [OPTIONS]
 
 This script must be run as root.
+Supports Debian (13), Alpine (3), AlmaLinux (10) etc.
 
 Options:
   -v, --version VERSION      PHP version (default: 8.5.4)
