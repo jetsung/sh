@@ -70,7 +70,11 @@ get_download_url() {
     local _releases_url
     local _release_json
 
-    _releases_url=$(do_remove_https "${CDN_URL}https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json")
+    if [[ -z "$FLUTTER_STORAGE_BASE_URL" ]]; then
+        FLUTTER_STORAGE_BASE_URL="https://storage.googleapis.com"
+    fi
+
+    _releases_url=$(do_remove_https "${CDN_URL}${FLUTTER_STORAGE_BASE_URL}/flutter_infra_release/releases/releases_linux.json")
     _release_json=$(curl -fsSL "$_releases_url")
 
     _base_url=$(echo "$_release_json" | jq -r '.base_url')
@@ -112,19 +116,19 @@ download_exact() {
         exit 1
     fi
 
-    if [[ -d "$HOME/.flutter" ]]; then
-        rm -rf "$HOME
-        /.flutter"
+    if [[ -d "$HOME/.local/flutter" ]]; then
+        rm -rf "$HOME/.local/flutter"
     fi
 
-    mv flutter "$HOME/.flutter"
-    export PATH="$PATH:$HOME/.flutter/bin"
+    mv flutter "$HOME/.local/flutter"
+    export PATH="$PATH:$HOME/.local/flutter/bin"
 
     popd >/dev/null
 }
 
 main() {
-    if ! check_in_china; then
+    # 若自定义则跳过 CDN
+    if [[ -n "$FLUTTER_STORAGE_BASE_URL" ]] || ! check_in_china; then
         CDN_URL=""
     fi
 
