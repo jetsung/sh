@@ -42,8 +42,8 @@ sudo apt install -y jq
 # URL: https://fx4.cn/
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
-# CreatedAt: 2025-
-# UpdatedAt: 2025-
+# CreatedAt: 2026-
+# UpdatedAt: 2026-
 #============================================================
 
 

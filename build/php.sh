@@ -304,8 +304,8 @@ build() {
         --enable-intl \
         ${CONFIGURE_ARGS:-}
 
-    make -j6
-    # make "-j$(nproc)"
+    # make -j6
+    make "-j$(nproc)"
     make install
 }
 
@@ -377,7 +377,7 @@ install_pecl_extension() {
     fi
 
     echo "⚙️  Installing $ext..."
-    if yes "" | pecl install "$ext"; then
+    if yes "" | /usr/local/php/bin/pecl install "$ext"; then
         echo "extension=$ext.so" > "/usr/local/php/etc/conf.d/$ext.ini"
         echo "✅ $ext installed successfully."
     else
@@ -405,7 +405,7 @@ install_ext_igbinary() {
     fi
 
     echo "⚙️  Installing igbinary..."
-    pecl install igbinary
+    /usr/local/php/bin/pecl install igbinary
     echo "extension=igbinary.so" > /usr/local/php/etc/conf.d/igbinary.ini
     echo "✅ igbinary installed successfully."    
 }
@@ -422,7 +422,7 @@ install_ext_redis() {
 
     # 3. 不存在才执行安装
     echo "⚙️  Installing redis..."
-    yes "" | pecl install redis --configureoptions '--enable-redis-igbinary=yes --enable-redis-msgpack=no --enable-redis-lzf=no --enable-redis-zstd=no --enable-redis-lz4=no'
+    yes "" | /usr/local/php/bin/pecl install redis --configureoptions '--enable-redis-igbinary=yes --enable-redis-msgpack=no --enable-redis-lzf=no --enable-redis-zstd=no --enable-redis-lz4=no'
     echo "extension=redis.so" > /usr/local/php/etc/conf.d/redis.ini
     echo "✅ redis installed successfully."
 }
