@@ -8,7 +8,7 @@
 ./bore.sh  |  网络穿透工具
 ./chromium.sh  |  Ungoogled Chromium
 ./croc.sh  |  文件传输工具
-./flutter.sh
+./flutter.sh  |  安装 Flutter SDK
 ./frp.sh  |  网络穿透工具
 ./gitlab-runner.sh  |  GitLab Runner
 ./goreleaser.sh  |  Go语言程序构建工具

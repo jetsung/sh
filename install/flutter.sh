@@ -2,7 +2,7 @@
 
 #============================================================
 # File: flutter.sh
-# Description: 
+# Description: 安装 Flutter SDK
 # URL: https://fx4.cn/flutter
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
@@ -152,6 +152,9 @@ main() {
     fi
 
     echo "flutter has been installed successfully!"
+    echo ""
+    echo "Please add the following line to your ~/.bashrc or ~/.zshrc:"
+    echo "export PATH=\"\$PATH:\$HOME/.local/flutter/bin\""
     echo ""
     flutter --help
     echo ""
