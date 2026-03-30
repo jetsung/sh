@@ -27,3 +27,15 @@
 | [**gitlab-backup**](./gitlab-backup.sh) | [https://fx4.cn/4ddf9061](https://fx4.cn/4ddf9061) | GitLab 账号源码仓库备份 |
 | [**google-cloud-token**](./google-cloud-token.sh) |  | 获取 google cloud token |
 | [**komodo**](./komodo.sh) | [https://fx4.cn/komodo](https://fx4.cn/komodo) | Komodo 一键安装脚本 |
+| [**nginx-acme**](./nginx-acme.sh) |  | 编译 nginx-acme 模块并集成到当前系统 Nginx |
+| [**nginx-init**](./nginx-init.sh) |  | Nginx 初始化解耦配置脚本 |
+| [**push-notify**](./push-notify.sh) | [https://fx4.cn/](https://fx4.cn/) | 推送消息到钉钉、飞书、Lark |
+| [**remove_github_deployments_run**](./remove_github_deployments_run.sh) | [https://fx4.cn/](https://fx4.cn/) | 批量删除 GitHub 部署记录 |
+| [**remove_github_packages_untagged**](./remove_github_packages_untagged.sh) | [https://fx4.cn/](https://fx4.cn/) | 删除 GitHub Packages 悬空的镜像标签 |
+| [**remove_github_workflow_runs**](./remove_github_workflow_runs.sh) | [https://fx4.cn/](https://fx4.cn/) | 批量删除 GitHub Action Workflows 流水线 |
+| [**remove_gitlab_workflow_runs**](./remove_gitlab_workflow_runs.sh) |  | 批量删除 GitLab CI 流水线 |
+| [**shell**](./shell.sh) | [https://fx4.cn/shell](https://fx4.cn/shell) | 将命令行组合成函数调用 |
+| [**ssl-check**](./ssl-check.sh) | [https://fx4.cn/sslcheck](https://fx4.cn/sslcheck) | 检测 WebDAV 上的 SSL 证书是否在指定时间内更新，更新则执行升级和重启脚本 |
+| [**ssl-reload**](./ssl-reload.sh) | [https://fx4.cn/sslreload](https://fx4.cn/sslreload) | 检查 SSL 证书是否在指定时间范围内更新，更新则重启服务 |
+| [**totp2md**](./totp2md.sh) | [https://fx4.cn/](https://fx4.cn/) | 将 TOTP 二维码转换为 Markdown 表格 |
+| [**x**](./x.sh) | [https://fx4.cn/x](https://fx4.cn/x) | 替换脚本中的字符串为加速网址 |
