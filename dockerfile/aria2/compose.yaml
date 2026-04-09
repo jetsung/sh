@@ -1,0 +1,11 @@
+services:
+  aria2:
+    image: aria2
+    container_name: aria2
+    ports:
+      - "6800:6800"
+    volumes:
+      - ./data:/data
+      - ./aria2.conf:/etc/aria2/aria2.conf
+    command: --conf-path=/etc/aria2/aria2.conf
+    restart: unless-stopped
