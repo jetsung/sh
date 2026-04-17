@@ -79,7 +79,12 @@ make modules
 # 7. 安装模块
 MODULE_PATH=$(nginx -V 2>&1 | grep -oP "modules-path=\K[^ ]*")
 if [[ -z "$MODULE_PATH" ]]; then
-    MODULE_PATH="/usr/lib/nginx/modules"
+    PREFIX=$(nginx -V 2>&1 | grep -oP "--prefix=\K[^ ]*")
+    if [[ -n "$PREFIX" ]]; then
+        MODULE_PATH="${PREFIX}/modules"
+    else
+        MODULE_PATH="/usr/lib/nginx/modules"
+    fi
 fi
 
 echo "编译完成。正在将模块复制到 $MODULE_PATH..."
