@@ -5,9 +5,9 @@
 # Description: Neovim 编辑器
 # URL: https://fx4.cn/nvim
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.2.0
 # CreatedAt: 2026-02-17
-# UpdatedAt: 2026-02-17
+# UpdatedAt: 2026-04-29
 #============================================================
 
 
@@ -67,7 +67,17 @@ do_remove_https() {
 ########################## 以上为通用函数 #########################
 
 get_download_url() {
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    local version="${1:-latest}"
+    local repo="neovim/neovim"
+    local api_url
+    
+    if [[ "$version" == "latest" ]]; then
+        api_url="${CDN_URL}https://api.github.com/repos/${repo}/releases/latest"
+    else
+        api_url="${CDN_URL}https://api.github.com/repos/${repo}/releases/tags/${version}"
+    fi
+
+    repo_api_url=$(do_remove_https "$api_url")
     curl -fsSL "$repo_api_url" | jq -r --arg arch "$_ARCH" --arg os "$_OS" '.assets[] | select(.name | test("nvim-\($os)-\($arch).tar.gz$")) | .browser_download_url'
 }
 
@@ -127,10 +137,11 @@ main() {
     INSTALL_DIR="/opt/nvim"   
     BIN_DIR="/usr/local/bin"   
 
-    DOWNLOAD_URL="$(get_download_url neovim/neovim)"
+    VERSION="${1:-${VERSION:-latest}}"
+    DOWNLOAD_URL="$(get_download_url "$VERSION")"
 
     if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
-        echo "Error: Could not find a download URL for $_OS-$_ARCH"
+        echo "Error: Could not find a download URL for version $VERSION ($_OS-$_ARCH)"
         exit 1
     fi
 
