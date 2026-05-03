@@ -21,6 +21,7 @@
 ./shellcheck.sh  |  Shell 脚本分析工具
 ./skim.sh  |  命令行模糊查找器
 ./static-web-server.sh  |  静态网站服务器
+./textadept.sh  |  Textadept 编辑器
 ./ttyd.sh  |  ttyd SSH Web 终端
 ./vsd.sh  |  m3u8 下载器 （vsd）
 ./websocat.sh  |  WebSocket 客户端工具，用于在终端进行 WebSocket 通信
