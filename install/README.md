@@ -43,6 +43,7 @@ done
 | [**shellcheck**](./shellcheck.sh) | [https://fx4.cn/shellcheck](https://fx4.cn/shellcheck) | Shell 脚本分析工具 |
 | [**skim**](./skim.sh) | [https://fx4.cn/skim](https://fx4.cn/skim) | 命令行模糊查找器 |
 | [**static-web-server**](./static-web-server.sh) | [https://fx4.cn/sws](https://fx4.cn/sws) | 静态网站服务器 |
+| [**textadept**](./textadept.sh) | [https://fx4.cn/textadept](https://fx4.cn/textadept) | Textadept 编辑器 |
 | [**ttyd**](./ttyd.sh) | [https://fx4.cn/ttyd](https://fx4.cn/ttyd) | ttyd SSH Web 终端 |
 | [**vsd**](./vsd.sh) | [https://fx4.cn/vsd](https://fx4.cn/vsd) | m3u8 下载器 （vsd） |
 | [**websocat**](./websocat.sh) | [https://fx4.cn/websocat](https://fx4.cn/websocat) | WebSocket 客户端工具，用于在终端进行 WebSocket 通信 |
