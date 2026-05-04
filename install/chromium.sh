@@ -5,9 +5,9 @@
 # Description: Ungoogled Chromium
 # URL: https://fx4.cn/chromium
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.4.1
+# Version: 0.4.2
 # CreatedAt: 2025-08-10
-# UpdatedAt: 2026-03-15
+# UpdatedAt: 2026-05-04
 #============================================================
 
 
@@ -139,7 +139,7 @@ usage() {
 }
 
 main() {
-    SAVE_DIR="/opt/ungoogled-chromium)"
+    SAVE_DIR="/opt/ungoogled-chromium"
     CREATE_DESKTOP=true
 
     while getopts "d:nh" opt; do
