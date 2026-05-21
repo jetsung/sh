@@ -103,6 +103,7 @@ do_remove_https() {
 ########################## 以上为通用函数 #########################
 ```
 
+
 ## 仓库镜像
 
- [**MyCode**](https://git.jetsung.com/jetsung/sh) ● [**GitCode**](https://gitcode.com/jetsung/sh) ● [**GitHub**](https://github.com/jetsung/sh)
+[MyCode](https://git.jetsung.com/jetsung/sh) ● [AtomGit](https://atomgit.com/jetsung/sh) ● [GitHub](https://github.com/jetsung/sh)
