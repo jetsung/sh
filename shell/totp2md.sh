@@ -4,7 +4,7 @@
 # File: totp2md.sh
 # Description: 将 TOTP 二维码转换为 Markdown 表格
 # URL: https://fx4.cn/
-# ORIGIN: https://gist.asfd.cn/jetsung/totp2md/raw/HEAD/totp2md.sh
+# OpenGist: https://gist.asfd.cn/jetsung/totp2md/raw/HEAD/totp2md.sh
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-08-18
