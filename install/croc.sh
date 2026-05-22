@@ -107,11 +107,15 @@ main() {
     NO_HTTPS=$(check_remove_https "$CDN_URL")      
 
     OS="$(uname)"
+    if [ "$OS" = "Darwin" ]; then
+        OS="macOS"
+    fi
+
     case "$(uname -m)" in
         x86_64) 
             ARCH="64bit" 
             ;;
-        aarch64) 
+        aarch64|arm64) 
             ARCH="ARM64" 
             ;;
         *) 
