@@ -120,6 +120,10 @@ main() {
     
     case "$OS" in
         "darwin")
+            if [[ "$ARCH" == "x86_64" ]]; then
+                echo "Error: atuin no longer provides pre-built binaries for macOS x86_64 (Intel). Please use aarch64 (Apple Silicon) or install via brew."
+                exit 1
+            fi
             SUFFIX="${PREFIX}-${ARCH}-apple-darwin.tar.gz"
             ;;
         "linux")
