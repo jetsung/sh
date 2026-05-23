@@ -109,6 +109,9 @@ main() {
     OS="$(uname)"
     if [ "$OS" = "Darwin" ]; then
         OS="macOS"
+    elif [ "$OS" != "Linux" ]; then
+        echo "Unsupported OS: $OS"
+        exit 1
     fi
 
     case "$(uname -m)" in

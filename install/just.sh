@@ -113,8 +113,16 @@ main() {
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
     PLATFORM="unknown"
+
     if [[ "$OS" = "darwin" ]]; then
         PLATFORM="apple"
+    elif [[ "$OS" != "linux" ]]; then
+        echo "Unsupported OS: $(uname)"
+        exit 1
+    fi
+
+    if [[ "$ARCH" == "arm64" ]]; then
+        ARCH="aarch64"
     fi
 
     DOWNLOAD_URL="$(get_download_url casey/just)"
