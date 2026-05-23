@@ -107,6 +107,9 @@ main() {
     NO_HTTPS=$(check_remove_https "$CDN_URL")
 
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
+    if [[ "$ARCH" == "arm64" ]]; then
+        ARCH="aarch64"
+    fi
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     SUFFIX=""
 
