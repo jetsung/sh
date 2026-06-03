@@ -31,6 +31,7 @@ DOMAINS=example.com,example.cn
 CHECK_HOURS=48
 CERTS_SAVE_DIR=certs
 LOG_FILE=ssl-check.log
+LOCAL_MODE=false
 EOF
         echo "创建配置文件：$CONFIG_FILE 使用默认值"
         chmod 600 "$CONFIG_FILE"
@@ -45,6 +46,12 @@ EOF
             echo "LOG_FILE=ssl-check.log" >> "$CONFIG_FILE"
             echo "已向 $CONFIG_FILE 追加默认 LOG_FILE=ssl-check.log"
         fi
+        
+        # 如果文件存在但缺少 LOCAL_MODE，则追加
+        if ! grep -q "LOCAL_MODE=" "$CONFIG_FILE"; then
+            echo "LOCAL_MODE=false" >> "$CONFIG_FILE"
+            echo "已向 $CONFIG_FILE 追加默认 LOCAL_MODE=false"
+        fi
     fi
     
     # shellcheck disable=SC1090
@@ -57,6 +64,7 @@ EOF
     : "${CHECK_HOURS:=48}"
     : "${CERTS_SAVE_DIR:=certs}"
     : "${LOG_FILE:=ssl-check.log}"
+    : "${LOCAL_MODE:=false}"
     
     # 处理日志绝对路径
     if [[ "$LOG_FILE" == /* ]]; then
@@ -123,6 +131,11 @@ EOF
 
 # 下载证书文件
 download_certs() {
+    if [ "${LOCAL_MODE:-false}" = "true" ]; then
+        log "本地模式，跳过从 webdav 下载证书"
+        return 0
+    fi
+
     local domain="$1"
     local base_url
     # shellcheck disable=SC2059
@@ -148,14 +161,39 @@ download_certs() {
 # 检查单个域名的证书更新情况
 check_domain_update() {
     local domain="$1"
-    local url
-    # shellcheck disable=SC2059
-    url=$(printf "$WEBDAV_URL_TEMPLATE" "$domain")
     
     local current_time
     current_time=$(date +%s)
     local check_seconds=$((CHECK_HOURS * 3600))
     local check_time_ago=$((current_time - check_seconds))
+
+    if [ "${LOCAL_MODE:-false}" = "true" ]; then
+        local cert_path="$ABS_CERTS_SAVE_DIR/$domain.fullchain.cer"
+        echo "正在检查本地域名: $domain ($cert_path)" >&2
+        
+        if [ -f "$cert_path" ]; then
+            not_before=$(openssl x509 -in "$cert_path" -noout -startdate 2>/dev/null | grep -oP 'notBefore=\K.*' || true)
+            
+            if [ -n "$not_before" ]; then
+                not_before_ts=$(date -d "$not_before" +%s 2>/dev/null || date -j -f "%b %d %T %Y %Z" "$not_before" +%s 2>/dev/null)
+                
+                if [ -n "$not_before_ts" ] && [ "$not_before_ts" -gt "$check_time_ago" ]; then
+                    log "本地证书 $domain 在过去 $CHECK_HOURS 小时内更新过 (notBefore: $not_before)"
+                    return 0 # 有更新
+                fi
+            else
+                echo "警告：无法从 $cert_path 获取有效的证书信息" >&2
+            fi
+        else
+            echo "错误：本地证书文件不存在 $cert_path" >&2
+        fi
+        
+        return 1
+    fi
+
+    local url
+    # shellcheck disable=SC2059
+    url=$(printf "$WEBDAV_URL_TEMPLATE" "$domain")
 
     echo "正在检查域名: $domain ($url)" >&2
     
@@ -246,6 +284,7 @@ show_help() {
     echo "  CHECK_HOURS          检查更新的时间范围（小时），默认 48"
     echo "  CERTS_SAVE_DIR       证书本地存储目录名，默认 certs"
     echo "  LOG_FILE             日志文件名，默认 ssl-check.log"
+    echo "  LOCAL_MODE           是否开启本地检测，默认 false"
     exit 0
 }
 
