@@ -65,6 +65,27 @@ do_remove_https() {
 
 ########################## 以上为通用函数 #########################
 
+# 编译日志配置
+LOG_DIR="/var/log/php-build"
+LOG_FILE="${LOG_DIR}/php-build-$(date +%Y%m%d-%H%M%S).log"
+
+# 初始化日志目录
+init_log() {
+    mkdir -p "$LOG_DIR"
+    echo "📝 编译日志保存到: $LOG_FILE"
+    echo "========== PHP 编译开始 $(date) ==========" > "$LOG_FILE"
+}
+
+# 记录日志
+log() {
+    echo "$@" | tee -a "$LOG_FILE"
+}
+
+# 记录分隔线
+log_separator() {
+    echo "========================================" >> "$LOG_FILE"
+}
+
 china_mirror() {
     if [[ -z "$IS_CHINA" ]]; then
         return 0
@@ -110,10 +131,12 @@ china_mirror() {
 
 # 支持多个 Linux 平台的依赖安装
 install_deps() {
+    log "📦 安装编译依赖..."
+
     if check_is_command "apt-get"; then
         china_mirror deb
-        echo "检测到 Debian/Ubuntu 系统，安装依赖..."
-        apt-get update
+        log "检测到 Debian/Ubuntu 系统，安装依赖..."
+        apt-get update 2>&1 | tee -a "$LOG_FILE"
         apt-get install -y \
             build-essential \
             curl \
@@ -137,14 +160,14 @@ install_deps() {
             libargon2-dev \
             libtidy-dev \
             libbz2-dev \
-            procps
+            procps 2>&1 | tee -a "$LOG_FILE"
     elif check_is_command "dnf"; then
         china_mirror dnf
-        echo "检测到 RHEL 系列系统，安装依赖..."
+        log "检测到 RHEL 系列系统，安装依赖..."
         # dnf makecache
-        dnf update -y
-        dnf install -y epel-release
-        dnf groupinstall -y "Development Tools"
+        dnf update -y 2>&1 | tee -a "$LOG_FILE"
+        dnf install -y epel-release 2>&1 | tee -a "$LOG_FILE"
+        dnf groupinstall -y "Development Tools" 2>&1 | tee -a "$LOG_FILE"
         dnf install -y \
             curl \
             libxml2-devel \
@@ -161,16 +184,16 @@ install_deps() {
             libargon2-devel \
             libtidy-devel \
             libxslt-devel \
-            libzip-devel
+            libzip-devel 2>&1 | tee -a "$LOG_FILE"
     elif check_is_command "yum"; then
         china_mirror yum
-        echo "检测到 RHEL 系列系统，安装依赖..."
-        yum install -y curl
+        log "检测到 RHEL 系列系统，安装依赖..."
+        yum install -y curl 2>&1 | tee -a "$LOG_FILE"
     elif check_is_command "apk"; then
         china_mirror apk
-        echo "检测到 Alpine 系统，安装依赖..."
-        apk update
-        apk add build-base linux-headers autoconf shadow
+        log "检测到 Alpine 系统，安装依赖..."
+        apk update 2>&1 | tee -a "$LOG_FILE"
+        apk add build-base linux-headers autoconf shadow 2>&1 | tee -a "$LOG_FILE"
         apk add \
             curl \
             pkgconfig \
@@ -190,14 +213,24 @@ install_deps() {
             argon2-dev \
             tidyhtml-dev \
             libxslt-dev \
-            libzip-dev
+            libzip-dev 2>&1 | tee -a "$LOG_FILE"
     elif check_is_command "pacman"; then
-        echo "检测到 Arch Linux 系统，安装依赖..."
-        pacman -Syu --noconfirm --needed curl
+        log "检测到 Arch Linux 系统，安装依赖..."
+        pacman -Syu --noconfirm --needed curl 2>&1 | tee -a "$LOG_FILE"
     else
-        echo "未检测到已知包管理器，请手动安装依赖：curl xz build-essential"
+        log "❌ 未检测到已知包管理器，请手动安装依赖：curl xz build-essential"
         return 1
     fi
+
+    log "✅ 依赖安装完成"
+}
+
+# 获取 PHP 最新版本号（跳过第一行空行）
+get_latest_php_version() {
+    curl -sL https://www.php.net \
+        | grep hero__version \
+        | awk -F '[><]' '{print $5}' \
+        | sed -n '2p'
 }
 
 get_download_url() {
@@ -215,6 +248,7 @@ download_and_build() {
 }
 
 download_exact() {
+    log "📥 下载 PHP 源码..."
     local download_file="php.tar.xz"
     local local_file="php-${PHP_VERSION}.tar.xz"
     TMP_DIR=$(mktemp -d /tmp/php.XXXXXX)
@@ -231,26 +265,32 @@ download_exact() {
     pushd "$TMP_DIR" >/dev/null
     if [[ ! -f "$download_file" ]]; then
         _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
-        if ! curl -fsSL "$_download_url" -o "$download_file"; then
-            echo "Error: Failed to download $download_file"
+        if ! curl -fsSL "$_download_url" -o "$download_file" 2>&1 | tee -a "$LOG_FILE"; then
+            log "❌ 下载失败: $download_file"
             exit 1
         fi
     fi
 
-    if ! tar -xJf "$download_file" --strip-components=1; then 
-        echo "Error: Extraction failed"
+    log "📦 解压源码..."
+    if ! tar -xJf "$download_file" --strip-components=1 2>&1 | tee -a "$LOG_FILE"; then
+        log "❌ 解压失败"
         rm -f "$download_file"
         exit 1
     fi
 
     build
-    
+
     setting
 
     popd >/dev/null
 }
 
 build() {
+    log "⚙️  开始配置 PHP..."
+
+    log_separator
+    log ">>> ./configure 开始 $(date) <<<"
+
     # shellcheck disable=SC2086
     ./configure --prefix=/usr/local/php \
         --with-config-file-path=/usr/local/php/etc \
@@ -302,14 +342,26 @@ build() {
         --enable-mbregex \
         --enable-pcntl \
         --enable-intl \
-        ${CONFIGURE_ARGS:-}
+        ${CONFIGURE_ARGS:-} 2>&1 | tee -a "$LOG_FILE"
+
+    log_separator
+    log ">>> make 开始 $(date) <<<"
 
     # make -j6
-    make "-j$(nproc)"
-    make install
+    make "-j$(nproc)" 2>&1 | tee -a "$LOG_FILE"
+
+    log_separator
+    log ">>> make install 开始 $(date) <<<"
+
+    make install 2>&1 | tee -a "$LOG_FILE"
+
+    log_separator
+    log "✅ 编译完成 $(date)"
 }
 
 setting() {
+    log "⚙️  配置 PHP..."
+
     # 1. 创建配置文件目录
     mkdir -p /usr/local/php/etc/conf.d
 
@@ -329,6 +381,8 @@ setting() {
     install_custom_extensions
 
     ldconfig
+
+    log "✅ 配置完成"
 }
 
 setting_env() {
@@ -369,6 +423,39 @@ check_loaded() {
     return $?
 }
 
+# 函数：检查扩展 .so 文件是否存在
+check_ext_exists() {
+    local ext="$1"
+    local ext_dir
+    ext_dir=$(php -i 2>/dev/null | grep "extension_dir" | awk '{print $3}' | head -n 1)
+    [[ -f "${ext_dir}/${ext}.so" ]]
+}
+
+# 函数：执行 pecl 安装，处理 "already installed" 的情况
+# 当扩展已存在同版本时，先卸载再重装
+pecl_install() {
+    local ext="$1"
+    shift
+    local args=("$@")
+
+    local output
+    local rc=0
+    output=$(/usr/local/php/bin/pecl install "$ext" "${args[@]}" 2>&1) || rc=$?
+
+    if [[ $rc -ne 0 ]]; then
+        # 检查是否是 "already installed" 的错误
+        if echo "$output" | grep -q "already installed"; then
+            echo "⚠️  $ext 已存在，尝试先卸载再重装..."
+            /usr/local/php/bin/pecl uninstall "$ext" 2>/dev/null || true
+            /usr/local/php/bin/pecl install "$ext" "${args[@]}"
+        else
+            echo "$output"
+            return 1
+        fi
+    fi
+    return 0
+}
+
 install_pecl_extension() {
     local ext="$1"
     if check_loaded "$ext"; then
@@ -377,9 +464,15 @@ install_pecl_extension() {
     fi
 
     echo "⚙️  Installing $ext..."
-    if yes "" | /usr/local/php/bin/pecl install "$ext"; then
-        echo "extension=$ext.so" > "/usr/local/php/etc/conf.d/$ext.ini"
-        echo "✅ $ext installed successfully."
+    if pecl_install "$ext"; then
+        # 安装后验证扩展文件是否存在
+        if check_ext_exists "$ext" || check_loaded "$ext"; then
+            echo "extension=$ext.so" > "/usr/local/php/etc/conf.d/$ext.ini"
+            echo "✅ $ext installed successfully."
+        else
+            echo "❌ $ext installed but .so file not found."
+            return 1
+        fi
     else
         echo "❌ $ext installation failed."
         return 1
@@ -405,9 +498,18 @@ install_ext_igbinary() {
     fi
 
     echo "⚙️  Installing igbinary..."
-    /usr/local/php/bin/pecl install igbinary
-    echo "extension=igbinary.so" > /usr/local/php/etc/conf.d/igbinary.ini
-    echo "✅ igbinary installed successfully."    
+    if pecl_install igbinary; then
+        if check_ext_exists igbinary || check_loaded igbinary; then
+            echo "extension=igbinary.so" > /usr/local/php/etc/conf.d/igbinary.ini
+            echo "✅ igbinary installed successfully."
+        else
+            echo "❌ igbinary installed but .so file not found."
+            return 1
+        fi
+    else
+        echo "❌ igbinary installation failed."
+        return 1
+    fi
 }
 
 install_ext_redis() {
@@ -418,16 +520,28 @@ install_ext_redis() {
     if check_loaded redis; then
         echo "✅ redis already exists, skipping."
         return 0
-    fi 
+    fi
 
     # 3. 不存在才执行安装
     echo "⚙️  Installing redis..."
-    yes "" | /usr/local/php/bin/pecl install redis --configureoptions '--enable-redis-igbinary=yes --enable-redis-msgpack=no --enable-redis-lzf=no --enable-redis-zstd=no --enable-redis-lz4=no'
-    echo "extension=redis.so" > /usr/local/php/etc/conf.d/redis.ini
-    echo "✅ redis installed successfully."
+    local redis_opts='--enable-redis-igbinary=yes --enable-redis-msgpack=no --enable-redis-lzf=no --enable-redis-zstd=no --enable-redis-lz4=no'
+    if pecl_install redis --configureoptions "$redis_opts"; then
+        if check_ext_exists redis || check_loaded redis; then
+            echo "extension=redis.so" > /usr/local/php/etc/conf.d/redis.ini
+            echo "✅ redis installed successfully."
+        else
+            echo "❌ redis installed but .so file not found."
+            return 1
+        fi
+    else
+        echo "❌ redis installation failed."
+        return 1
+    fi
 }
 
 optimized() {
+    log "⚙️  优化 PHP 配置..."
+
     # 优化 php.ini
     # 1. 获取服务器总内存 (GB)
     MEM_GB=$(free -g | awk '/^Mem:/{print $2}')
@@ -444,7 +558,7 @@ optimized() {
     sed -i "s/max_execution_time = .*/max_execution_time = 300/" $CONF_PATH
     sed -i "s/;date.timezone =.*/date.timezone = Asia\/Shanghai/" $CONF_PATH
 
-    echo "PHP.ini optimized, memory_limit: $NEW_MEM"
+    log "✅ PHP.ini 优化完成, memory_limit: $NEW_MEM"
 
     # 优化 php-fpm
     # 获取 CPU 核心数
@@ -463,10 +577,12 @@ optimized() {
     # 开启请求清理，防止内存泄漏
     sed -i "s/;pm.max_requests = .*/pm.max_requests = 1000/" $CONF_PATH
 
-    echo "PHP-FPM optimized, max_children: $MAX_CHILDREN"    
+    log "✅ PHP-FPM 优化完成, max_children: $MAX_CHILDREN"
 }
 
 setting_phpfpm() {
+    log "⚙️  配置 PHP-FPM..."
+
     mkdir -p /usr/local/php/var/run
     mkdir -p /usr/local/php/var/log
 
@@ -479,17 +595,24 @@ setting_phpfpm() {
     sed -i "s/^user = .*/user = $FPM_USER/" /usr/local/php/etc/php-fpm.d/www.conf
     sed -i "s/^group = .*/group = $FPM_USER/" /usr/local/php/etc/php-fpm.d/www.conf
 
+    # 修改监听方式为 Unix Socket（处理带或不带注释的情况）
+    sed -i 's|^;*listen = 127.0.0.1:9000|listen = /usr/local/php/var/run/php-fpm.sock|' /usr/local/php/etc/php-fpm.d/www.conf
+    # 添加 socket 权限配置（如果不存在）
+    if ! grep -q "listen.owner" /usr/local/php/etc/php-fpm.d/www.conf; then
+        sed -i '/^listen = .*\.sock$/a listen.owner = www\nlisten.group = www\nlisten.mode = 0660' /usr/local/php/etc/php-fpm.d/www.conf
+    fi
+
     sed -i 's|^;pid = .*|pid = /usr/local/php/var/run/php-fpm.pid|' /usr/local/php/etc/php-fpm.conf
 
     if [[ -f /.dockerenv ]]; then
-        echo "Notice: Running inside a Docker container.. To start PHP-FPM manually:"
-        echo "  /usr/local/php/sbin/php-fpm --nodaemonize --fpm-config /usr/local/php/etc/php-fpm.conf"
+        log "🐳 检测到 Docker 环境，跳过 systemd 服务配置"
+        log "💡 手动启动命令: /usr/local/php/sbin/php-fpm --nodaemonize --fpm-config /usr/local/php/etc/php-fpm.conf"
         return 0
     fi
 
-    echo "Running on a Host/VM."
+    log "🖥️  检测到主机/虚拟机环境，配置 systemd 服务..."
 
-    cat <<EOF | tee /etc/systemd/system/php-fpm.service
+    cat <<EOF | tee /etc/systemd/system/php-fpm.service >> "$LOG_FILE"
 [Unit]
 Description=The PHP FastCGI Process Manager (8.5)
 After=network.target
@@ -510,11 +633,31 @@ EOF
     systemctl daemon-reload
     systemctl enable php-fpm
     systemctl start php-fpm
-    systemctl status php-fpm
+    systemctl status php-fpm | tee -a "$LOG_FILE"
+
+    log "✅ PHP-FPM 服务配置完成"
+
+    # 显示 Nginx 配置提示
+    cat <<'EOF'
+
+========================================
+📋 Nginx 配置提示
+========================================
+请在 nginx 站点配置中添加以下内容：
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/usr/local/php/var/run/php-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+========================================
+EOF
 }
 
 main() {
-    PHP_VERSION=8.5.4
+    PHP_VERSION="${PHP_VERSION:-}"
     FPM_USER="www"
     EXTENSIONS=""
     CONFIGURE_ARGS=""
@@ -534,7 +677,7 @@ This script must be run as root.
 Supports Debian (13), Alpine (3), AlmaLinux (10) etc.
 
 Options:
-  -v, --version VERSION      PHP version (default: 8.5.4)
+  -v, --version VERSION      PHP version (default: auto-detect latest)
   -u, --user USER            PHP-FPM user and group (default: www)
   -e, --extensions EXTS      Additional PECL extensions to install
   -c, --configure ARGS       Extra configure arguments
@@ -548,6 +691,17 @@ EOF
                 ;;
         esac
     done
+
+    # 若未通过环境变量或参数指定版本，则获取最新版本
+    if [[ -z "$PHP_VERSION" ]]; then
+        echo "🔍 正在获取 PHP 最新版本..."
+        PHP_VERSION=$(get_latest_php_version)
+        if [[ -z "$PHP_VERSION" ]]; then
+            echo "Error: 无法获取 PHP 最新版本，使用默认版本 8.5.4"
+            PHP_VERSION="8.5.4"
+        fi
+    fi
+    echo "📦 PHP 版本: $PHP_VERSION"
 
     if [[ "$USER_ID" -ne 0 ]]; then
         echo "Error: This script must be run as root."
@@ -567,6 +721,8 @@ EOF
         echo "Error: Failed to get download url"
         exit 1
     fi
+
+    init_log
 
     download_and_build
 
