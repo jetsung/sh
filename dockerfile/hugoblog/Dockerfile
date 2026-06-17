@@ -112,19 +112,26 @@ ARG DEBIAN_FRONTEND=noninteractive
 # 安装构建站点和部署所需的最小依赖
 # 1. ca-certificates: 确保 git/npm 的 HTTPS 连接安全
 # 2. git: 处理子模块 (GIT_SUBMODULE_STRATEGY: recursive)
-# 3. nodejs/npm: 用于主题资源处理及部署工具 (Surge, Vercel, Netlify, Cloudflare 等)
-# 4. make: 兼容 CI 中的 make 指令
-# 5. bash: 脚本运行的基础 Shell
+# 3. make: 兼容 CI 中的 make 指令
+# 4. bash: 脚本运行的基础 Shell
+# 5. curl: 用于下载 fnm 和其他资源
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     bash \
     git \
-    nodejs \
-    npm \
     make \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# 使用 fnm 安装 Node.js 24
+# fnm (Fast Node Manager) 是一个快速的 Node.js 版本管理器
+SHELL ["/bin/bash", "-c"]
+RUN curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell
+ENV PATH="/root/.local/share/fnm:$PATH"
+RUN eval "$(fnm env)" && fnm install 24 && fnm default 24
+ENV PATH="/root/.local/share/fnm/aliases/default/bin:$PATH"
 
 # 从官方仓库阶段复制 hugo 二进制文件
 COPY --from=hugo-provider /usr/local/bin/hugo /usr/local/bin/hugo
