@@ -123,6 +123,7 @@ RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selectio
     git \
     make \
     curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # 使用 fnm 安装 Node.js 24
