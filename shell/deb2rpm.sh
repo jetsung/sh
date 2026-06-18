@@ -54,10 +54,13 @@ fi
 pkg_name=$(grep -i "^Package:" "$control_file" | cut -d: -f2 | tr -d ' ')
 pkg_version_raw=$(grep -i "^Version:" "$control_file" | cut -d: -f2 | tr -d ' ')
 pkg_arch=$(grep -i "^Architecture:" "$control_file" | cut -d: -f2 | tr -d ' ')
-pkg_maintainer=$(grep -i "^Maintainer:" "$control_file" | cut -d: -f2- | sed 's/^ *//')
-pkg_homepage=$(grep -i "^Homepage:" "$control_file" | cut -d: -f2- | sed 's/^ *//' | tr -d ' ')
+pkg_maintainer=$(grep -i "^Maintainer:" "$control_file" | cut -d: -f2- | sed 's/^ *//' || true)
+pkg_homepage=$(grep -i "^Homepage:" "$control_file" | cut -d: -f2- | sed 's/^ *//' | tr -d ' ' || true)
 # Description 可能有多行，只取第一行作为摘要
-pkg_summary=$(grep -i "^Description:" "$control_file" | sed 's/^[Dd]escription:[[:space:]]*//' | head -1)
+pkg_summary=$(grep -i "^Description:" "$control_file" | sed 's/^[Dd]escription:[[:space:]]*//' | head -1 || true)
+if [[ -z "$pkg_summary" ]]; then
+    pkg_summary="$pkg_name"
+fi
 
 # 处理版本信息以符合 RPM 规范 (RPM 版本号不能包含横杠)
 # 1. 提取 Epoch (如果有)
