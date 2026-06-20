@@ -149,6 +149,57 @@ echo "正在初始化 Nginx 配置结构于: $NGINX_ROOT ..."
 mkdir -p "$NGINX_ROOT"/{extend,wildcard,conf.d,acme/{letsencrypt,zerossl,google},modules,ssl}
 mkdir -p /data/wwwlogs /data/wwwroot/default
 
+# --- 创建示例站点配置模板 ---
+# 10. wildcard/example.com.conf (SSL 证书配置模板)
+[ ! -f "$NGINX_ROOT/wildcard/example.com.conf" ] && cat <<'EOF' > "$NGINX_ROOT/wildcard/example.com.conf"
+include extend/ssl.conf;
+
+# 指定 SSL 证书和私钥的位置
+ssl_certificate /srv/acme/ssl/example.com.fullchain.cer;
+ssl_certificate_key /srv/acme/ssl/example.com.key;
+EOF
+
+# 11. conf.d/example.com.conf.bak (完整站点配置模板)
+[ ! -f "$NGINX_ROOT/conf.d/example.com.conf.bak" ] && cat <<'EOF' > "$NGINX_ROOT/conf.d/example.com.conf.bak"
+server {
+    listen 80;
+    listen  [::]:80;
+
+    server_name example.com;
+
+    include extend/http_to_https.conf;
+}
+
+server {
+    server_name example.com;
+
+    #acme_certificate letsencrypt;
+    #acme_certificate google;
+    #acme_certificate zerossl;
+    #include wildcard/acme.conf;
+    include wildcard/example.com.conf;
+    include extend/robots_disallow.conf;
+
+    access_log /data/wwwlogs/example.com_access.log combined;
+    error_log /data/wwwlogs/example.com_error.log;
+
+    charset utf-8;
+
+    location / {
+        proxy_pass http://komodo;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_http_version 1.1;
+
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $http_host;
+    }
+}
+EOF
+
 # --- 生成自签名哑证书 (Dummy SSL) ---
 DUMMY_CRT="$NGINX_ROOT/ssl/dummy.crt"
 DUMMY_KEY="$NGINX_ROOT/ssl/dummy.key"
@@ -310,14 +361,12 @@ if [[ -n "$NGINX_CONF" && -f "$NGINX_CONF" ]]; then
     # 2. 补全 http 块内的 include
     declare -A INCLUDES=(
         ["extend/maps.conf"]="include extend/maps.conf;"
-        ["extend/acme.conf"]="include extend/acme.conf;"
         ["extend/upstreams.conf"]="include extend/upstreams.conf;"
         ["conf.d/\*.conf"]="include conf.d/*.conf;"
     )
 
     for key in "${!INCLUDES[@]}"; do
         val="${INCLUDES[$key]}"
-        # 使用正则表达式匹配，处理 * 和可能的路径前缀
         if ! grep -qE "include[[:space:]]+([^[:space:]]*/)?${key};" "$NGINX_CONF"; then
             echo "正在添加指令: $val"
             if grep -q "http {" "$NGINX_CONF"; then
@@ -327,6 +376,16 @@ if [[ -n "$NGINX_CONF" && -f "$NGINX_CONF" ]]; then
             fi
         fi
     done
+
+    # 3. 添加注释掉的 acme.conf include（需手动启用）
+    if ! grep -qE "#?include[[:space:]]+([^[:space:]]*/)?extend/acme\.conf;" "$NGINX_CONF"; then
+        echo "添加注释的 ACME 配置: #include extend/acme.conf;"
+        if grep -q "http {" "$NGINX_CONF"; then
+            sed -i "/http {/a \    #include extend/acme.conf;" "$NGINX_CONF"
+        else
+            echo "#include extend/acme.conf;" >> "$NGINX_CONF"
+        fi
+    fi
 fi
 
 echo "------------------------------------------------"
