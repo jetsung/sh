@@ -104,6 +104,7 @@ settings_override() {
         echo "KOMODO_JWT_SECRET=$(openssl rand -hex 16)"
         echo "KOMODO_INIT_ADMIN_USERNAME=${KOMODO_ADMIN_USERNAME}"
         echo "KOMODO_INIT_ADMIN_PASSWORD=$(openssl rand -hex 8)"
+        echo "KOMODO_DISABLE_USER_REGISTRATION=true"
 
         if [[ -n "$PERIPHERY_ROOT_DIRECTORY" ]]; then
             echo "PERIPHERY_ROOT_DIRECTORY=$PERIPHERY_ROOT_DIRECTORY"
@@ -187,6 +188,12 @@ settings_newfile() {
     fi
     echo "KOMODO_INIT_ADMIN_USERNAME: $KOMODO_ADMIN_USERNAME"
 
+    if grep -q "^KOMODO_DISABLE_USER_REGISTRATION=" "${DOWNLOAD_DIR}/.env"; then
+        sed -i "s#^KOMODO_DISABLE_USER_REGISTRATION=.*#KOMODO_DISABLE_USER_REGISTRATION=true#g" "${DOWNLOAD_DIR}/.env"
+    else
+        echo "KOMODO_DISABLE_USER_REGISTRATION=true" >> "${DOWNLOAD_DIR}/.env"
+    fi
+
     echo
 
     PASSWORD=$(openssl rand -hex 8)
@@ -200,7 +207,7 @@ main() {
     KOMODO_HOST_VALUE=""
     OVERRIDE_SETTINGS=""
     PERIPHERY_ROOT_DIRECTORY=""
-    KOMODO_IMAGE_TAG="dev"
+    KOMODO_IMAGE_TAG="2"
     KOMODO_ADMIN_USERNAME="admin"
 
     while getopts "t:d:H:r:u:oh" opt; do
