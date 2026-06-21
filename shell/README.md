@@ -21,6 +21,7 @@
 | [**cn-mirror**](./cn-mirror.sh) | [https://fx4.cn/cnmirror](https://fx4.cn/cnmirror) | 中国镜像信息配置 |
 | [**code-migrate**](./code-migrate.sh) | [https://fx4.cn/JKjOWe](https://fx4.cn/JKjOWe) | Git 裸仓库多平台自动备份推送脚本 |
 | [**deb2rpm**](./deb2rpm.sh) | [https://fx4.cn/deb2rpm](https://fx4.cn/deb2rpm) | 将 deb 包转换为 rpm 包 |
+| [**docker-compose**](./docker-compose.sh) | [https://fx4.cn/dservice](https://fx4.cn/dservice) | 从 Git 仓库下载 docker-compose 相关文件 |
 | [**docker-copy**](./docker-copy.sh) | [https://fx4.cn/dockercopy](https://fx4.cn/dockercopy) | Docker 镜像复制至新的注册表 |
 | [**docker-pull**](./docker-pull.sh) | [https://fx4.cn/dockerpull](https://fx4.cn/dockerpull) | Docker 通过加速站拉取镜像 |
 | [**git-qcloud**](./git-qcloud.sh) | [https://fx4.cn/7c2f52c8](https://fx4.cn/7c2f52c8) | 腾讯工峰 命令行工具 |
