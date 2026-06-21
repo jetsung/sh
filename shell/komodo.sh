@@ -70,8 +70,9 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -d <dir>       下载目录 (默认为: .)"
-    echo "  -u <host>      Komodo 主机地址 (例如: komodo.example.com)"
+    echo "  -H <host>      Komodo 主机地址 (例如: komodo.example.com)"
     echo "  -r <dir>       Periphery 根目录 (PERIPHERY_ROOT_DIRECTORY)"
+    echo "  -u <username>  初始管理员用户名 (默认为: admin)"
     echo "  -o             启用覆盖模式 (使用 compose.override.yaml)"
     echo "  -h             显示此帮助信息"
     echo ""
@@ -101,6 +102,7 @@ settings_override() {
         echo "KOMODO_PASSKEY=$(openssl rand -hex 16)"
         echo "KOMODO_WEBHOOK_SECRET=$(openssl rand -hex 16)"
         echo "KOMODO_JWT_SECRET=$(openssl rand -hex 16)"
+        echo "KOMODO_INIT_ADMIN_USERNAME=${KOMODO_ADMIN_USERNAME}"
         echo "KOMODO_INIT_ADMIN_PASSWORD=$(openssl rand -hex 8)"
 
         if [[ -n "$PERIPHERY_ROOT_DIRECTORY" ]]; then
@@ -178,6 +180,13 @@ settings_newfile() {
         echo "PERIPHERY_ROOT_DIRECTORY: $PERIPHERY_ROOT_DIRECTORY"
     fi
 
+    if grep -q "^KOMODO_INIT_ADMIN_USERNAME=" "${DOWNLOAD_DIR}/.env"; then
+        sed -i "s#^KOMODO_INIT_ADMIN_USERNAME=.*#KOMODO_INIT_ADMIN_USERNAME=${KOMODO_ADMIN_USERNAME}#g" "${DOWNLOAD_DIR}/.env"
+    else
+        echo "KOMODO_INIT_ADMIN_USERNAME=${KOMODO_ADMIN_USERNAME}" >> "${DOWNLOAD_DIR}/.env"
+    fi
+    echo "KOMODO_INIT_ADMIN_USERNAME: $KOMODO_ADMIN_USERNAME"
+
     echo
 
     PASSWORD=$(openssl rand -hex 8)
@@ -192,13 +201,15 @@ main() {
     OVERRIDE_SETTINGS=""
     PERIPHERY_ROOT_DIRECTORY=""
     KOMODO_IMAGE_TAG="dev"
+    KOMODO_ADMIN_USERNAME="admin"
 
-    while getopts "t:d:u:r:oh" opt; do
+    while getopts "t:d:H:r:u:oh" opt; do
         case ${opt} in
             t) KOMODO_IMAGE_TAG=$OPTARG;;
             d) DOWNLOAD_DIR=$OPTARG ;;
-            u) KOMODO_HOST_VALUE=$OPTARG ;;
+            H) KOMODO_HOST_VALUE=$OPTARG ;;
             r) PERIPHERY_ROOT_DIRECTORY=$OPTARG ;;
+            u) KOMODO_ADMIN_USERNAME=$OPTARG ;;
             o) OVERRIDE_SETTINGS="1" ;;
             h) usage ;;
             \?) usage ;;
