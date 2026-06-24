@@ -56,18 +56,30 @@ Examples:
     # Initialize .env file
     $(basename "$0") init
 
-    # Backup using .env configuration
-    $(basename "$0") backup -t mysql
-    $(basename "$0") backup -t postgres
+    # Backup MySQL database
+    $(basename "$0") backup -t mysql -d mydb
 
-    # Add daily backup at 2am
+    # Backup PostgreSQL database
+    $(basename "$0") backup -t postgres -d mydb
+
+    # Backup all databases (MySQL)
+    $(basename "$0") backup -t mysql --all
+
+    # Backup all databases (PostgreSQL)
+    $(basename "$0") backup -t postgres --all
+
+    # Add daily MySQL backup at 2am
     $(basename "$0") cron add "0 2 * * *" -t mysql
 
-    # Remove scheduled backup
-    $(basename "$0") cron del
+    # Add daily PostgreSQL backup at 3am
+    $(basename "$0") cron add "0 3 * * *" -t postgres
 
     # List scheduled tasks
     $(basename "$0") cron list
+
+Configuration:
+    Create .env file in script directory or run '$(basename "$0") init'.
+    See '$(basename "$0") backup --help' for available options.
 
 EOF
 }
@@ -75,35 +87,73 @@ EOF
 # 显示备份帮助
 show_backup_help() {
     cat << EOF
-Usage: $(basename "$0") backup -t <type> [options]
+Usage: $(basename "$0") backup [options]
 
-Backup MySQL or PostgreSQL databases.
+Backup MySQL or PostgreSQL databases to SQL files.
+
+Supports:
+    - MySQL (mysqldump)
+    - PostgreSQL (pg_dump / pg_dumpall)
 
 Options:
-    -t, --type TYPE              Database type: mysql or postgres (required)
-    -d, --database DB            Database name
-    --all                        Backup all databases (override .env config)
-    -z, --compress               Enable gzip compression
-    --no-compress                Disable compression (default)
-    -o, --output DIR             Output directory (default: current directory)
-    --docker-mysql CONTAINER     Docker container for MySQL
-    --docker-postgres CONTAINER  Docker container for PostgreSQL
-    --docker-mysql-env           Use MySQL Docker image env vars (MYSQL_ROOT_PASSWORD etc.)
-    --docker-postgres-env        Use PostgreSQL Docker image env vars (POSTGRES_PASSWORD etc.)
-    -?, --help                   Show this help message
+    Database:
+        -t, --type TYPE              Database type: mysql or postgres (required)
+        -d, --database DB            Database name
+        --all                        Backup all databases (override .env config)
 
-Configuration:
-    Database connection is read from .env file:
+    Compression:
+        -z, --compress               Enable gzip compression
+        --no-compress                Disable compression (default)
+
+    Docker:
+        --docker-mysql CONTAINER     Docker container for MySQL
+        --docker-postgres CONTAINER  Docker container for PostgreSQL
+        --docker-mysql-env           Use MySQL Docker image env vars
+        --docker-postgres-env        Use PostgreSQL Docker image env vars
+
+    Output:
+        -o, --output DIR             Output directory (default: current directory)
+
+    Help:
+        -?, --help                   Show this help message
+
+Configuration (.env):
+    MySQL:
         MYSQL_DATABASE_URL=mysql://user:password@host:port/database
-        POSTGRES_DATABASE_URL=postgres://user:password@host:port/database
         MYSQL_ALL_DATABASES=true/false
-        POSTGRES_ALL_DATABASES=true/false
-        USE_DOCKER=true/false
         MYSQL_DOCKER_CONTAINER=container_name
-        POSTGRES_DOCKER_CONTAINER=container_name
         MYSQL_USE_DOCKER_ENV=true/false
+
+    PostgreSQL:
+        POSTGRES_DATABASE_URL=postgres://user:password@host:port/database
+        POSTGRES_ALL_DATABASES=true/false
+        POSTGRES_DOCKER_CONTAINER=container_name
         POSTGRES_USE_DOCKER_ENV=true/false
+
+    General:
+        USE_DOCKER=true/false
         TARGET_DIR=databases
+        RCLONE_REMOTE_PATHS="remote1:path1 remote2:path2"
+        OUTPUT_DIR=/path/to/backups
+
+Examples:
+    # Backup MySQL database
+    $(basename "$0") backup -t mysql -d mydb
+
+    # Backup PostgreSQL database
+    $(basename "$0") backup -t postgres -d mydb
+
+    # Backup all MySQL databases
+    $(basename "$0") backup -t mysql --all
+
+    # Backup all PostgreSQL databases
+    $(basename "$0") backup -t postgres --all
+
+    # Backup with compression
+    $(basename "$0") backup -t mysql -z
+
+    # Backup using Docker container
+    $(basename "$0") backup -t mysql --docker-mysql my_mysql
 
 EOF
 }
@@ -188,7 +238,7 @@ init_env() {
 # MySQL Configuration
 # -------------------
 # Database URL (format: mysql://user:password@host:port/database)
-MYSQL_DATABASE_URL=mysql://root:password@localhost:3306
+MYSQL_DATABASE_URL=mysql://root:your_password_here@localhost:3306
 
 # Backup all databases (true/false)
 MYSQL_ALL_DATABASES=true
@@ -203,7 +253,7 @@ MYSQL_USE_DOCKER_ENV=false
 # PostgreSQL Configuration
 # ------------------------
 # Database URL (format: postgresql://user:password@host:port/database)
-POSTGRES_DATABASE_URL=postgres://postgres:password@localhost:5432
+POSTGRES_DATABASE_URL=postgres://postgres:your_password_here@localhost:5432
 
 # Backup all databases (true/false)
 POSTGRES_ALL_DATABASES=true
@@ -222,6 +272,9 @@ USE_DOCKER=false
 
 # Remote storage directory name
 TARGET_DIR=databases
+
+# Remote storage paths (rclone remote:path, multiple separated by space)
+RCLONE_REMOTE_PATHS=""
 
 # Output directory for backups
 # OUTPUT_DIR=/var/backups
