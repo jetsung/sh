@@ -18,6 +18,7 @@
 | [**act-event**](./act-event.sh) | [https://fx4.cn/act-event](https://fx4.cn/act-event) | 生成 act 的 event.json 文件 |
 | [**backup-update**](./backup-update.sh) | [https://fx4.cn/backupupdate](https://fx4.cn/backupupdate) | 更新服务器中的 Docker 镜像和备份数据 |
 | [**backup**](./backup.sh) | [https://fx4.cn/backupdirs](https://fx4.cn/backupdirs) | 备份数据库、文件夹、文件的脚本（保留每月1日的数据） |
+| [**backupdb**](./backupdb.sh) | [https://fx4.cn/backupdb](https://fx4.cn/backupdb) | 备份 MySQL 和 PostgreSQL 数据库的脚本 |
 | [**cn-mirror**](./cn-mirror.sh) | [https://fx4.cn/cnmirror](https://fx4.cn/cnmirror) | 中国镜像信息配置 |
 | [**code-migrate**](./code-migrate.sh) | [https://fx4.cn/JKjOWe](https://fx4.cn/JKjOWe) | Git 裸仓库多平台自动备份推送脚本 |
 | [**deb2rpm**](./deb2rpm.sh) | [https://fx4.cn/deb2rpm](https://fx4.cn/deb2rpm) | 将 deb 包转换为 rpm 包 |
