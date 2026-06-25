@@ -340,6 +340,29 @@ cron_add() {
 }
 
 cron_del() {
+    # 解析参数
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -?|--help)
+                cat << EOF
+Usage: $(basename "$0") cron del [options]
+
+Remove scheduled SSL check tasks.
+
+Options:
+    -?, --help    Show this help message
+
+Examples:
+    $(basename "$0") cron del    # Remove all SSL check tasks
+
+EOF
+                exit 0
+                ;;
+            *) shift ;;
+        esac
+    done
+
+    # 1. 检查是否存在受当前脚本管理的任务
     if ! crontab -l 2>/dev/null | grep -q "$CRON_TAG"; then
         echo "No scheduled SSL check found."
         exit 0
@@ -347,12 +370,22 @@ cron_del() {
 
     load_config
 
-    log "Removing scheduled SSL check:"
-    crontab -l 2>/dev/null | grep "$CRON_TAG"
+    log "Removing scheduled SSL check..."
 
-    crontab -l 2>/dev/null | grep -v "$CRON_TAG" | crontab -
+    # 2. 安全过滤并重新写入（核心修复点）
+    # 移除所有带标记的 SSL 检查任务，保留其他任务
+    local remaining_cron
+    remaining_cron=$(crontab -l 2>/dev/null | grep -v "$CRON_TAG" || true)
 
-    log ""
+    # 3. 根据剩余内容决定重写还是彻底清空
+    if [[ -n "$remaining_cron" ]]; then
+        # 如果还有其他任务，则安全覆盖
+        echo "$remaining_cron" | crontab -
+    else
+        # 如果什么都不剩了，使用 -r 参数安全地移除整个用户的 crontab
+        crontab -r 2>/dev/null || true
+    fi
+    
     log "Scheduled SSL check removed successfully."
 }
 
