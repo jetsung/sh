@@ -18,45 +18,71 @@ fi
 
 # 获取脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/.env"
+CRON_TAG="# ssl-check-managed"
 
-# 加载配置
-load_config() {
-    CONFIG_FILE="$SCRIPT_DIR/.env"
-    if [ ! -f "$CONFIG_FILE" ]; then
-        cat > "$CONFIG_FILE" <<EOF
-WEBDAV_USER=username
-WEBDAV_PASS=password
-WEBDAV_URL_TEMPLATE=https://dav.com/%s.fullchain.cer
-DOMAINS=example.com,example.cn
-CHECK_HOURS=48
-CERTS_SAVE_DIR=certs
-LOG_FILE=ssl-check.log
-LOCAL_MODE=false
-EOF
-        echo "创建配置文件：$CONFIG_FILE 使用默认值"
-        chmod 600 "$CONFIG_FILE"
-    else
-        # 如果文件存在但缺少 CERTS_SAVE_DIR，则追加
-        if ! grep -q "CERTS_SAVE_DIR=" "$CONFIG_FILE"; then
-            echo "CERTS_SAVE_DIR=certs" >> "$CONFIG_FILE"
-            echo "已向 $CONFIG_FILE 追加默认 CERTS_SAVE_DIR=certs"
-        fi
-        # 如果文件存在但缺少 LOG_FILE，则追加
-        if ! grep -q "LOG_FILE=" "$CONFIG_FILE"; then
-            echo "LOG_FILE=ssl-check.log" >> "$CONFIG_FILE"
-            echo "已向 $CONFIG_FILE 追加默认 LOG_FILE=ssl-check.log"
-        fi
-        
-        # 如果文件存在但缺少 LOCAL_MODE，则追加
-        if ! grep -q "LOCAL_MODE=" "$CONFIG_FILE"; then
-            echo "LOCAL_MODE=false" >> "$CONFIG_FILE"
-            echo "已向 $CONFIG_FILE 追加默认 LOCAL_MODE=false"
+init_env() {
+    if [[ -f "$CONFIG_FILE" ]]; then
+        echo "Environment file already exists: $CONFIG_FILE"
+        read -r -p "Do you want to overwrite it? (y/N): " confirm
+        if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            echo "Aborted."
+            exit 0
         fi
     fi
-    
+
+    cat > "$CONFIG_FILE" << 'EOF'
+# WebDAV Configuration
+# ===================
+
+# WebDAV credentials
+WEBDAV_USER=username
+WEBDAV_PASS=password
+
+# URL template for certificate files
+# Use %s as domain placeholder
+# Example: https://dav.com/%s.fullchain.cer
+WEBDAV_URL_TEMPLATE=https://dav.com/%s.fullchain.cer
+
+# Domain Configuration
+# ====================
+
+# Domain list (comma-separated)
+DOMAINS=example.com,example.cn
+
+# Check time range in hours (default: 48)
+CHECK_HOURS=48
+
+# Storage Configuration
+# =====================
+
+# Local directory for certificates
+CERTS_SAVE_DIR=certs
+
+# Log file (relative to script dir or absolute path)
+LOG_FILE=ssl-check.log
+
+# Local mode: check local certificates only (skip WebDAV)
+# Set to true if certificates are already downloaded locally
+LOCAL_MODE=false
+
+EOF
+
+    chmod 600 "$CONFIG_FILE"
+    echo "Environment file created: $CONFIG_FILE"
+    echo "Please edit it with your WebDAV configuration."
+}
+
+load_config() {
+    if [[ ! -f "$CONFIG_FILE" ]]; then
+        echo "Warning: Environment file not found: $CONFIG_FILE" >&2
+        echo "Use '$(basename "$0") init' to create one." >&2
+        return 1
+    fi
+
     # shellcheck disable=SC1090
     source "$CONFIG_FILE"
-    
+
     : "${WEBDAV_USER:=}"
     : "${WEBDAV_PASS:=}"
     : "${WEBDAV_URL_TEMPLATE:=}"
@@ -65,8 +91,7 @@ EOF
     : "${CERTS_SAVE_DIR:=certs}"
     : "${LOG_FILE:=ssl-check.log}"
     : "${LOCAL_MODE:=false}"
-    
-    # 处理日志绝对路径
+
     if [[ "$LOG_FILE" == /* ]]; then
         ABS_LOG_FILE="$LOG_FILE"
     else
@@ -87,14 +112,15 @@ log() {
 setup_dirs() {
     UPGRADE_DIR="$SCRIPT_DIR/upgrade_scripts"
     RESTART_DIR="$SCRIPT_DIR/restart_scripts"
-    
-    # 处理绝对路径和相对路径
+
+    : "${CERTS_SAVE_DIR:=certs}"
+
     if [[ "$CERTS_SAVE_DIR" == /* ]]; then
         ABS_CERTS_SAVE_DIR="$CERTS_SAVE_DIR"
     else
         ABS_CERTS_SAVE_DIR="$SCRIPT_DIR/$CERTS_SAVE_DIR"
     fi
-    
+
     mkdir -p "$UPGRADE_DIR"
     mkdir -p "$RESTART_DIR"
     mkdir -p "$ABS_CERTS_SAVE_DIR"
@@ -248,82 +274,268 @@ run_restart_scripts() {
     done
 }
 
-# 设置 cron 任务
-setup_cron() {
-    local script_path
-    script_path="$(basename "$0")"
-    local random_hour=$((RANDOM % 8))
-    local random_min=$((RANDOM % 60))
-    local cron_file="/etc/cron.d/ssl_check"
+cron_add() {
+    local schedule="" domains="" check_hours="" local_mode="false"
 
-    echo "$random_min $random_hour * * * root cd $SCRIPT_DIR; bash $script_path" > "$cron_file"
-    chmod 644 "$cron_file"
-    echo "已设置 cron 任务：每天 $random_hour:$random_min 运行 $script_path (写入 $cron_file)"
-}
-
-# 显示帮助
-show_help() {
-    echo "Usage: $(basename "$0") [init] [-h|--help]"
-    echo ""
-    echo "Description:"
-    echo "  检查 WebDAV 上的 SSL 证书是否在 $CHECK_HOURS 小时内有更新。"
-    echo "  如果有更新，则自动下载相关证书到中转站，触发 upgrade_scripts/ 下的脚本，"
-    echo "  最后触发 restart_scripts/ 下的重启脚本。"
-    echo ""
-    echo "Options:"
-    echo "  init         设置随机凌晨 0-8 点的 cron 任务并初始化目录与配置。"
-    echo "  -h, --help   显示此帮助信息。"
-    echo ""
-    echo "配置文件: $SCRIPT_DIR/.env"
-    echo ""
-    echo "支持的配置变量："
-    echo "  WEBDAV_USER          WebDAV 用户名"
-    echo "  WEBDAV_PASS          WebDAV 密码"
-    echo "  WEBDAV_URL_TEMPLATE  URL 模板，例如 https://dav.com/%s.fullchain.cer"
-    echo "  DOMAINS              域名列表，逗号分隔"
-    echo "  CHECK_HOURS          检查更新的时间范围（小时），默认 48"
-    echo "  CERTS_SAVE_DIR       证书本地存储目录名，默认 certs"
-    echo "  LOG_FILE             日志文件名，默认 ssl-check.log"
-    echo "  LOCAL_MODE           是否开启本地检测，默认 false"
-    exit 0
-}
-
-# 主逻辑
-main() {
-    if [[ $# -gt 0 ]]; then
+    while [[ $# -gt 0 ]]; do
         case "$1" in
-            init)
-                load_config
-                setup_dirs
-                setup_cron
-                exit 0
-                ;;
-            -h|--help)
-                load_config
-                show_help
-                ;;
+            -d|--domains) domains="$2"; shift 2 ;;
+            -c|--check-hours) check_hours="$2"; shift 2 ;;
+            --local) local_mode="true"; shift ;;
             *)
-                echo "未知参数: $1"
-                load_config
-                show_help
+                if [[ -z "$schedule" ]]; then
+                    schedule="$1"
+                fi
+                shift
                 ;;
         esac
+    done
+
+    if [[ -z "$schedule" ]]; then
+        echo "Error: Schedule is required." >&2
+        echo "Usage: $(basename "$0") cron add \"0 2 * * *\"" >&2
+        exit 1
     fi
 
     load_config
+
+    local cron_cmd
+    local script_path
+    script_path="${SCRIPT_DIR}/$(basename "$0")"
+
+    if [[ "$schedule" == "random" ]]; then
+        local random_hour=$((RANDOM % 8))
+        local random_min=$((RANDOM % 60))
+        cron_cmd="$random_min $random_hour * * * $script_path check"
+    else
+        local fields
+        fields=$(echo "$schedule" | awk '{print NF}')
+        if [[ "$fields" -lt 5 ]]; then
+            echo "Error: Invalid cron schedule format." >&2
+            echo "Expected 5 fields: minute hour day month weekday" >&2
+            exit 1
+        fi
+        cron_cmd="$schedule $script_path check"
+    fi
+
+    [[ -n "$domains" ]] && cron_cmd+=" -d \"$domains\""
+    [[ -n "$check_hours" ]] && cron_cmd+=" -c $check_hours"
+    [[ "$local_mode" == "true" ]] && cron_cmd+=" --local"
+    cron_cmd+=" $CRON_TAG"
+
+    if crontab -l 2>/dev/null | grep -q "$CRON_TAG"; then
+        echo "Scheduled SSL check already exists. Use '$(basename "$0") cron del' first."
+        crontab -l 2>/dev/null | grep "$CRON_TAG"
+        exit 1
+    fi
+
+    (crontab -l 2>/dev/null; echo "$cron_cmd") | crontab -
+
+    log "Scheduled SSL check added:"
+    log "  Schedule: $schedule"
+    log "  Command:  $script_path check"
+    log ""
+    log "Current crontab:"
+    crontab -l 2>/dev/null | grep "$CRON_TAG" || true
+}
+
+cron_del() {
+    if ! crontab -l 2>/dev/null | grep -q "$CRON_TAG"; then
+        echo "No scheduled SSL check found."
+        exit 0
+    fi
+
+    load_config
+
+    log "Removing scheduled SSL check:"
+    crontab -l 2>/dev/null | grep "$CRON_TAG"
+
+    crontab -l 2>/dev/null | grep -v "$CRON_TAG" | crontab -
+
+    log ""
+    log "Scheduled SSL check removed successfully."
+}
+
+cron_list() {
+    if ! crontab -l 2>/dev/null | grep -q "$CRON_TAG"; then
+        echo "No scheduled SSL check found."
+        exit 0
+    fi
+
+    echo "Scheduled SSL check tasks:"
+    crontab -l 2>/dev/null | grep "$CRON_TAG"
+}
+
+do_cron() {
+    local action="${1:-}"
+    shift || true
+
+    case "$action" in
+        add)
+            cron_add "$@"
+            ;;
+        del|delete|remove)
+            cron_del "$@"
+            ;;
+        list|ls)
+            cron_list
+            ;;
+        *)
+            show_cron_help
+            exit 1
+            ;;
+    esac
+}
+
+show_help() {
+    cat << EOF
+Usage: $(basename "$0") <command> [options]
+
+SSL certificate monitoring tool for WebDAV.
+
+Commands:
+    check           Check SSL certificates (default)
+    init            Initialize .env configuration and setup cron
+    cron add        Add scheduled check task
+    cron del        Remove scheduled check task
+    cron list       List scheduled check tasks
+    help            Show this help message
+
+Examples:
+    # Initialize configuration and setup cron
+    $(basename "$0") init
+
+    # Check SSL certificates
+    $(basename "$0") check
+
+    # Add daily check at 2am
+    $(basename "$0") cron add "0 2 * * *"
+
+    # Add random daily check (0-8am)
+    $(basename "$0") cron add random
+
+    # List scheduled tasks
+    $(basename "$0") cron list
+
+    # Remove all scheduled tasks
+    $(basename "$0") cron del
+
+Configuration:
+    Create .env file in script directory or run '$(basename "$0") init'.
+    See '$(basename "$0") check --help' for available options.
+
+EOF
+}
+
+show_check_help() {
+    cat << EOF
+Usage: $(basename "$0") check [options]
+
+Check SSL certificates on WebDAV for updates.
+
+Options:
+    -d, --domains DOMAINS    Domain list (comma-separated, override .env)
+    -c, --check-hours HOURS  Check time range in hours (default: from .env)
+    -o, --output DIR         Certificate save directory (default: from .env)
+    -l, --local              Check local certificates only (skip WebDAV)
+    -?, --help               Show this help message
+
+Configuration (.env):
+    WebDAV:
+        WEBDAV_USER=username
+        WEBDAV_PASS=password
+        WEBDAV_URL_TEMPLATE=https://dav.com/%s.fullchain.cer
+
+    Domains:
+        DOMAINS=example.com,example.cn
+        CHECK_HOURS=48
+
+    Storage:
+        CERTS_SAVE_DIR=certs
+        LOG_FILE=ssl-check.log
+        LOCAL_MODE=false
+
+Examples:
+    # Check all configured domains
+    $(basename "$0") check
+
+    # Check specific domains
+    $(basename "$0") check -d "example.com,example.cn"
+
+    # Check with custom time range
+    $(basename "$0") check -c 24
+
+    # Check local certificates only
+    $(basename "$0") check --local
+
+EOF
+}
+
+show_cron_help() {
+    cat << EOF
+Usage: $(basename "$0") cron <action> [options]
+
+Manage scheduled SSL check tasks.
+
+Actions:
+    add <schedule>          Add a scheduled check
+    del [-t <type>]         Remove scheduled check (all or by type)
+    list                    List scheduled checks
+
+Options:
+    -d, --domains DOMAINS   Domain list (comma-separated)
+    -c, --check-hours HOURS Check time range in hours
+    --local                 Check local certificates only
+
+Schedule Formats:
+    Standard cron:  "0 2 * * *"           # Daily at 2am
+    Random daily:   "random"              # Random time between 0-8am
+    Every N hours:  "0 */6 * * *"         # Every 6 hours
+
+Examples:
+    $(basename "$0") cron add "0 2 * * *"                    # Daily at 2am
+    $(basename "$0") cron add random                         # Random daily
+    $(basename "$0") cron add "0 */6 * * *" -c 12            # Every 6 hours
+    $(basename "$0") cron del                                # Remove all checks
+    $(basename "$0") cron list
+
+EOF
+}
+
+do_check() {
+    local domains="" check_hours="" output_dir="" local_mode="false"
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -d|--domains) domains="$2"; shift 2 ;;
+            -c|--check-hours) check_hours="$2"; shift 2 ;;
+            -o|--output) output_dir="$2"; shift 2 ;;
+            -l|--local) local_mode="true"; shift ;;
+            -?|--help) show_check_help; exit 0 ;;
+            *) echo "Unknown option: $1" >&2; exit 1 ;;
+        esac
+    done
+
+    load_config
+
+    [[ -n "$domains" ]] && DOMAINS="$domains"
+    [[ -n "$check_hours" ]] && CHECK_HOURS="$check_hours"
+    [[ -n "$output_dir" ]] && CERTS_SAVE_DIR="$output_dir"
+    [[ "$local_mode" == "true" ]] && LOCAL_MODE="true"
+
     setup_dirs
-    
-    if [ -z "$DOMAINS" ]; then
-        echo "错误：未在 .env 中配置 DOMAINS"
+
+    if [[ -z "$DOMAINS" ]]; then
+        echo "Error: DOMAINS not configured in .env" >&2
         exit 1
     fi
 
     local restart_needed=false
     IFS=',' read -r -a domain_array <<< "$DOMAINS"
-    
+
     for domain in "${domain_array[@]}"; do
-        domain=$(echo "$domain" | xargs) # 去除空格
-        if [ -n "$domain" ]; then
+        domain=$(echo "$domain" | xargs)
+        if [[ -n "$domain" ]]; then
             if check_domain_update "$domain"; then
                 download_certs "$domain"
                 run_upgrade_scripts "$domain"
@@ -332,12 +544,44 @@ main() {
         fi
     done
 
-    if [ "$restart_needed" = true ]; then
-        echo "检测到证书更新，正在执行服务重启逻辑..."
+    if [[ "$restart_needed" == "true" ]]; then
+        echo "Certificate update detected, running restart scripts..."
         run_restart_scripts
     else
-        echo "所有域名证书在过去 $CHECK_HOURS 小时内均无更新。"
+        echo "No certificate updates detected in the past $CHECK_HOURS hours."
     fi
+}
+
+main() {
+    local command="${1:-check}"
+
+    case "$command" in
+        check)
+            shift
+            do_check "$@"
+            ;;
+        init)
+            init_env
+            setup_dirs
+            echo ""
+            echo "Next steps:"
+            echo "  1. Edit $CONFIG_FILE with your WebDAV configuration"
+            echo "  2. Run '$(basename "$0") cron add' to setup scheduled checks"
+            ;;
+        cron)
+            shift
+            do_cron "$@"
+            ;;
+        help|-?|--help)
+            show_help
+            ;;
+        *)
+            echo "Unknown command: $command" >&2
+            echo ""
+            show_help
+            exit 1
+            ;;
+    esac
 }
 
 main "$@"
