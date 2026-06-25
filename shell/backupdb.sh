@@ -5,9 +5,9 @@
 #              支持 Docker 容器、全量备份、压缩、预执行脚本
 # URL: https://fx4.cn/backupdb
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.2.0
 # CreatedAt: 2026-06-24
-# UpdatedAt: 2026-06-24
+# UpdatedAt: 2026-06-25
 #============================================================
 
 if [[ -n "$DEBUG" ]]; then
@@ -21,9 +21,47 @@ SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_PATH}/.env"
 CRON_TAG="# backupdb-managed"
 
-# 带时间戳的日志函数
+LOG_FILE="${BACKUPDB_LOG_FILE:-}"
+LOG_LEVEL="${BACKUPDB_LOG_LEVEL:-}"
+
+readonly LOG_LEVEL_DEBUG=0
+readonly LOG_LEVEL_INFO=1
+readonly LOG_LEVEL_WARN=2
+readonly LOG_LEVEL_ERROR=3
+
+_get_log_level_value() {
+    case "$1" in
+        DEBUG) echo $LOG_LEVEL_DEBUG ;;
+        INFO)  echo $LOG_LEVEL_INFO ;;
+        WARN)  echo $LOG_LEVEL_WARN ;;
+        ERROR) echo $LOG_LEVEL_ERROR ;;
+        *)     echo $LOG_LEVEL_INFO ;;
+    esac
+}
+
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >&2
+    local level="${1:-INFO}"
+    shift
+    local message="$*"
+    
+    local current_level_value
+    local message_level_value
+    current_level_value=$(_get_log_level_value "$LOG_LEVEL")
+    message_level_value=$(_get_log_level_value "$level")
+    
+    if [[ $message_level_value -lt $current_level_value ]]; then
+        return
+    fi
+    
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    local formatted_message="[$timestamp] [$level] $message"
+    
+    echo "$formatted_message" >&2
+    
+    if [[ -n "$LOG_FILE" ]]; then
+        echo "$formatted_message" >> "$LOG_FILE"
+    fi
 }
 
 # 执行前置/后置脚本
@@ -31,7 +69,7 @@ do_exec() {
     local exec_file="${SCRIPT_PATH}/exec_${1}.sh"
     if [[ -f "$exec_file" ]]; then
         if ! "$exec_file" "$2"; then
-            log "错误：执行 $exec_file 失败"
+            log ERROR "错误：执行 $exec_file 失败"
             exit 1
         fi
     fi
@@ -113,6 +151,10 @@ Options:
 
     Output:
         -o, --output DIR             Output directory (default: current directory)
+
+    Logging:
+        --log-file FILE              Log file path (default: ./backupdb.log)
+        --log-level LEVEL            Log level: DEBUG, INFO, WARN, ERROR (default: INFO)
 
     Help:
         -?, --help                   Show this help message
@@ -279,6 +321,14 @@ RCLONE_REMOTE_PATHS=""
 # Output directory for backups
 # OUTPUT_DIR=/var/backups
 
+# Logging Configuration
+# ---------------------
+# Log file path (default: ./backupdb.log)
+# LOG_FILE=/var/log/backupdb.log
+
+# Log level: DEBUG, INFO, WARN, ERROR (default: INFO)
+# LOG_LEVEL=INFO
+
 EOF
 
     echo "Environment file created: $ENV_FILE"
@@ -333,6 +383,8 @@ backup_mysql() {
     today=$(date +%Y%m%d)
     local backup_file="${output_dir}/mysql_${db_name:-all}_${today}.sql"
 
+    local start_time
+    start_time=$(date +%s)
     log "Starting MySQL backup..."
     log "  Host: $db_host:$db_port"
     log "  User: $db_user"
@@ -352,13 +404,16 @@ backup_mysql() {
             docker_args+=("--databases" "$db_name")
         fi
         
-        if docker "${docker_args[@]}" > "$backup_file"; then
-            log "Backup completed: $backup_file"
-        else
-            log "错误：备份失败"
-            rm -f "$backup_file"
-            exit 1
-        fi
+            if docker "${docker_args[@]}" > "$backup_file"; then
+                local end_time
+                end_time=$(date +%s)
+                local duration=$(( end_time - start_time ))
+                log "Backup completed: $backup_file (耗时: ${duration}s)"
+            else
+                log ERROR "错误：备份失败"
+                rm -f "$backup_file"
+                exit 1
+            fi
     else
         # 本地方式
         local mysqldump_args=()
@@ -372,9 +427,12 @@ backup_mysql() {
         fi
         
         if mysqldump "${mysqldump_args[@]}" > "$backup_file"; then
-            log "Backup completed: $backup_file"
+            local end_time
+            end_time=$(date +%s)
+            local duration=$(( end_time - start_time ))
+            log "Backup completed: $backup_file (耗时: ${duration}s)"
         else
-            log "错误：备份失败"
+            log ERROR "错误：备份失败"
             rm -f "$backup_file"
             exit 1
         fi
@@ -386,7 +444,7 @@ backup_mysql() {
             backup_file="${backup_file}.gz"
             log "已压缩: $backup_file"
         else
-            log "错误：压缩失败"
+            log ERROR "错误：压缩失败"
             rm -f "$backup_file"
             exit 1
         fi
@@ -409,6 +467,8 @@ backup_postgres() {
     today=$(date +%Y%m%d)
     local backup_file="${output_dir}/postgres_${db_name:-all}_${today}.sql"
 
+    local start_time
+    start_time=$(date +%s)
     log "Starting PostgreSQL backup..."
     log "  Host: $db_host:$db_port"
     log "  User: $db_user"
@@ -424,9 +484,12 @@ backup_postgres() {
             docker_args+=("$docker_container" "pg_dumpall" "-h" "$db_host" "-p" "$db_port" "-U" "$db_user")
             
             if docker "${docker_args[@]}" > "$backup_file"; then
-                log "Backup completed: $backup_file"
+                local end_time
+                end_time=$(date +%s)
+                local duration=$(( end_time - start_time ))
+                log "Backup completed: $backup_file (耗时: ${duration}s)"
             else
-                log "错误：备份失败"
+                log ERROR "错误：备份失败"
                 rm -f "$backup_file"
                 exit 1
             fi
@@ -437,9 +500,12 @@ backup_postgres() {
             docker_args+=("$docker_container" "pg_dump" "-h" "$db_host" "-p" "$db_port" "-U" "$db_user" "$db_name")
             
             if docker "${docker_args[@]}" > "$backup_file"; then
-                log "Backup completed: $backup_file"
+                local end_time
+                end_time=$(date +%s)
+                local duration=$(( end_time - start_time ))
+                log "Backup completed: $backup_file (耗时: ${duration}s)"
             else
-                log "错误：备份失败"
+                log ERROR "错误：备份失败"
                 rm -f "$backup_file"
                 exit 1
             fi
@@ -452,9 +518,12 @@ backup_postgres() {
             [[ -n "$db_pass" ]] && export PGPASSWORD="$db_pass"
             
             if pg_dumpall "${pg_dumpall_args[@]}" > "$backup_file"; then
-                log "Backup completed: $backup_file"
+                local end_time
+                end_time=$(date +%s)
+                local duration=$(( end_time - start_time ))
+                log "Backup completed: $backup_file (耗时: ${duration}s)"
             else
-                log "错误：备份失败"
+                log ERROR "错误：备份失败"
                 rm -f "$backup_file"
                 exit 1
             fi
@@ -466,9 +535,12 @@ backup_postgres() {
             pg_dump_args+=("$db_name")
             
             if pg_dump "${pg_dump_args[@]}" > "$backup_file"; then
-                log "Backup completed: $backup_file"
+                local end_time
+                end_time=$(date +%s)
+                local duration=$(( end_time - start_time ))
+                log "Backup completed: $backup_file (耗时: ${duration}s)"
             else
-                log "错误：备份失败"
+                log ERROR "错误：备份失败"
                 rm -f "$backup_file"
                 exit 1
             fi
@@ -482,7 +554,7 @@ backup_postgres() {
             backup_file="${backup_file}.gz"
             log "已压缩: $backup_file"
         else
-            log "错误：压缩失败"
+            log ERROR "错误：压缩失败"
             rm -f "$backup_file"
             exit 1
         fi
@@ -496,6 +568,7 @@ do_backup() {
     local db_type="" db_name="" output_dir="" compress="false"
     local docker_container="" backup_all="false"
     local use_docker_env="false"
+    local log_file="" log_level=""
 
     # 解析参数
     while [[ $# -gt 0 ]]; do
@@ -510,6 +583,8 @@ do_backup() {
             --docker-mysql-env) use_docker_env="mysql"; shift ;;
             --docker-postgres-env) use_docker_env="postgres"; shift ;;
             -o|--output) output_dir="$2"; shift 2 ;;
+            --log-file) log_file="$2"; shift 2 ;;
+            --log-level) log_level="$2"; shift 2 ;;
             -?|--help) show_backup_help; exit 0 ;;
             *) echo "Unknown option: $1" >&2; exit 1 ;;
         esac
@@ -530,6 +605,20 @@ do_backup() {
     # 加载 .env 文件
     load_env
 
+    if [[ -z "$LOG_FILE" ]]; then
+        LOG_FILE="${SCRIPT_PATH}/backupdb.log"
+    fi
+    if [[ -z "$LOG_LEVEL" ]]; then
+        LOG_LEVEL="INFO"
+    fi
+
+    if [[ -n "$log_file" ]]; then
+        LOG_FILE="$log_file"
+    fi
+    if [[ -n "$log_level" ]]; then
+        LOG_LEVEL="$log_level"
+    fi
+
     # 如果未指定 docker 容器，从 .env 读取
     if [[ -z "$docker_container" ]]; then
         local use_docker="${USE_DOCKER:-false}"
@@ -539,8 +628,8 @@ do_backup() {
                 postgres) docker_container="${POSTGRES_DOCKER_CONTAINER:-}" ;;
             esac
             if [[ -z "$docker_container" ]]; then
-                log "错误：USE_DOCKER=true 但未设置 ${db_type} 容器名称"
-                log "请设置 ${db_type^^}_DOCKER_CONTAINER 或使用 --docker-${db_type} 参数"
+                log ERROR "错误：USE_DOCKER=true 但未设置 ${db_type} 容器名称"
+                log ERROR "请设置 ${db_type^^}_DOCKER_CONTAINER 或使用 --docker-${db_type} 参数"
                 exit 1
             fi
         fi
@@ -582,7 +671,7 @@ do_backup() {
         
         # 检查是否获取到密码
         if [[ -z "$DB_PASS" ]]; then
-            log "错误：无法从容器 $docker_container 获取密码"
+            log ERROR "错误：无法从容器 $docker_container 获取密码"
             exit 1
         fi
         
@@ -690,6 +779,7 @@ do_backup() {
 cron_add() {
     local schedule="" db_type="" db_name="" compress="false"
     local docker_container="" extra_args=""
+    local log_file="" log_level=""
 
     # 解析参数
     while [[ $# -gt 0 ]]; do
@@ -700,6 +790,8 @@ cron_add() {
             --no-compress) extra_args+=" --no-compress"; shift ;;
             --docker-mysql) docker_container="$2"; extra_args+=" --docker-mysql $2"; shift 2 ;;
             --docker-postgres) docker_container="$2"; extra_args+=" --docker-postgres $2"; shift 2 ;;
+            --log-file) log_file="$2"; extra_args+=" --log-file $2"; shift 2 ;;
+            --log-level) log_level="$2"; extra_args+=" --log-level $2"; shift 2 ;;
             *)
                 if [[ -z "$schedule" ]]; then
                     schedule="$1"
@@ -847,6 +939,8 @@ Options:
     -z, --compress               Enable compression
     --docker-mysql CONTAINER     Docker container for MySQL
     --docker-postgres CONTAINER  Docker container for PostgreSQL
+    --log-file FILE              Log file path
+    --log-level LEVEL            Log level: DEBUG, INFO, WARN, ERROR
 
 Examples:
     $(basename "$0") cron add "0 2 * * *" -t mysql                    # Daily at 2am for MySQL
