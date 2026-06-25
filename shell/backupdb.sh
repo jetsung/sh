@@ -833,9 +833,9 @@ cron_add() {
     cron_cmd+="${extra_args} ${CRON_TAG}"
 
     # 检查是否已存在相同类型的备份任务
-    if crontab -l 2>/dev/null | grep -q "${CRON_TAG}.*${db_type}"; then
+    if crontab -l 2>/dev/null | grep -q "${db_type}.*${CRON_TAG}"; then
         echo "Scheduled ${db_type} backup already exists. Use '$(basename "$0") cron del' first."
-        crontab -l 2>/dev/null | grep "${CRON_TAG}.*${db_type}"
+        crontab -l 2>/dev/null | grep "${db_type}.*${CRON_TAG}"
         exit 1
     fi
 
@@ -859,40 +859,67 @@ cron_del() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -t|--type) db_type="$2"; shift 2 ;;
+            -?|--help)
+                cat << EOF
+Usage: $(basename "$0") cron del [options]
+
+Remove scheduled backup tasks.
+
+Options:
+    -t, --type TYPE    Database type: mysql or postgres (optional)
+    -?, --help         Show this help message
+
+Examples:
+    $(basename "$0") cron del              # Remove all backup tasks
+    $(basename "$0") cron del -t mysql     # Remove MySQL backup task only
+    $(basename "$0") cron del -t postgres  # Remove PostgreSQL backup task only
+
+EOF
+                exit 0
+                ;;
             *) shift ;;
         esac
     done
 
+    # 1. 检查是否存在受当前脚本管理的任务
     if [[ -z "$db_type" ]]; then
-        # 删除所有备份任务
         if ! crontab -l 2>/dev/null | grep -q "$CRON_TAG"; then
             echo "No scheduled backup found."
             exit 0
         fi
-
-        log "Removing all scheduled backups:"
-        crontab -l 2>/dev/null | grep "$CRON_TAG"
-        
-        crontab -l 2>/dev/null | grep -v "$CRON_TAG" | crontab -
+        log "Removing all scheduled backups..."
     else
-        # 删除指定类型的备份任务
         case "$db_type" in
             mysql|postgres) ;;
             *) echo "Error: Invalid database type. Must be 'mysql' or 'postgres'." >&2; exit 1 ;;
         esac
 
-        if ! crontab -l 2>/dev/null | grep -q "${CRON_TAG}.*${db_type}"; then
+        if ! crontab -l 2>/dev/null | grep -q "${db_type}.*${CRON_TAG}"; then
             echo "No scheduled ${db_type} backup found."
             exit 0
         fi
-
-        log "Removing scheduled ${db_type} backup:"
-        crontab -l 2>/dev/null | grep "${CRON_TAG}.*${db_type}"
-        
-        crontab -l 2>/dev/null | grep -v "${CRON_TAG}.*${db_type}" | crontab -
+        log "Removing scheduled ${db_type} backup..."
     fi
     
-    log ""
+    # 2. 安全过滤并重新写入（核心修复点）
+    local remaining_cron
+    if [[ -z "$db_type" ]]; then
+        # 移除所有带标记的备份任务，保留其他任务
+        remaining_cron=$(crontab -l 2>/dev/null | grep -v "$CRON_TAG" || true)
+    else
+        # 仅移除指定类型的备份任务，保留其他任务
+        remaining_cron=$(crontab -l 2>/dev/null | grep -v "${db_type}.*${CRON_TAG}" || true)
+    fi
+
+    # 3. 根据剩余内容决定重写还是彻底清空
+    if [[ -n "$remaining_cron" ]]; then
+        # 如果还有其他任务，则安全覆盖
+        echo "$remaining_cron" | crontab -
+    else
+        # 如果什么都不剩了，使用 -r 参数安全地移除整个用户的 crontab
+        crontab -r 2>/dev/null || true
+    fi
+    
     log "Scheduled backup removed successfully."
 }
 
