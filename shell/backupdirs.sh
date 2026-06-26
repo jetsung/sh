@@ -61,7 +61,7 @@ show_help() {
   # targetdir=/path/to/backup
   # backdir=/path/to/backup
   # morefile=a b.txt c/d/1.txt
-  # rclone_remote_paths=qcloud:your_bucket/data minio:/backup/data
+  # rclone_remote_paths=qcloud:your_bucket minio:/backup
 
 EOF
   exit 0
@@ -375,21 +375,23 @@ main() {
     exit 1
   fi
 
-  : ${env_targetdir:=databases}
+  : "${env_targetdir:=data}"
 
   local remotes=()
   if [[ -n "$env_rclone_remote_paths" ]]; then
     read -ra remotes <<< "$env_rclone_remote_paths"
   else
     remotes=(
-      "qcloud:your_bucket/${env_targetdir}"
-      "minio:/backup/${env_targetdir}"
+      "qcloud:your_bucket"
+      "minio:/backup"
     )
   fi
 
   # 遍历每个远程目标：删除旧备份，上传新备份（带重试）
-  for remote_path in "${remotes[@]}"; do
-    local remote_delete_tar="${remote_path}/${delete_tar}"
+  local remote_path remote_delete_tar
+  for remote in "${remotes[@]}"; do
+    remote_path="${remote}/${env_targetdir}"
+    remote_delete_tar="${remote_path}/${delete_tar}"
     # local remote_current_tar="${remote_path}/${current_tar}"
 
     # 删除远程旧备份（如果存在）
@@ -448,7 +450,7 @@ main "$@"
 # targetdir=/path/to/backup
 # backdir=/path/to/backup
 # morefile=a b.txt c/d/1.txt
-# rclone_remote_paths=qcloud:your_bucket/data minio:/backup/data
+# rclone_remote_paths=qcloud:your_bucket minio:/backup
 #
 # 扩展脚本：
 # ./exec_?.sh （? 为 pre 或 post）—— 通用前置/后置脚本
