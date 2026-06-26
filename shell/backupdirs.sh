@@ -46,6 +46,7 @@ show_help() {
     # targetdir=data                   # 云端路径名
     # backdir=./data                   # 本地要备份的主要路径
     # morefile=file1 file2 dir1        # 额外要备份的文件和目录（用空格分隔）
+    # rclone_remote_paths=remote1:path1 remote2:path2  # rclone 远程存储路径（用空格分隔）
 
 优先级：命令行字面值 > .env 配置 > 命令行模式 > 自动推导
 
@@ -60,6 +61,7 @@ show_help() {
   # targetdir=/path/to/backup
   # backdir=/path/to/backup
   # morefile=a b.txt c/d/1.txt
+  # rclone_remote_paths=qcloud:your_bucket/data minio:/backup/data
 
 EOF
   exit 0
@@ -155,28 +157,42 @@ get_date_days_ago() {
   echo "$result"
 }
 
-# 从 .env 文件加载配置（支持 project_name, targetdir, backdir, morefile）
+# 从 .env 文件加载配置（支持 project_name, targetdir, backdir, morefile, rclone_remote_paths）
 load_env_config() {
   local env_file="$1"
   [[ ! -f "$env_file" ]] && return 0
 
-  # 读取配置项，支持注释格式（含 "# "）
   env_project_name=$(grep -E '^\s*# project_name=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
   env_targetdir=$(grep -E '^\s*# targetdir=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
   env_backdir=$(grep -E '^\s*# backdir=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
   env_morefile=$(grep -E '^\s*# morefile=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
+  env_rclone_remote_paths=$(grep -E '^\s*# rclone_remote_paths=' "$env_file" | cut -d= -f2- | sed 's/^ *//' | sed 's/ *$//' 2>/dev/null || true)
 }
 
 # 执行脚本
 do_exec() {
   pushd "${1:-}" >/dev/null 2>&1
-  local exec_file="./exec_${2:-}.sh"
+  local exec_type="${2:-}"
+  local project_name="${3:-}"
+  
+  local exec_file="./exec_${exec_type}.sh"
   if [[ -f "$exec_file" ]]; then
-    if ! "$exec_file"; then
+    if ! "$exec_file" "$project_name"; then
       log "错误：执行 $exec_file 失败"
       exit 1
     fi
   fi
+  
+  if [[ -n "$project_name" ]]; then
+    local exec_project_file="./exec_${exec_type}.${project_name}.sh"
+    if [[ -f "$exec_project_file" ]]; then
+      if ! "$exec_project_file" "$project_name"; then
+        log "错误：执行 $exec_project_file 失败"
+        exit 1
+      fi
+    fi
+  fi
+  
   popd >/dev/null 2>&1
 }
 
@@ -229,11 +245,8 @@ main() {
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   local env_file="$script_dir/.env"
 
-  # 前置执行
-  do_exec "$script_dir" pre
-
   # 初始化环境变量（默认值）
-  local env_project_name="" env_targetdir="data" env_backdir=""
+  local env_project_name="" env_targetdir="data" env_backdir="" env_rclone_remote_paths=""
 
   # 从 .env 加载配置
   load_env_config "$env_file"
@@ -288,6 +301,9 @@ main() {
     log "错误：项目名为空"
     exit 1
   fi
+
+  # 前置执行
+  do_exec "$script_dir" pre "$project_name"
 
   # 计算日期
   keep_days=$(get_date_days_ago "$days") || exit 1
@@ -361,11 +377,15 @@ main() {
 
   : ${env_targetdir:=databases}
 
-  # 固定远程存储路径（根据你的实际需求硬编码，不从 .env 读取）
-  local remotes=(
-    "qcloud:backup-1251136007/${env_targetdir}"
-    "minio:/backup/${env_targetdir}"
-  )
+  local remotes=()
+  if [[ -n "$env_rclone_remote_paths" ]]; then
+    read -ra remotes <<< "$env_rclone_remote_paths"
+  else
+    remotes=(
+      "qcloud:your_bucket/${env_targetdir}"
+      "minio:/backup/${env_targetdir}"
+    )
+  fi
 
   # 遍历每个远程目标：删除旧备份，上传新备份（带重试）
   for remote_path in "${remotes[@]}"; do
@@ -408,7 +428,7 @@ main() {
   log "项目 '$project_name' 备份成功同步至所有远程存储"
 
   # 后置操作
-  do_exec "$script_dir" post
+  do_exec "$script_dir" post "$project_name"
 
   # 返回原始目录（失败仅记录警告）
   cd "$original_dir" 2>/dev/null || log "警告：无法返回原始目录：$original_dir"
@@ -423,14 +443,16 @@ main "$@"
 # 备份名称使用模式 3 （父目录名）作为项目名称，保持最近 3 天数据，分隔符为 - 作为分隔符且使用第 1 部分作为项目名称
 # ./backup.sh 3 3 - 1
 #
-# ./.env 配置示例（含 “# ”）:
+# ./.env 配置示例（含 "# "）:
 # project_name=project
 # targetdir=/path/to/backup
 # backdir=/path/to/backup
 # morefile=a b.txt c/d/1.txt
+# rclone_remote_paths=qcloud:your_bucket/data minio:/backup/data
 #
 # 扩展脚本：
-# ./exec_?.sh （? 为 pre 或 post）
+# ./exec_?.sh （? 为 pre 或 post）—— 通用前置/后置脚本
+# ./exec_?.${project_name}.sh —— 项目专属前置/后置脚本
 # 使之支持先打包再备份，或备份完成后发送 PUSH 通知
 #
 ##

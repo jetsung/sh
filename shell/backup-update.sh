@@ -5,9 +5,9 @@
 # Description: 更新服务器中的 Docker 镜像和备份数据
 # URL: https://fx4.cn/backupupdate
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.1
+# Version: 0.2.0
 # CreatedAt: 2025-07-12
-# UpdatedAt: 2025-09-07
+# UpdatedAt: 2026-06-26
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -55,28 +55,16 @@ judgment_parameters() {
         docker_path="$OPTARG"
         ;;
       b)
-        # 备份
-        if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
-          backup_arg="yes"
-        else
-          backup_arg="no"
-        fi
-        ;;   
+        # 备份：带参数即启用，不带参数也启用（因为 -b 出现即启用）
+        backup_arg="yes"
+        ;;
       s)
-        # 子目录脚本运行
-        if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
-          subrun_arg="yes"
-        else
-          subrun_arg="no"
-        fi
-        ;;              
+        # 子目录脚本运行：带参数即启用，不带参数也启用
+        subrun_arg="yes"
+        ;;
       u)
-        # 更新
-        if [[ -n "${OPTARG:-}" && ( "${OPTARG,,}" = "yes" || "${OPTARG,,}" = "y" ) ]]; then
-          update_arg="yes"
-        else
-          update_arg="no"
-        fi
+        # 更新：带参数即启用，不带参数也启用
+        update_arg="yes"
         ;;    
       e)
         # 备份的额外参数
@@ -104,16 +92,30 @@ judgment_parameters() {
         ;;
       h)
         # 帮助
-        echo "Usage: $0 [-i] [-d <days>] [-p <path>] [-b <yes/no>] [-s <yes/no>] [-u <yes/no>] [-e <extra>] [-h]"
-        echo "  -i: 安装 crontab 任务"
-        echo "  -d: 每隔多少天备份一次，默认每天备份一次"
-        echo "  -m: 文件夹深度(mindepth-maxdepth)，默认值 2-2"
-        echo "  -p: Docker 项目路径"
-        echo "  -b: 启用备份数据功能"
-        echo "  -u: 启用更新 Docker 镜像功能"
-        echo "  -s: 子目录脚本运行"
-        echo "  -e: 备份的额外参数"
-        echo "  -h: 帮助"
+        cat <<EOF
+用法: $0 [选项]
+
+选项:
+  -i          安装 crontab 定时任务
+  -d <天数>   每隔多少天备份一次 (默认: 每天)
+  -m <深度>   文件夹深度 mindepth-maxdepth (默认: 2-2)
+  -p <路径>   Docker 项目路径 (默认: /root/dockers)
+  -b          启用备份功能
+  -u          启用更新 Docker 镜像功能
+  -s          启用子目录脚本运行
+  -e <参数>   备份的额外参数
+  -h          显示此帮助信息
+
+示例:
+  $0 -i -p ~/dockers -d 5 -b -u
+  安装定时任务: 每5天执行一次备份和更新
+
+  $0 -i -p ~/dockers -b -u -s
+  安装定时任务: 每天执行备份、更新,并运行子目录脚本
+
+  $0 -b -u
+  手动切换备份和更新开关
+EOF
         exit 0
         ;;            
       \?)
@@ -352,12 +354,12 @@ main "$@" || exit 1
 # curl -L https://fx4.cn/backupupdate -o backup-update.sh
 #
 # 查看帮助: bash backup-update.sh -h
-# 安装定时计划,每5天执行备份和更新: bash backup-update.sh -i -p ~/dockers -d 5 -b y -u y
+# 安装定时计划,每5天执行备份和更新: bash backup-update.sh -i -p ~/dockers -d 5 -b -u
 
 # 1. 在每个 docker 服务的文件夹下，创建 update.sh 和 backup.sh
-# 2. 生成 crontab 任务: bash backup-update.sh -i -p ~/dockers -d 5 -b y -u y
+# 2. 生成 crontab 任务: bash backup-update.sh -i -p ~/dockers -d 5 -b -u
 # 3. 将需要定时更新（docker compose pull）的 Docker 项目文件夹添加到 .docker_sync 文件中，每行一个文件夹(只需要文件夹本名即可)
 #    如 ~/dockers/minio => minio
 #    该文件夹下,需要有 update.sh 文件
-# *4. 后期可通过 ./file.sh -b y -u y 来切换备份和更新
+# *4. 后期可通过 ./file.sh -b -u 来切换备份和更新
 # 5. 本脚本目录下的所有子目录,包含 cronrun.sh 脚本则会被执行
