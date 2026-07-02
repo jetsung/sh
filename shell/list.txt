@@ -14,11 +14,13 @@
 ./komodo.sh  |  Komodo 一键安装脚本
 ./nginx-acme.sh  |  编译 nginx-acme 模块并集成到当前系统 Nginx
 ./nginx-init.sh  |  Nginx 初始化解耦配置脚本
+./ochelp.sh  |  OpenCode 配置管理工具 - 管理 provider 和模型配置
 ./push-notify.sh  |  推送消息到钉钉、飞书、Lark
 ./remove_github_deployments_run.sh  |  批量删除 GitHub 部署记录
 ./remove_github_packages_untagged.sh  |  删除 GitHub Packages 悬空的镜像标签
 ./remove_github_workflow_runs.sh  |  批量删除 GitHub Action Workflows 流水线
 ./remove_gitlab_workflow_runs.sh  |  批量删除 GitLab CI 流水线
+./restic-backup.sh  |  Restic 备份工具 - 支持本地/远程多仓库备份、自动触发（登录/关机/cron）、快照管理
 ./shell.sh  |  将命令行组合成函数调用
 ./ssl-check.sh  |  检测 WebDAV 上的 SSL 证书是否在指定时间内更新，更新则执行升级和重启脚本
 ./ssl-reload.sh  |  检查 SSL 证书是否在指定时间范围内更新，更新则重启服务
