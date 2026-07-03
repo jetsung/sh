@@ -164,6 +164,7 @@ show_help() {
   --install-login       仅安装登录时自动备份服务
   --install-shutdown    仅安装关机时自动备份服务 (需要 sudo)
   --cron                添加 cron 定时任务（凌晨随机时间，日志写入 /var/log/restic-backup.log）
+  --sync                同步脚本到 /usr/local/bin/ (需要 sudo)
   --uninstall           卸载所有自动备份服务
 
 备份行为:
@@ -282,6 +283,15 @@ case "${1:-}" in
   ;;
 --init)
   init_repos
+  exit 0
+  ;;
+--show)
+  show_snapshots "${2:-}"
+  exit 0
+  ;;
+--sync)
+  sudo cp -f "$SCRIPT_PATH" /usr/local/bin/restic-backup.sh
+  echo "Synced to /usr/local/bin/restic-backup.sh"
   exit 0
   ;;
 --prune)
