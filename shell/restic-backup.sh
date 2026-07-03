@@ -89,7 +89,7 @@ EOF
 # 安装关机触发服务 (系统级，需要 sudo)
 install_shutdown() {
   # 复制脚本到系统目录（绕过 SELinux）
-  sudo cp "$SCRIPT_PATH" /usr/local/bin/restic-backup.sh
+  sudo cp -f "$SCRIPT_PATH" /usr/local/bin/restic-backup.sh 2>/dev/null || true
   sudo chmod +x /usr/local/bin/restic-backup.sh
   local system_script="/usr/local/bin/restic-backup.sh"
 
