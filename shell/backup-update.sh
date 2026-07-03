@@ -5,7 +5,7 @@
 # Description: 更新服务器中的 Docker 镜像和备份数据
 # URL: https://fx4.cn/backupupdate
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.2.0
+# Version: 0.3.0
 # CreatedAt: 2025-07-12
 # UpdatedAt: 2026-06-26
 #============================================================
@@ -40,7 +40,7 @@ backup_arg_extra=""
 
 # 提取参数
 judgment_parameters() {
-  while getopts "d:p:b:s:u:m:e:hi" opt; do
+  while getopts "d:p:l:b:s:u:m:e:hi" opt; do
     case "$opt" in
       i)
         # 安装
@@ -74,6 +74,14 @@ judgment_parameters() {
         fi
         backup_arg_extra="$OPTARG"
         ;;
+      l)
+        # 日志文件路径
+        if [[ -z "${OPTARG:-}" ]]; then
+          echo "Error: -l requires a non-empty argument" >&2
+          exit 1
+        fi
+        log_file="$OPTARG"
+        ;;
       m)
         # 文件夹深度
         if [[ -z "${OPTARG:-}" ]]; then
@@ -104,6 +112,7 @@ judgment_parameters() {
   -u          启用更新 Docker 镜像功能
   -s          启用子目录脚本运行
   -e <参数>   备份的额外参数
+  -l <路径>   日志文件路径 (默认: <脚本名>.log)
   -h          显示此帮助信息
 
 示例:
@@ -186,6 +195,9 @@ setup_setting() {
     
     # 备份的额外参数
     sed -i "s#^backup_arg_extra=.*#backup_arg_extra=\"$backup_arg_extra\"#" "$cron_file_path"
+
+    # 日志文件路径
+    sed -i "s#^log_file=.*#log_file=\"$log_file\"#" "$cron_file_path"
 
     # 注释掉 setup 行
     sed -i '/^\s*setup\s*$/s/^/#/' "$cron_file_path"
