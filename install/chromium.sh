@@ -83,7 +83,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -130,11 +134,12 @@ EOF
 }
 
 usage() {
-    echo "Usage: $0 [-d <dir>] [-n] [-h]"
+    echo "Usage: $0 [-d <dir>] [-n] [-u <url>] [-h]"
     echo ""
     echo "Options:"
     echo "  -d <dir>    Set the installation directory (default: /opt/ungoogled-chromium)."
     echo "  -n          Disable creation of .desktop file."
+    echo "  -u <url>    Custom download URL."
     echo "  -h          Show this help message."
 }
 
@@ -142,13 +147,16 @@ main() {
     SAVE_DIR="/opt/ungoogled-chromium"
     CREATE_DESKTOP=true
 
-    while getopts "d:nh" opt; do
+    while getopts "d:nhu:" opt; do
         case ${opt} in
         d)
             SAVE_DIR=${OPTARG}
             ;;
         n)
             CREATE_DESKTOP=false
+            ;;
+        u)
+            CUSTOM_URL=${OPTARG}
             ;;
         h)
             usage
@@ -162,16 +170,24 @@ main() {
     done
     shift $((OPTIND - 1))
 
-    if ! check_in_china; then
-        CDN_URL=""
-    fi
-
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
 
-    DOWNLOAD_URL="$(get_download_url ungoogled-software/ungoogled-chromium-portablelinux)"
+    if [[ -z "$DOWNLOAD_URL" ]]; then
+
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url ungoogled-software/ungoogled-chromium-portablelinux)"
+    else
+        echo "使用指定下载地址: $DOWNLOAD_URL"
+    fi
 
     download_exact
 

@@ -1,4 +1,3 @@
-./acme-docker.sh  |  acme docker 方式脚本
 ./act.sh  |  GitHub Action 本地构建
 ./aitr.sh  |  AI 文档翻译工具
 ./aliyunpan.sh  |  阿里网盘命令行工具

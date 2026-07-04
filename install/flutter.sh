@@ -104,7 +104,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -127,19 +131,40 @@ download_exact() {
 }
 
 main() {
+    # 解析命令行参数
+    CUSTOM_URL=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            -p|--pre)
+                PRE_VERSION=1
+                shift
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
+
     # 若自定义则跳过 CDN
-    if [[ -n "$FLUTTER_STORAGE_BASE_URL" ]] || ! check_in_china; then
-        CDN_URL=""
+    if [[ -z "$DOWNLOAD_URL" ]]; then
+        if [[ -n "$FLUTTER_STORAGE_BASE_URL" ]] || ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url)"
+    else
+        echo "使用指定下载地址: $DOWNLOAD_URL"
     fi
-
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
-
-    # 预览版
-    if [[ -n "${1:-}" && ("$1" = "-p" || "$1" = "--pre") ]]; then
-        PRE_VERSION=1
-    fi
-
-    DOWNLOAD_URL="$(get_download_url)"
 
     download_exact
 
@@ -159,7 +184,7 @@ main() {
     flutter --help
     echo ""
     flutter --version
-    echo ""        
+    echo ""
 }
 
 main "$@"

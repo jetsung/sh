@@ -82,7 +82,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -100,27 +104,50 @@ download_exact() {
 }
 
 main() {
-    if ! check_in_china; then
-        CDN_URL=""
-    fi
+    # 解析命令行参数
+    CUSTOM_URL=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
 
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     case "$(uname -m)" in
-        x86_64) 
-            ARCH="amd64" 
+        x86_64)
+            ARCH="amd64"
             ;;
-        aarch64) 
-            ARCH="arm64" 
+        aarch64)
+            ARCH="arm64"
             ;;
-        *) 
+        *)
             echo "Unsupported architecture"
             exit 1
-            ;; 
+            ;;
     esac
 
-    DOWNLOAD_URL="$(get_download_url forkdo/m3u8-downloader)"
+    if [[ -z "$DOWNLOAD_URL" ]]; then
+
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url forkdo/m3u8-downloader)"
+    else
+        echo "使用指定下载地址: $DOWNLOAD_URL"
+    fi
 
     download_exact
 
@@ -136,7 +163,7 @@ main() {
     echo "m3u8-downloader has been installed successfully!"
     echo ""
     m3u8-downloader --help
-    echo ""    
+    echo ""
 }
 
 main "$@"

@@ -92,7 +92,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     echo "Downloading: $_download_url"
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
@@ -111,14 +115,9 @@ download_exact() {
 }
 
 main() {
-    if ! check_in_china; then
-        CDN_URL=""
-    fi
-
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
-
     PKG_PREFIX="hugo"
     VERSION=""
+    CUSTOM_URL=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -134,19 +133,20 @@ main() {
                 PKG_PREFIX="${PKG_PREFIX}_extended_withdeploy"
                 shift
                 ;;
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
             -h|--help)
-                echo "Usage: $0 [-v <version>] [-e] [-w]"
+                echo "Usage: $0 [-v <version>] [-e] [-w] [--url <url>]"
                 echo "  -v, --version <version>  Specify the version to install (e.g. 0.115.4)"
                 echo "  -e, --extended           Install extended edition"
                 echo "  -w, --ew                 Install extended edition with deploy"
+                echo "      --url <url>          Custom download URL"
                 echo "  -h, --help               Show this help message"
                 exit 0
                 ;;
             *)
-                # Backward compatibility for positional args implies extended
-                # If first arg is not a flag, assume it's requesting extended (old behavior)
-                # But since we are looping, this might catch arguments to flags if not careful.
-                # The old script just checked $1.
                 if [[ "$1" == "-"* ]]; then
                     echo "Unknown option: $1"
                     exit 1
@@ -158,25 +158,39 @@ main() {
         esac
     done
 
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
+
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     case "$(uname -m)" in
-        x86_64) 
-            ARCH="amd64" 
+        x86_64)
+            ARCH="amd64"
             ;;
-        aarch64) 
-            ARCH="arm64" 
+        aarch64)
+            ARCH="arm64"
             ;;
-        *) 
+        *)
             echo "Unsupported architecture"
             exit 1
-            ;; 
+            ;;
     esac
 
-    DOWNLOAD_URL="$(get_download_url gohugoio/hugo "$VERSION")"
-
     if [[ -z "$DOWNLOAD_URL" ]]; then
-        echo "Error: Could not find download URL for version '${VERSION:-latest}'."
-        exit 1
+
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url gohugoio/hugo "$VERSION")"
+
+        if [[ -z "$DOWNLOAD_URL" ]]; then
+            echo "Error: Could not find download URL for version '${VERSION:-latest}'."
+            exit 1
+        fi
+    else
+        NO_HTTPS=""
+        echo "使用指定下载地址: $DOWNLOAD_URL"
     fi
 
     download_exact
