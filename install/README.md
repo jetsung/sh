@@ -20,7 +20,6 @@ done
 
 | **标题** | **URL** | **描述** |
 |:---|:---|:---|
-| [**acme-docker**](./acme-docker.sh) | [https://fx4.cn/acme](https://fx4.cn/acme) | acme docker 方式脚本 |
 | [**act**](./act.sh) | [https://fx4.cn/act](https://fx4.cn/act) | GitHub Action 本地构建 |
 | [**aitr**](./aitr.sh) | [https://fx4.cn/aitr](https://fx4.cn/aitr) | AI 文档翻译工具 |
 | [**aliyunpan**](./aliyunpan.sh) | [https://fx4.cn/aliyunpan](https://fx4.cn/aliyunpan) | 阿里网盘命令行工具 |

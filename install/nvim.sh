@@ -92,7 +92,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -114,31 +118,55 @@ download_exact() {
 }
 
 main() {
-    if ! check_in_china; then
-        CDN_URL=""
-    fi
-
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
-
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
-    
+
     _OS="$OS"
     if [[ "$OS" == "darwin" ]]; then
         _OS="macos"
     fi
-    
+
     _ARCH="$ARCH"
     if [[ "$ARCH" == "aarch64" ]]; then
         _ARCH="arm64"
     fi
 
     # 统一使用全局安装路径
-    INSTALL_DIR="/opt/nvim"   
-    BIN_DIR="/usr/local/bin"   
+    INSTALL_DIR="/opt/nvim"
+    BIN_DIR="/usr/local/bin"
 
-    VERSION="${1:-${VERSION:-latest}}"
-    DOWNLOAD_URL="$(get_download_url "$VERSION")"
+    CUSTOM_URL=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            *)
+                VERSION="$1"
+                shift
+                ;;
+        esac
+    done
+    [[ -z "${VERSION:-}" ]] && VERSION="latest"
+
+    if [[ -z "$CUSTOM_URL" && -n "${URL:-}" ]]; then
+        CUSTOM_URL="$URL"
+    fi
+
+    if [[ -z "$CUSTOM_URL" ]]; then
+
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url "$VERSION")"
+    else
+        DOWNLOAD_URL=""
+        echo "使用指定下载地址: $CUSTOM_URL"
+    fi
 
     if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
         echo "Error: Could not find a download URL for version $VERSION ($_OS-$_ARCH)"

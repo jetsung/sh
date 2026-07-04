@@ -49,7 +49,7 @@ check_in_china() {
 check_remove_https() {
     if [[ -n "$1" && "${1: -1}" != "/" ]]; then
         echo 1
-    fi    
+    fi
 }
 
 do_remove_https() {
@@ -58,7 +58,7 @@ do_remove_https() {
         # shellcheck disable=SC2001
         echo "$url" | sed 's|https:/||2'
 
-    else 
+    else
         echo "$url"
     fi
 }
@@ -81,11 +81,11 @@ get_download_url() {
         '
     else
         curl -fsSL "$repo_api_url" | jq -r --arg package "$PACKAGE" '
-        .assets[] 
-        | select(.name | test("\($package)"; "i")) 
+        .assets[]
+        | select(.name | test("\($package)"; "i"))
         | .browser_download_url
         '
-    fi    
+    fi
 }
 
 download_exact() {
@@ -93,10 +93,10 @@ download_exact() {
         install_for_linux
     elif [[ "$OS" == "darwin" ]]; then
         install_for_macos
-    else 
+    else
         echo "Unsupported OS: $OS"
         exit 1
-    fi    
+    fi
 }
 
 install_for_linux() {
@@ -112,15 +112,20 @@ install_for_linux() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
+
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
     fi
 
     if [[ "$USER_ID" -eq 0 ]]; then
-        _install_dir_path="/opt/"   
-        _run_path="/usr/local/bin"   
+        _install_dir_path="/opt/"
+        _run_path="/usr/local/bin"
     else
         _install_dir_path="$HOME/.local/"
         _run_path="$HOME/.local/bin"
@@ -143,8 +148,12 @@ install_for_linux() {
 }
 
 install_for_macos() {
-    local download_file="zed.dmg"    
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    local download_file="zed.dmg"
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -158,31 +167,56 @@ install_for_macos() {
 }
 
 main() {
-    if ! check_in_china; then
-        CDN_URL=""
-    fi
+    # 解析命令行参数
+    CUSTOM_URL=""
+    PRE_VERSION=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -p|--pre)
+                PRE_VERSION=1
+                shift
+                ;;
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
 
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
-
-    # 预览版
-    if [[ -n "${1:-}" && ("$1" = "-p" || "$1" = "--pre") ]]; then
-        PRE_VERSION=1
-    fi
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
 
     OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
-    ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"  
-    PACKAGE=""  
+    ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
 
-    if [[ "$OS" == "darwin" ]]; then
-        PACKAGE="Zed-${ARCH}.dmg"
-    elif [[ "$OS" == "linux" ]]; then
-        PACKAGE="zed-${OS}-${ARCH}.tar.gz"
+    if [[ -z "$DOWNLOAD_URL" ]]; then
+
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        # 原有流程：获取版本、提取下载地址
+        PACKAGE=""
+
+        if [[ "$OS" == "darwin" ]]; then
+            PACKAGE="Zed-${ARCH}.dmg"
+        elif [[ "$OS" == "linux" ]]; then
+            PACKAGE="zed-${OS}-${ARCH}.tar.gz"
+        else
+            echo "Unsupported OS: $OS"
+            exit 1
+        fi
+
+        DOWNLOAD_URL="$(get_download_url zed-industries/zed)"
     else
-        echo "Unsupported OS: $OS"
-        exit 1 
+        echo "使用指定下载地址: $DOWNLOAD_URL"
     fi
-
-    DOWNLOAD_URL="$(get_download_url zed-industries/zed)"
 
     download_exact
 
@@ -199,7 +233,7 @@ main() {
     zed --help
     echo ""
     zed --version
-    echo ""    
+    echo ""
 }
 
 main "$@"

@@ -82,7 +82,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -97,12 +101,13 @@ download_exact() {
 make_install() {
     TMP_DIR=$(mktemp -d /tmp/ttyd.XXXXXX)
     
+    # shellcheck disable=SC2329
     cleanup() {
         rm -rf -- "$TMP_DIR"
     }
     trap cleanup EXIT
 
-    pushd "$TMP_DIR" >/dev/null    
+    pushd "$TMP_DIR" >/dev/null
 
     _repo_url="https://github.com/${1}.git"
     _git_url=$(do_remove_https "${CDN_URL}${_repo_url}")
@@ -120,22 +125,49 @@ make_install() {
 }
 
 main() {
-    if ! check_in_china; then
-        CDN_URL=""
+    # 解析命令行参数
+    CUSTOM_URL=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            make)
+                make_install "tsl0922/ttyd"
+                exit 0
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    # 参数解析后处理 URL 环境变量
+    if [[ -z "$CUSTOM_URL" && -n "${URL:-}" ]]; then
+        CUSTOM_URL="$URL"
     fi
 
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
 
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
 
-    # 编译安装
-    if [[ "${1:-}" = "make" ]]; then
-        make_install "tsl0922/ttyd"
-    else
-        DOWNLOAD_URL="$(get_download_url tsl0922/ttyd)"
+    if [[ -z "$DOWNLOAD_URL" ]]; then
 
-        download_exact
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url tsl0922/ttyd)"
+    else
+        echo "使用指定下载地址: $DOWNLOAD_URL"
     fi
+
+    download_exact
 
     echo ""
 
@@ -143,7 +175,7 @@ main() {
         echo "ttyd has not been installed successfully."
         echo ""
         exit 1
-    fi    
+    fi
 
     echo ""
     echo "ttyd has been installed successfully"

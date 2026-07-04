@@ -82,7 +82,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -100,20 +104,43 @@ download_exact() {
 }
 
 main() {
-    if ! check_in_china; then
-        CDN_URL=""
-    fi
+    # 解析命令行参数
+    CUSTOM_URL=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
 
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m)"
 
-    DOWNLOAD_URL="$(get_download_url koalaman/shellcheck)"
+    if [[ -z "$DOWNLOAD_URL" ]]; then
 
-    if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
-        echo "Error: Could not find a download URL for $OS-$ARCH"
-        exit 1
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url koalaman/shellcheck)"
+
+        if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
+            echo "Error: Could not find a download URL for $OS-$ARCH"
+            exit 1
+        fi
+    else
+        echo "使用指定下载地址: $DOWNLOAD_URL"
     fi
 
     download_exact
@@ -130,9 +157,9 @@ main() {
     echo "shellcheck has been installed successfully!"
     echo ""
     shellcheck --version
-    echo ""    
+    echo ""
     shellcheck --help
-    echo ""        
+    echo ""
 }
 
 main "$@"

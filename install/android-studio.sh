@@ -34,7 +34,11 @@ install_android_studio() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    DOWNLOAD_URL=$(get_download_url)
+    if [[ -z "$DOWNLOAD_URL" ]]; then
+        DOWNLOAD_URL=$(get_download_url)
+    else
+        echo "使用指定下载地址: $DOWNLOAD_URL"
+    fi
     echo "download_url: $DOWNLOAD_URL"
 
     if ! curl -fsSL "$DOWNLOAD_URL" -o "$download_file"; then
@@ -54,6 +58,24 @@ install_android_studio() {
 }
 
 main() {
+    # 解析命令行参数
+    CUSTOM_URL=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
+
     install_android_studio
 
     export PATH="$HOME/.local/android-studio/bin:$PATH"
@@ -64,7 +86,7 @@ main() {
     studio --help
     echo ""
     studio --version
-    echo ""    
+    echo ""
 }
 
 main "$@"

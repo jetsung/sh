@@ -65,8 +65,7 @@ do_remove_https() {
 ########################## 以上为通用函数 #########################
 
 get_download_url() {
-    local repo_api_url
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/orbitalquark/textadept/releases")
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases")
     if [[ -z "${PRE_VERSION:-}" ]]; then
         repo_api_url="${repo_api_url}/latest"
     fi
@@ -100,7 +99,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -157,16 +160,28 @@ download_exact() {
 }
 
 main() {
-    if ! check_in_china; then
-        CDN_URL=""
-    fi
+    # 解析命令行参数
+    CUSTOM_URL=""
+    PRE_VERSION=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            -p|--pre)
+                PRE_VERSION=1
+                shift
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
 
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
-
-    # nightly 预览版
-    if [[ -n "${1:-}" && ("$1" = "-p" || "$1" = "--pre") ]]; then
-        PRE_VERSION=1
-    fi
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
@@ -203,11 +218,22 @@ main() {
             ;;
     esac
 
-    DOWNLOAD_URL="$(get_download_url)"
+    if [[ -z "$DOWNLOAD_URL" ]]; then
 
-    if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" || "$DOWNLOAD_URL" =~ ^[[:space:]]*$ ]]; then
-        echo "Error: Could not find a download URL ($_OS-$_ARCH)"
-        exit 1
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url orbitalquark/textadept)"
+
+        if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" || "$DOWNLOAD_URL" =~ ^[[:space:]]*$ ]]; then
+            echo "Error: Could not find a download URL ($_OS-$_ARCH)"
+            exit 1
+        fi
+    else
+        echo "使用指定下载地址: $DOWNLOAD_URL"
     fi
 
     download_exact
@@ -225,7 +251,7 @@ main() {
     textadept-gtk --help
     echo ""
     textadept-gtk --version
-    echo ""    
+    echo ""
 }
 
 main "$@"

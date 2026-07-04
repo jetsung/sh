@@ -83,7 +83,11 @@ download_exact() {
 
     pushd "$TMP_DIR" >/dev/null
 
-    _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
     if ! curl -fsSL "$_download_url" -o "$download_file"; then
         echo "Error: Failed to download $download_file"
         exit 1
@@ -104,11 +108,23 @@ download_exact() {
 }
 
 main() {
-    if ! check_in_china; then
-        CDN_URL=""
-    fi
+    CUSTOM_URL=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
 
-    NO_HTTPS=$(check_remove_https "$CDN_URL")
+    if [[ -z "$CUSTOM_URL" && -n "${URL:-}" ]]; then
+        CUSTOM_URL="$URL"
+    fi
 
     OS="$(uname | tr '[:upper:]' '[:lower:]')"
     ARCH="$(uname -m | tr '[:upper:]' '[:lower:]')"
@@ -117,7 +133,19 @@ main() {
         PLATFORM="apple"
     fi
 
-    DOWNLOAD_URL="$(get_download_url ajeetdsouza/zoxide)"
+    if [[ -z "$CUSTOM_URL" ]]; then
+
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url ajeetdsouza/zoxide)"
+    else
+        DOWNLOAD_URL=""
+        echo "使用指定下载地址: $CUSTOM_URL"
+    fi
 
     download_exact
 
