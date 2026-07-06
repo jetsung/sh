@@ -181,7 +181,7 @@ tar czf "$rpm_build_dir_abs/SOURCES/$pkg_name-$rpm_version.tar.gz" "$pkg_name"
 # 构建 RPM
 echo "Building RPM package..."
 cd "$rpm_build_dir_abs"
-QA_RPATHS=$(( 0x0002 | 0x0004 )) rpmbuild -bb --define "_topdir $rpm_build_dir_abs" "$spec_file"
+QA_RPATHS=$(( 0x0002 | 0x0004 | 0x0010 )) rpmbuild -bb --define "_topdir $rpm_build_dir_abs" "$spec_file"
 
 # 输出结果
 rpm_file=$(find "$rpm_build_dir_abs/RPMS" -name "*.rpm" -type f | head -1)
