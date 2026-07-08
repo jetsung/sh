@@ -20,14 +20,6 @@ CDN_URL="${CDN:-https://fastfile.asfd.cn/}"
 
 USER_ID="$(id -u)"
 
-sudo_exec() {
-    if [[ "$USER_ID" -ne 0 ]]; then
-        sudo "$@"
-    else
-        "$@"
-    fi
-}
-
 check_is_command() {
     command -v "$1" >/dev/null 2>&1
 }
@@ -109,6 +101,11 @@ download_exact() {
         exit 1
     fi
 
+    local _sudo=""
+    if [[ "$USER_ID" -ne 0 ]]; then
+        _sudo="sudo"
+    fi
+
     if [[ "$USER_ID" -eq 0 ]]; then
         _install_dir_path="/opt/"
         _bin_path="/usr/local/bin"
@@ -121,19 +118,19 @@ download_exact() {
 
     local install_dir="${_install_dir_path}textadept"
 
-    sudo_exec rm -rf "$install_dir"
-    sudo_exec mkdir -p "$install_dir"
+    $_sudo rm -rf "$install_dir"
+    $_sudo mkdir -p "$install_dir"
 
     case "$ASSET_EXT" in
         tgz)
-            if ! sudo_exec tar -xzf "$download_file" -C "$install_dir" --strip-components=1; then
+            if ! $_sudo tar -xzf "$download_file" -C "$install_dir" --strip-components=1; then
                 echo "Error: Extraction failed"
                 rm -f "$download_file"
                 exit 1
             fi
             ;;
         zip)
-            if ! sudo_exec unzip -qo "$download_file" -d "$install_dir"; then
+            if ! $_sudo unzip -qo "$download_file" -d "$install_dir"; then
                 echo "Error: Extraction failed"
                 rm -f "$download_file"
                 exit 1
@@ -141,19 +138,19 @@ download_exact() {
             ;;
     esac
 
-    sudo_exec mkdir -p "$_bin_path"
+    $_sudo mkdir -p "$_bin_path"
     # 删除并重建软链接
-    sudo_exec ln -sf "${install_dir}/textadept" "${_bin_path}/textadept"
-    sudo_exec ln -sf "${install_dir}/textadept-gtk" "${_bin_path}/textadept-gtk"
-    sudo_exec ln -sf "${install_dir}/textadept-curses" "${_bin_path}/textadept-curses"
+    $_sudo ln -sf "${install_dir}/textadept" "${_bin_path}/textadept"
+    $_sudo ln -sf "${install_dir}/textadept-gtk" "${_bin_path}/textadept-gtk"
+    $_sudo ln -sf "${install_dir}/textadept-curses" "${_bin_path}/textadept-curses"
 
     # 需要根据不同的用户( root 或普通用户)，复制 ${install_dir}/textadept.desktop 到 applications 中
     if [[ -f "${install_dir}/textadept.desktop" ]]; then
-        sudo_exec mkdir -p "$_apps_path"
-        sudo_exec cp "${install_dir}/textadept.desktop" "${_apps_path}/textadept.desktop"
+        $_sudo mkdir -p "$_apps_path"
+        $_sudo cp "${install_dir}/textadept.desktop" "${_apps_path}/textadept.desktop"
         # 修正 desktop 文件中的路径 (Exec 和 Icon)
-        sudo_exec sed -i "s|^Exec=.*|Exec=${_bin_path}/textadept %F|g" "${_apps_path}/textadept.desktop"
-        sudo_exec sed -i "s|^Icon=.*|Icon=${install_dir}/core/images/textadept.svg|g" "${_apps_path}/textadept.desktop"
+        $_sudo sed -i "s|^Exec=.*|Exec=${_bin_path}/textadept %F|g" "${_apps_path}/textadept.desktop"
+        $_sudo sed -i "s|^Icon=.*|Icon=${install_dir}/core/images/textadept.svg|g" "${_apps_path}/textadept.desktop"
     fi
 
     popd >/dev/null
