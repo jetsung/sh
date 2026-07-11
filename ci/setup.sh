@@ -189,25 +189,21 @@ esac
         fi
     fi
 
-# 2.6 复制 docker/README.md 到项目根 README.md，并按需替换 ORG/REPO
+# 2.6 复制 docker/README.md 到项目根 README.md
+# 已存在则追加（保留原内容），不存在则直接写入
 readme_dest="README.md"
+readme_tmp="$(mktemp)"
+fetch_file "docker/README.md" "$readme_tmp"
 if [[ -f "$readme_dest" ]]; then
-    answer="y"
-    if [[ -t 0 && -t 1 && "$FORCE_OVERWRITE" != "1" && -z "${CI:-}" && -z "${FORCE:-}" ]]; then
-        if read -r -t 30 -p "文件已存在: $readme_dest ，是否覆盖? [y/N] " answer; then
-            answer="${answer:-n}"
-        else
-            answer="y"
-        fi
-    fi
-    case "$answer" in
-        y|Y|yes|YES) fetch_file "docker/README.md" "$readme_dest" && echo "已写入: $readme_dest" ;;
-        *) echo "跳过: $readme_dest" ;;
-    esac
+    # 追加前加空行分隔原内容与新增内容
+    printf '\n' >> "$readme_dest"
+    cat "$readme_tmp" >> "$readme_dest"
+    echo "已追加: $readme_dest"
 else
-    fetch_file "docker/README.md" "$readme_dest"
+    mv "$readme_tmp" "$readme_dest"
     echo "已写入: $readme_dest"
 fi
+rm -f "$readme_tmp"
 
 if [[ -n "$PROJECT" && "$PROJECT" == */* ]]; then
     org="${PROJECT%%/*}"
@@ -238,5 +234,22 @@ cat "$build_stage" > docker/Dockerfile
 echo "" >> docker/Dockerfile
 cat "$runtime_stage" >> docker/Dockerfile
 echo "已生成: docker/Dockerfile"
+
+# 3.4 对 rust 且 -p 含有 REPO 的语言，将 Dockerfile 中 myapp 替换为项目名称
+if [[ "$LANG_NAME" == "rust" && -n "$PROJECT" ]]; then
+    repo=""
+    case "$PROJECT" in
+        /*)
+            repo="${PROJECT#/}"
+            ;;
+        */*)
+            repo="${PROJECT##*/}"
+            ;;
+    esac
+    if [[ -n "$repo" ]]; then
+        replace_in_file "docker/Dockerfile" 'myapp' "$repo"
+        echo "已替换 Dockerfile 中的 myapp 为 ${repo}"
+    fi
+fi
 
 echo "完成：Docker CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}）。"
