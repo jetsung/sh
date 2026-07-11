@@ -17,13 +17,13 @@ github_workflows() {
     fi
 
     pushd golang > /dev/null 2>&1
-    
+
     save_pre_path="./"
     if [[ -n "$save_path" ]]; then
       mkdir -p "$save_path"
       save_pre_path="./${save_path}/"
     fi
-    
+
     for file in "${@:3}"; do
       save_file_path="${save_pre_path}${file}"
       fetch_file_path="${git_url}${save_path}/${file}"
@@ -35,7 +35,7 @@ github_workflows() {
 ## Python
 
 ## Golang
-git_url="https://framagit.org/idev/shortener/-/raw/main/"
+git_url="https://git.asfd.cn/idev/shortener/-/raw/main/"
 
 save_path=".github/workflows"
 file_list=(
