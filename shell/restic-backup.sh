@@ -298,6 +298,10 @@ case "${1:-}" in
   prune_snapshots
   exit 0
   ;;
+--cron)
+  install_cron
+  exit 0
+  ;;
 --install|--install-login|--install-shutdown|--uninstall)
   if [[ "$EUID" -eq 0 ]]; then
     echo "ERROR: This option must be run as a normal user (not root)."
