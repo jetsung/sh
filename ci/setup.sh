@@ -22,22 +22,30 @@ BASE_URL="${BASE_URL:-https://git.asfd.cn/jetsung/sh/raw/branch/main/ci/}"
 LANG_NAME=""
 PROJECT=""
 FORCE_OVERWRITE=0
+DOCS_ENABLED=0          # 是否显式传入了 --docs 开关
+DOCS_DOMAIN=""          # --domain 的域名值（必须非空）
 
 usage() {
     cat <<'EOF'
-Usage: setup.sh -l <language> [-p <project>] [-h]
+Usage: setup.sh -l <language> [-p <project>] [--docs] [--domain <domain>] [-h]
 
   -l, --language <lang>   目标语言（必填），如 rust
   -p, --project <value>   镜像归属，支持三种形态：
                            ORG/REPO  同时设置 image_org 与 package_name
                            myorg     仅设置 image_org
                            /myrepo   仅设置 package_name
+      --docs              开关：下发 MkDocs 文档构建工作流（.github/workflows/docs.yml）
+                           以及 docs/requirements.txt
+      --domain <domain>   自定义域名（必填值），配合 --docs 在目标项目生成
+                           docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
   -f, --force             强制覆盖已存在文件，跳过逐文件确认
   -h, --help              显示本帮助并退出
 
 示例:
   curl -fsSL <base>/ci/setup.sh | bash -s -- -l rust
   bash setup.sh -l rust -p myorg/myrepo
+  bash setup.sh -l rust --docs
+  bash setup.sh -l rust --docs --domain example.com
 EOF
 }
 
@@ -52,6 +60,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         -p|--project)
             PROJECT="${2:?"--project requires a value"}"
+            shift 2
+            ;;
+        --docs)
+            DOCS_ENABLED=1
+            shift
+            ;;
+        --domain)
+            DOCS_DOMAIN="${2:?"--domain requires a value"}"
             shift 2
             ;;
         -h|--help)
@@ -166,28 +182,28 @@ case "$LANG_NAME" in
 esac
 
 # 2.5 根据 -p 形态写入 docker-release.yml 的 env.image_org / env.package_name
-    if [[ -n "$PROJECT" ]]; then
-        rel_wf=".github/workflows/docker-release.yml"
-        if [[ -f "$rel_wf" ]]; then
-            if [[ "$PROJECT" == /* ]]; then
-                # 仅 REPO：形如 /myrepo
-                repo="${PROJECT#/}"
-                [[ -n "$repo" ]] && replace_in_file "$rel_wf" 'package_name:.*' "package_name: '${repo}'"
-            elif [[ "$PROJECT" == */* ]]; then
-                # ORG/REPO：两半均非空
-                org="${PROJECT%%/*}"
-                repo="${PROJECT##*/}"
-                if [[ -n "$org" && -n "$repo" ]]; then
-                    replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${org}'"
-                    replace_in_file "$rel_wf" 'package_name:.*' "package_name: '${repo}'"
-                fi
-            else
-                # 仅 ORG：形如 myorg
-                replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${PROJECT}'"
+if [[ -n "$PROJECT" ]]; then
+    rel_wf=".github/workflows/docker-release.yml"
+    if [[ -f "$rel_wf" ]]; then
+        if [[ "$PROJECT" == /* ]]; then
+            # 仅 REPO：形如 /myrepo
+            repo="${PROJECT#/}"
+            [[ -n "$repo" ]] && replace_in_file "$rel_wf" 'package_name:.*' "package_name: '${repo}'"
+        elif [[ "$PROJECT" == */* ]]; then
+            # ORG/REPO：两半均非空
+            org="${PROJECT%%/*}"
+            repo="${PROJECT##*/}"
+            if [[ -n "$org" && -n "$repo" ]]; then
+                replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${org}'"
+                replace_in_file "$rel_wf" 'package_name:.*' "package_name: '${repo}'"
             fi
-            echo "已应用 -p ${PROJECT} 到 ${rel_wf}"
+        else
+            # 仅 ORG：形如 myorg
+            replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${PROJECT}'"
         fi
+        echo "已应用 -p ${PROJECT} 到 ${rel_wf}"
     fi
+fi
 
 # 2.6 复制 docker/README.md 到项目根 README.md
 # 已存在则追加（保留原内容），不存在则直接写入
@@ -212,6 +228,99 @@ if [[ -n "$PROJECT" && "$PROJECT" == */* ]]; then
         replace_in_file "$readme_dest" 'ORG/REPO' "${org}/${repo}"
         echo "已替换 README.md 中的 ORG/REPO 为 ${org}/${repo}"
     fi
+fi
+
+#------------------------------------------------------------
+# 文档工作流下发（--docs）
+#------------------------------------------------------------
+
+if [[ "$DOCS_ENABLED" -eq 1 ]]; then
+    # 3.1 拉取工作流模板到临时文件
+    docs_tmp="$(mktemp)"
+    fetch_file "docs/docs.yml" "$docs_tmp"
+
+    # 3.2 写入目标工作流（复用 maybe_write 的覆盖确认逻辑，内容来自已处理的临时文件）
+    docs_dest=".github/workflows/docs.yml"
+    answer="y"
+    if [[ -f "$docs_dest" ]]; then
+        answer="y"
+        if [[ -t 0 && -t 1 && "$FORCE_OVERWRITE" != "1" && -z "${CI:-}" && -z "${FORCE:-}" ]]; then
+            if read -r -t 30 -p "文件已存在: $docs_dest ，是否覆盖? [y/N] " answer; then
+                answer="${answer:-n}"
+            else
+                answer="y"
+            fi
+        fi
+        case "$answer" in
+            y|Y|yes|YES) ;;
+            *)
+                echo "跳过: $docs_dest"
+                answer="skip"
+                ;;
+        esac
+    fi
+    if [[ "$answer" != "skip" ]]; then
+        mkdir -p "$(dirname "$docs_dest")"
+        cp "$docs_tmp" "$docs_dest"
+        echo "已写入: $docs_dest"
+    fi
+    rm -f "$docs_tmp"
+
+    # 3.2.1 下发 mkdocs.yml 到项目根（docs.yml 工作流监听 mkdocs.yml 变更）
+    mkdocs_dest="mkdocs.yml"
+    maybe_write "$mkdocs_dest" "docs/mkdocs.yml"
+
+    # 3.2.2 若 -p 含有 REPO 部分，将 mkdocs.yml 中的 REPO 占位替换为 org/repo
+    if [[ -n "$PROJECT" ]]; then
+        mkdocs_repo=""
+        mkdocs_org=""
+        case "$PROJECT" in
+            /*)
+                # 仅 REPO：org 缺省为作者默认 org
+                mkdocs_repo="${PROJECT#/}"
+                mkdocs_org="jetsung"
+                ;;
+            */*)
+                mkdocs_org="${PROJECT%%/*}"
+                mkdocs_repo="${PROJECT##*/}"
+                ;;
+        esac
+        if [[ -n "$mkdocs_repo" && -n "$mkdocs_org" ]]; then
+            replace_in_file "$mkdocs_dest" 'REPO' "${mkdocs_org}/${mkdocs_repo}"
+            echo "已替换 mkdocs.yml 中的 REPO 为 ${mkdocs_org}/${mkdocs_repo}"
+        fi
+    fi
+
+    # 3.3 若提供了 --domain，在目标项目生成 docs/CNAME（GitHub Pages 自定义域名）
+    if [[ -n "$DOCS_DOMAIN" ]]; then
+        cname_dest="docs/CNAME"
+        cname_answer="y"
+        if [[ -f "$cname_dest" ]]; then
+            cname_answer="y"
+            if [[ -t 0 && -t 1 && "$FORCE_OVERWRITE" != "1" && -z "${CI:-}" && -z "${FORCE:-}" ]]; then
+                if read -r -t 30 -p "文件已存在: $cname_dest ，是否覆盖? [y/N] " cname_answer; then
+                    cname_answer="${cname_answer:-n}"
+                else
+                    cname_answer="y"
+                fi
+            fi
+            case "$cname_answer" in
+                y|Y|yes|YES) ;;
+                *)
+                    echo "跳过: $cname_dest"
+                    cname_answer="skip"
+                    ;;
+            esac
+        fi
+        if [[ "$cname_answer" != "skip" ]]; then
+            mkdir -p "$(dirname "$cname_dest")"
+            printf '%s\n' "$DOCS_DOMAIN" > "$cname_dest"
+            echo "已写入: $cname_dest (${DOCS_DOMAIN})"
+        fi
+    fi
+
+    # 4.1 下发 docs/requirements.txt
+    maybe_write "docs/requirements.txt" "docs/requirements.txt"
 fi
 
 #------------------------------------------------------------
@@ -252,4 +361,4 @@ if [[ "$LANG_NAME" == "rust" && -n "$PROJECT" ]]; then
     fi
 fi
 
-echo "完成：Docker CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}）。"
+echo "完成：Docker CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}${DOCS_ENABLED:+, docs=enabled${DOCS_DOMAIN:+, domain=${DOCS_DOMAIN}}}）。"
