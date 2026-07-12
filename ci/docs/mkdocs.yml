@@ -1,9 +1,9 @@
-site_name: REPO
-site_description: REPO documentation
+site_name: ORG/REPO
+site_description: ORG/REPO documentation
 site_author: Jetsung Chan
-site_url: https://jetsung.github.io/REPO
-repo_url: https://github.com/jetsung/REPO
-repo_name: jetsung/REPO
+site_url: https://ORG.github.io/REPO
+repo_url: https://github.com/ORG/REPO
+repo_name: ORG/REPO
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; 2026 Jetsung Chan
 

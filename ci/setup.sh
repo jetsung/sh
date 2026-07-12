@@ -270,24 +270,29 @@ if [[ "$DOCS_ENABLED" -eq 1 ]]; then
     mkdocs_dest="mkdocs.yml"
     maybe_write "$mkdocs_dest" "docs/mkdocs.yml"
 
-    # 3.2.2 若 -p 含有 REPO 部分，将 mkdocs.yml 中的 REPO 占位替换为 org/repo
+    # 3.2.2 若提供了 -p，将 mkdocs.yml 中的 ORG/REPO 占位分别替换为组织与仓库名
     if [[ -n "$PROJECT" ]]; then
-        mkdocs_repo=""
         mkdocs_org=""
-        case "$PROJECT" in
-            /*)
-                # 仅 REPO：org 缺省为作者默认 org
-                mkdocs_repo="${PROJECT#/}"
-                mkdocs_org="jetsung"
-                ;;
-            */*)
-                mkdocs_org="${PROJECT%%/*}"
-                mkdocs_repo="${PROJECT##*/}"
-                ;;
-        esac
-        if [[ -n "$mkdocs_repo" && -n "$mkdocs_org" ]]; then
-            replace_in_file "$mkdocs_dest" 'REPO' "${mkdocs_org}/${mkdocs_repo}"
-            echo "已替换 mkdocs.yml 中的 REPO 为 ${mkdocs_org}/${mkdocs_repo}"
+        mkdocs_repo=""
+        if [[ "$PROJECT" == /* ]]; then
+            # 仅 REPO：形如 /myrepo，org 缺省为作者默认 org
+            mkdocs_repo="${PROJECT#/}"
+            mkdocs_org="jetsung"
+        elif [[ "$PROJECT" == */* ]]; then
+            # ORG/REPO：两半均非空
+            mkdocs_org="${PROJECT%%/*}"
+            mkdocs_repo="${PROJECT##*/}"
+        else
+            # 仅 ORG：形如 myorg，repo 未知，仅替换 org
+            mkdocs_org="$PROJECT"
+        fi
+        if [[ -n "$mkdocs_org" ]]; then
+            replace_in_file "$mkdocs_dest" 'ORG' "$mkdocs_org"
+            echo "已替换 mkdocs.yml 中的 ORG 为 ${mkdocs_org}"
+        fi
+        if [[ -n "$mkdocs_repo" ]]; then
+            replace_in_file "$mkdocs_dest" 'REPO' "$mkdocs_repo"
+            echo "已替换 mkdocs.yml 中的 REPO 为 ${mkdocs_repo}"
         fi
     fi
 
