@@ -24,6 +24,7 @@ PROJECT=""
 FORCE_OVERWRITE=0
 DOCS_ENABLED=0          # 是否显式传入了 --docs 开关
 DOCS_DOMAIN=""          # --domain 的域名值（必须非空）
+RELEASE_ENABLED=0       # 是否显式传入了 --release 开关
 
 usage() {
     cat <<'EOF'
@@ -38,6 +39,8 @@ Usage: setup.sh -l <language> [-p <project>] [--docs] [--domain <domain>] [-h]
                            依赖通过 uv 在 docs.yml 中安装，无需 requirements.txt
       --domain <domain>   自定义域名（必填值），配合 --docs 在目标项目生成
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
+      --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
+                           如 -l rust 则复制 rust/release.yml；配合 -p 的 REPO 名替换工作流内 APP 占位符
   -f, --force             强制覆盖已存在文件，跳过逐文件确认
   -h, --help              显示本帮助并退出
 
@@ -46,6 +49,7 @@ Usage: setup.sh -l <language> [-p <project>] [--docs] [--domain <domain>] [-h]
   bash setup.sh -l rust -p myorg/myrepo
   bash setup.sh -l rust --docs
   bash setup.sh -l rust --docs --domain example.com
+  bash setup.sh -l rust --release -p myorg/myrepo
 EOF
 }
 
@@ -64,6 +68,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --docs)
             DOCS_ENABLED=1
+            shift
+            ;;
+        --release)
+            RELEASE_ENABLED=1
             shift
             ;;
         --domain)
@@ -333,6 +341,39 @@ if [[ "$DOCS_ENABLED" -eq 1 ]]; then
     elif ! grep -q '^site/$' "$gitignore_dest"; then
         printf '%s\n' "site/" >> "$gitignore_dest"
         echo "已追加 site/ 到 $gitignore_dest"
+    fi
+fi
+
+#------------------------------------------------------------
+# 原生二进制发布工作流下发（--release）
+#------------------------------------------------------------
+
+if [[ "$RELEASE_ENABLED" -eq 1 ]]; then
+    rel_src="${LANG_NAME}/release.yml"
+    rel_dest=".github/workflows/${LANG_NAME}-release.yml"
+
+    # 4.1 源不存在（该语言无发布工作流）则警告并跳过，不中断其余脚手架
+    if ! curl -fsSL -o /dev/null "${BASE_URL%/}/${rel_src}"; then
+        echo "警告: 语言 ${LANG_NAME} 暂无发布工作流（${rel_src}），已跳过 --release。" >&2
+    else
+        # 4.2 写入目标工作流（复用 maybe_write 的覆盖确认 / -f / CI 语义）
+        maybe_write "$rel_dest" "$rel_src"
+        echo "已下发发布工作流: $rel_dest"
+
+        # 4.3 若 -p 解析出 REPO 名，将工作流内 APP 占位符替换为仓库名
+        rel_repo=""
+        case "$PROJECT" in
+            /*)
+                rel_repo="${PROJECT#/}"
+                ;;
+            */*)
+                rel_repo="${PROJECT##*/}"
+                ;;
+        esac
+        if [[ -n "$rel_repo" ]]; then
+            replace_in_file "$rel_dest" 'APP' "$rel_repo"
+            echo "已替换 ${rel_dest} 中的 APP 为 ${rel_repo}"
+        fi
     fi
 fi
 
