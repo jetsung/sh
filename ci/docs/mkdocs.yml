@@ -69,8 +69,3 @@ extra:
       link: https://github.com/jetsung
     - icon: fontawesome/solid/envelope
       link: mailto:i@jetsung.com
-  version:
-    provider: mike
-
-extra_css:
-  - stylesheets/extra.css
