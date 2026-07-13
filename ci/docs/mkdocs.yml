@@ -63,9 +63,6 @@ markdown_extensions:
       permalink: true
       toc_depth: 3
 
-nav:
-  - Index: index.md
-
 extra:
   social:
     - icon: fontawesome/brands/github
