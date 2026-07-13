@@ -71,19 +71,22 @@ jobs:
           mkdir ${{ env.RELEASE_DIR }}
           for arch in x86_64 aarch64 loongarch64; do
             # .deb (gnu)
-            cargo deb --target $arch-unknown-linux-gnu --no-build
+            # --no-strip: the cross binary is built by cargo-zigbuild; the host
+            # `strip` cannot recognise aarch64/loongarch64 binaries, so skip it.
+            cargo deb --target $arch-unknown-linux-gnu --no-build --no-strip
             mv target/$arch-unknown-linux-gnu/debian/*.deb ${{ env.RELEASE_DIR }}/
 
-            # .rpm (gnu)
-            cargo generate-rpm --target-dir target/generate-rpm-$arch-gnu --target $arch-unknown-linux-gnu
-            mv target/generate-rpm-$arch-gnu/*.rpm ${{ env.RELEASE_DIR }}/
+            # .rpm (gnu) — cargo-generate-rpm emits the .rpm under
+            # target/$arch-unknown-linux-gnu/generate-rpm/, so locate it with find
+            cargo generate-rpm --target $arch-unknown-linux-gnu
+            mv target/$arch-unknown-linux-gnu/generate-rpm/*.rpm ${{ env.RELEASE_DIR }}/
 
             # gnu tarball
             tar -cJf "${{ env.RELEASE_DIR }}/APP-v${{ steps.tag.outputs.VERSION }}-$arch-unknown-linux-gnu.tar.xz" -C target/$arch-unknown-linux-gnu/release APP
 
             # musl static tarball (for Alpine / musl-based docker)
             tar -cJf "${{ env.RELEASE_DIR }}/APP-v${{ steps.tag.outputs.VERSION }}-$arch-unknown-linux-musl.tar.xz" -C target/$arch-unknown-linux-musl/release APP
-          done
+          done          
       - name: Upload release artifacts
         uses: actions/upload-artifact@v7
         with:

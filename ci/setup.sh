@@ -44,6 +44,11 @@ Usage: setup.sh -l <language> [-p <project>] [--docs] [--domain <domain>] [-h]
   -f, --force             强制覆盖已存在文件，跳过逐文件确认
   -h, --help              显示本帮助并退出
 
+说明:
+  compose.yaml 会随脚手架自动下发到项目 docker/ 目录（docker/compose.yaml）：脱敏
+  模板，默认拉取预构建镜像，同时保留 build 段（docker compose up --build 可本地构建）。
+  若目标已存在 docker/compose.yaml 则跳过（即使 -f）。配合 -p 的 REPO 名替换镜像与服务名占位符。
+
 示例:
   curl -fsSL <base>/ci/setup.sh | bash -s -- -l rust
   bash setup.sh -l rust -p myorg/myrepo
@@ -228,6 +233,24 @@ else
     echo "已写入: $readme_dest"
 fi
 rm -f "$readme_tmp"
+
+# 2.7 将 docker/compose.yaml 内容内嵌到项目 README.md（移除 build 段，仅保留 ghcr 镜像方式）
+compose_src="docker/compose.yaml"
+if [[ -f "$compose_src" ]]; then
+    {
+        printf '\n'
+        printf '#### docker/compose.yaml\n\n'
+        printf '```yaml\n'
+        # 去掉 build: 段（从 "    build:" 到下一个顶层键 "    ports:" 之前），仅保留 image 拉取方式
+        awk '
+            /^    build:/ { skip=1 }
+            /^    ports:/ { skip=0 }
+            !skip { print }
+        ' "$compose_src"
+        printf '```\n'
+    } >> "$readme_dest"
+    echo "已内嵌 $compose_src（移除 build 段）到 $readme_dest"
+fi
 
 if [[ -n "$PROJECT" && "$PROJECT" == */* ]]; then
     org="${PROJECT%%/*}"
@@ -422,6 +445,38 @@ echo "已生成: docker/Dockerfile"
             replace_in_file "docker/Dockerfile" 'myapp' "$repo"
             echo "已替换 Dockerfile 中的 myapp 为 ${repo}"
         fi
+    fi
+fi
+
+#------------------------------------------------------------
+# compose.yaml 下发（脱敏模板，跳过已存在）
+#------------------------------------------------------------
+
+# 5.1 若目标 docker/compose.yaml 已存在（无论 -f 与否）则跳过，保留用户原有文件
+if [[ -f "docker/compose.yaml" ]]; then
+    echo "已存在: docker/compose.yaml，已跳过下发（-f 不影响此文件）。"
+else
+    maybe_write "docker/compose.yaml" "docker/compose.yaml"
+    echo "已下发: docker/compose.yaml"
+
+    # 5.2 若 -p 解析出 REPO 名，覆盖镜像与服务名占位符
+    comp_repo=""
+    comp_org="jetsung"
+    case "$PROJECT" in
+        /*)
+            comp_repo="${PROJECT#/}"
+            ;;
+        */*)
+            comp_org="${PROJECT%%/*}"
+            comp_repo="${PROJECT##*/}"
+            ;;
+    esac
+    if [[ -n "$comp_repo" ]]; then
+        replace_in_file "docker/compose.yaml" '__APP_IMAGE__' "ghcr.io/${comp_org}/${comp_repo}"
+        replace_in_file "docker/compose.yaml" '__APP_NAME__' "$comp_repo"
+        replace_in_file "docker/compose.yaml" '__APP_CONTAINER__' "$comp_repo"
+        replace_in_file "docker/compose.yaml" '__APP_HOST__' "$comp_repo"
+        echo "已替换 docker/compose.yaml 中的占位符（org=${comp_org}, repo=${comp_repo}）"
     fi
 fi
 
