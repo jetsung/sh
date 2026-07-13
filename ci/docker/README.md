@@ -16,16 +16,11 @@
 
 ### 使用 compose 启动
 
-脚手架会自动下发 `docker/compose.yaml`（若项目 `docker/` 下已存在则跳过）。该文件为脱敏模板，
-默认拉取预构建镜像，同时保留本地构建能力。
-
 #### 默认：拉取预构建镜像
 
 ```bash
 docker compose -f docker/compose.yaml up -d
 ```
-
-> 标签固定为 `:latest`；如需其他版本，直接修改 `docker/compose.yaml` 中的 `image` 字段。
 
 #### 本地构建：使用 build 段
 
