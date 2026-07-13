@@ -35,7 +35,7 @@ Usage: setup.sh -l <language> [-p <project>] [--docs] [--domain <domain>] [-h]
                            myorg     仅设置 image_org
                            /myrepo   仅设置 package_name
       --docs              开关：下发 MkDocs 文档构建工作流（.github/workflows/docs.yml）
-                           以及 docs/requirements.txt
+                           依赖通过 uv 在 docs.yml 中安装，无需 requirements.txt
       --domain <domain>   自定义域名（必填值），配合 --docs 在目标项目生成
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
   -f, --force             强制覆盖已存在文件，跳过逐文件确认
@@ -324,8 +324,16 @@ if [[ "$DOCS_ENABLED" -eq 1 ]]; then
         fi
     fi
 
-    # 4.1 下发 docs/requirements.txt
-    maybe_write "docs/requirements.txt" "docs/requirements.txt"
+    # 4.2 确保 MkDocs 构建产物 site/ 被 git 忽略
+    # 不存在则创建；已存在但无 site/ 行则追加；已有则跳过，避免重复
+    gitignore_dest=".gitignore"
+    if [[ ! -f "$gitignore_dest" ]]; then
+        printf '%s\n' "site/" > "$gitignore_dest"
+        echo "已写入: $gitignore_dest (site/)"
+    elif ! grep -q '^site/$' "$gitignore_dest"; then
+        printf '%s\n' "site/" >> "$gitignore_dest"
+        echo "已追加 site/ 到 $gitignore_dest"
+    fi
 fi
 
 #------------------------------------------------------------
