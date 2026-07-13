@@ -39,6 +39,7 @@ done
 | [**nvim**](./nvim.sh) | [https://fx4.cn/nvim](https://fx4.cn/nvim) | Neovim 编辑器 |
 | [**prek**](./prek.sh) | [https://fx4.cn/prek](https://fx4.cn/prek) | Git 钩子管理工具 |
 | [**protoc**](./protoc.sh) |  | protobuf 编译工具 |
+| [**relaydrop**](./relaydrop.sh) | [https://fx4.cn/relaydrop](https://fx4.cn/relaydrop) | 文件传输中继服务 |
 | [**shellcheck**](./shellcheck.sh) | [https://fx4.cn/shellcheck](https://fx4.cn/shellcheck) | Shell 脚本分析工具 |
 | [**skim**](./skim.sh) | [https://fx4.cn/skim](https://fx4.cn/skim) | 命令行模糊查找器 |
 | [**static-web-server**](./static-web-server.sh) | [https://fx4.cn/sws](https://fx4.cn/sws) | 静态网站服务器 |
