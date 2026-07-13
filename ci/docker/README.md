@@ -25,22 +25,6 @@
 docker compose -f docker/compose.yaml up -d
 ```
 
-镜像地址、服务名、端口等可通过环境变量（或 `.env`）覆盖，例如：
-
-```bash
-export __APP_IMAGE__=ghcr.io/myorg/myrepo
-export __APP_PORT__=8080
-docker compose -f docker/compose.yaml up -d
-```
-
-| 变量 | 说明 | 默认值 |
-| ---- | ---- | ------ |
-| `__APP_NAME__` | 服务名 | `APP` |
-| `__APP_CONTAINER__` | 容器名 | 同服务名 |
-| `__APP_HOST__` | 容器主机名 | `app` |
-| `__APP_IMAGE__` | 镜像地址（不含标签） | `ghcr.io/ORG/REPO` |
-| `__APP_PORT__` | 映射端口 | `80` |
-
 > 标签固定为 `:latest`；如需其他版本，直接修改 `docker/compose.yaml` 中的 `image` 字段。
 
 #### 本地构建：使用 build 段
