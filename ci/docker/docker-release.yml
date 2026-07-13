@@ -141,8 +141,8 @@ jobs:
         DEST_REPO: ${{ needs.build.outputs.image_org }}/${{ needs.build.outputs.package_name }}
         DEST_TAG: ${{ needs.build.outputs.tag }}
       run: |
-          skopeo copy --registries-conf=/dev/null --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
-          skopeo copy --registries-conf=/dev/null --all $SRC_IMAGE docker://$DEST_REPO:latest
+          skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
+          skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:latest
 
   sync-to-ghcr:
     needs: build
@@ -170,8 +170,8 @@ jobs:
         DEST_REPO: ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.package_name }}
         DEST_TAG: ${{ needs.build.outputs.tag }}
       run: |
-          skopeo copy --registries-conf=/dev/null --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
-          skopeo copy --registries-conf=/dev/null --all $SRC_IMAGE docker://$DEST_REPO:latest
+          skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
+          skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:latest
     - uses: actions/delete-package-versions@v5
       continue-on-error: true
       with:
@@ -221,8 +221,8 @@ jobs:
         DEST_REPO: ${{ env.acr_registry }}/${{ needs.build.outputs.image_org }}/${{ needs.build.outputs.package_name }}
         DEST_TAG: ${{ needs.build.outputs.tag }}
       run: |
-          skopeo copy --registries-conf=/dev/null --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
-          skopeo copy --registries-conf=/dev/null --all $SRC_IMAGE docker://$DEST_REPO:latest
+          skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
+          skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:latest
 
   sync-to-tencent:
     needs: build
@@ -265,5 +265,5 @@ jobs:
         DEST_REPO: ${{ env.tcr_registry }}/${{ needs.build.outputs.image_org }}/${{ needs.build.outputs.package_name }}
         DEST_TAG: ${{ needs.build.outputs.tag }}
       run: |
-          skopeo copy --registries-conf=/dev/null --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
-          skopeo copy --registries-conf=/dev/null --all $SRC_IMAGE docker://$DEST_REPO:latest
+          skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
+          skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:latest
