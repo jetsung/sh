@@ -275,8 +275,13 @@ if [[ "$DOCS_ENABLED" -eq 1 ]]; then
     rm -f "$docs_tmp"
 
     # 3.2.1 下发 mkdocs.yml 到项目根（docs.yml 工作流监听 mkdocs.yml 变更）
+    # 若目标已存在（无论 -f 与否）则跳过，保留用户原有文件
     mkdocs_dest="mkdocs.yml"
-    maybe_write "$mkdocs_dest" "docs/mkdocs.yml"
+    if [[ -f "$mkdocs_dest" ]]; then
+        echo "已存在: $mkdocs_dest，已跳过下发（-f 不影响此文件）。"
+    else
+        maybe_write "$mkdocs_dest" "docs/mkdocs.yml"
+    fi
 
     # 3.2.2 若提供了 -p，将 mkdocs.yml 中的 ORG/REPO 占位分别替换为组织与仓库名
     if [[ -n "$PROJECT" ]]; then
@@ -350,7 +355,7 @@ fi
 
 if [[ "$RELEASE_ENABLED" -eq 1 ]]; then
     rel_src="${LANG_NAME}/release.yml"
-    rel_dest=".github/workflows/${LANG_NAME}-release.yml"
+    rel_dest=".github/workflows/release.yml"
 
     # 4.1 源不存在（该语言无发布工作流）则警告并跳过，不中断其余脚手架
     if ! curl -fsSL -o /dev/null "${BASE_URL%/}/${rel_src}"; then
@@ -381,12 +386,16 @@ fi
 # 多阶段 Dockerfile 合并
 #------------------------------------------------------------
 
-build_stage="$(mktemp)"
-runtime_stage="$(mktemp)"
-trap 'rm -f "$build_stage" "$runtime_stage"' EXIT
+# 3.0 若目标 docker/Dockerfile 已存在，无论 -f 与否均跳过，保留用户原有文件
+if [[ -f "docker/Dockerfile" ]]; then
+    echo "已存在: docker/Dockerfile，已跳过合并生成（-f 不影响此文件）。"
+else
+    build_stage="$(mktemp)"
+    runtime_stage="$(mktemp)"
+    trap 'rm -f "$build_stage" "$runtime_stage"' EXIT
 
-# 3.1 编译层: <lang>.<n>.Dockerfile
-fetch_file "docker/${LANG_NAME}.1.Dockerfile" "$build_stage"
+    # 3.1 编译层: <lang>.<n>.Dockerfile
+    fetch_file "docker/${LANG_NAME}.1.Dockerfile" "$build_stage"
 
 # 3.2 运行时层: cc-debian13.Dockerfile
 fetch_file "docker/cc-debian13.Dockerfile" "$runtime_stage"
@@ -398,20 +407,21 @@ echo "" >> docker/Dockerfile
 cat "$runtime_stage" >> docker/Dockerfile
 echo "已生成: docker/Dockerfile"
 
-# 3.4 对 rust 且 -p 含有 REPO 的语言，将 Dockerfile 中 myapp 替换为项目名称
-if [[ "$LANG_NAME" == "rust" && -n "$PROJECT" ]]; then
-    repo=""
-    case "$PROJECT" in
-        /*)
-            repo="${PROJECT#/}"
-            ;;
-        */*)
-            repo="${PROJECT##*/}"
-            ;;
-    esac
-    if [[ -n "$repo" ]]; then
-        replace_in_file "docker/Dockerfile" 'myapp' "$repo"
-        echo "已替换 Dockerfile 中的 myapp 为 ${repo}"
+    # 3.4 对 rust 且 -p 含有 REPO 的语言，将 Dockerfile 中 myapp 替换为项目名称
+    if [[ "$LANG_NAME" == "rust" && -n "$PROJECT" ]]; then
+        repo=""
+        case "$PROJECT" in
+            /*)
+                repo="${PROJECT#/}"
+                ;;
+            */*)
+                repo="${PROJECT##*/}"
+                ;;
+        esac
+        if [[ -n "$repo" ]]; then
+            replace_in_file "docker/Dockerfile" 'myapp' "$repo"
+            echo "已替换 Dockerfile 中的 myapp 为 ${repo}"
+        fi
     fi
 fi
 
