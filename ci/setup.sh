@@ -22,25 +22,28 @@ BASE_URL="${BASE_URL:-https://git.asfd.cn/jetsung/sh/raw/branch/main/ci/}"
 LANG_NAME=""
 PROJECT=""
 FORCE_OVERWRITE=0
-DOCS_ENABLED=0          # 是否显式传入了 --docs 开关
-DOCS_DOMAIN=""          # --domain 的域名值（必须非空）
-RELEASE_ENABLED=0       # 是否显式传入了 --release 开关
+DOCS_ENABLED=0          # 是否显式传入了 --docs / -d 开关
+DOCS_DOMAIN=""          # --domain / -D 的域名值（必须非空）
+RELEASE_ENABLED=0       # 是否显式传入了 --release / -r 开关
+README_ENABLED=0         # 是否显式传入了 --readme / -R 开关（默认不下发/更新 README.md）
 
 usage() {
     cat <<'EOF'
-Usage: setup.sh -l <language> [-p <project>] [--docs] [--domain <domain>] [-h]
+Usage: setup.sh -l <language> [-p <project>] [-d] [-D <domain>] [-r] [-R] [-f] [-h]
 
   -l, --language <lang>   目标语言（必填），如 rust
   -p, --project <value>   镜像归属，支持三种形态：
                            ORG/REPO  同时设置 image_org 与 package_name
                            myorg     仅设置 image_org
                            /myrepo   仅设置 package_name
-      --docs              开关：下发 MkDocs 文档构建工作流（.github/workflows/docs.yml）
+  -d, --docs              开关：下发 MkDocs 文档构建工作流（.github/workflows/docs.yml）
                            依赖通过 uv 在 docs.yml 中安装，无需 requirements.txt
-      --domain <domain>   自定义域名（必填值），配合 --docs 在目标项目生成
+  -D, --domain <domain>   自定义域名（必填值），配合 --docs 在目标项目生成
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
-      --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
+  -r, --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
                            如 -l rust 则复制 rust/release.yml；配合 -p 的 REPO 名替换工作流内 APP 占位符
+  -R, --readme            开关：下发并更新项目根 README.md（复制 docker/README.md 并内嵌
+                           docker/compose.yaml）。默认不触碰 README.md，需显式启用才生成/更新。
   -f, --force             强制覆盖已存在文件，跳过逐文件确认
   -h, --help              显示本帮助并退出
 
@@ -71,15 +74,19 @@ while [[ $# -gt 0 ]]; do
             PROJECT="${2:?"--project requires a value"}"
             shift 2
             ;;
-        --docs)
+        -d|--docs)
             DOCS_ENABLED=1
             shift
             ;;
-        --release)
+        -r|--release)
             RELEASE_ENABLED=1
             shift
             ;;
-        --domain)
+        -R|--readme)
+            README_ENABLED=1
+            shift
+            ;;
+        -D|--domain)
             DOCS_DOMAIN="${2:?"--domain requires a value"}"
             shift 2
             ;;
@@ -218,21 +225,25 @@ if [[ -n "$PROJECT" ]]; then
     fi
 fi
 
-# 2.6 复制 docker/README.md 到项目根 README.md
-# 已存在则追加（保留原内容），不存在则直接写入
-readme_dest="README.md"
-readme_tmp="$(mktemp)"
-fetch_file "docker/README.md" "$readme_tmp"
-if [[ -f "$readme_dest" ]]; then
-    # 追加前加空行分隔原内容与新增内容
-    printf '\n' >> "$readme_dest"
-    cat "$readme_tmp" >> "$readme_dest"
-    echo "已追加: $readme_dest"
-else
-    mv "$readme_tmp" "$readme_dest"
-    echo "已写入: $readme_dest"
+# 2.6 复制 docker/README.md 到项目根 README.md（仅 --readme 启用时）
+# 默认不触碰 README.md；启用时才复制/追加，并将 readme_dest 设为有效值供段 5.3/5.4 使用。
+readme_dest=""
+if [[ "$README_ENABLED" -eq 1 ]]; then
+    # 已存在则追加（保留原内容），不存在则直接写入
+    readme_dest="README.md"
+    readme_tmp="$(mktemp)"
+    fetch_file "docker/README.md" "$readme_tmp"
+    if [[ -f "$readme_dest" ]]; then
+        # 追加前加空行分隔原内容与新增内容
+        printf '\n' >> "$readme_dest"
+        cat "$readme_tmp" >> "$readme_dest"
+        echo "已追加: $readme_dest"
+    else
+        mv "$readme_tmp" "$readme_dest"
+        echo "已写入: $readme_dest"
+    fi
+    rm -f "$readme_tmp"
 fi
-rm -f "$readme_tmp"
 
 # 注意：docker/compose.yaml 内嵌到 README.md 的逻辑已移至本脚本末尾的「compose.yaml 下发」段之后，
 # 确保占位符（__APP_*__）已完成 -p 替换后再内嵌，README 与落地文件保持一致。
@@ -478,7 +489,8 @@ if [[ -f "$compose_src" && -n "${readme_dest:-}" ]]; then
 fi
 
 # 5.4 若 -p 含 ORG/REPO，将 README.md 追加内容中的 ORG/REPO 占位替换为组织与仓库名
-if [[ -n "$PROJECT" && "$PROJECT" == */* ]]; then
+# 仅当 README 已下发（readme_dest 非空，即启用 --readme）时才执行
+if [[ -n "${readme_dest:-}" && -n "$PROJECT" && "$PROJECT" == */* ]]; then
     org="${PROJECT%%/*}"
     repo="${PROJECT##*/}"
     if [[ -n "$org" && -n "$repo" ]]; then
@@ -487,4 +499,4 @@ if [[ -n "$PROJECT" && "$PROJECT" == */* ]]; then
     fi
 fi
 
-echo "完成：Docker CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}${DOCS_ENABLED:+, docs=enabled${DOCS_DOMAIN:+, domain=${DOCS_DOMAIN}}}）。"
+echo "完成：Docker CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}${DOCS_ENABLED:+, docs=enabled${DOCS_DOMAIN:+, domain=${DOCS_DOMAIN}}}${README_ENABLED:+, readme=enabled}）。"
