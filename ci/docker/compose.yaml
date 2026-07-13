@@ -1,11 +1,11 @@
 services:
   __APP_NAME__:
-    container_name: ${__APP_CONTAINER__:-__APP_NAME__}
+    container_name: __APP_NAME__
     env_file:
       - path: ./.env
         required: false
-    hostname: ${__APP_HOST__:-app}
-    image: ${__APP_IMAGE__:-ghcr.io/ORG/REPO}:latest
+    hostname: __APP_NAME__
+    image: __APP_IMAGE__:latest
     build:
       context: .
       dockerfile: docker/Dockerfile

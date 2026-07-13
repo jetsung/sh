@@ -234,32 +234,8 @@ else
 fi
 rm -f "$readme_tmp"
 
-# 2.7 将 docker/compose.yaml 内容内嵌到项目 README.md（移除 build 段，仅保留 ghcr 镜像方式）
-compose_src="docker/compose.yaml"
-if [[ -f "$compose_src" ]]; then
-    {
-        printf '\n'
-        printf '#### docker/compose.yaml\n\n'
-        printf '```yaml\n'
-        # 去掉 build: 段（从 "    build:" 到下一个顶层键 "    ports:" 之前），仅保留 image 拉取方式
-        awk '
-            /^    build:/ { skip=1 }
-            /^    ports:/ { skip=0 }
-            !skip { print }
-        ' "$compose_src"
-        printf '```\n'
-    } >> "$readme_dest"
-    echo "已内嵌 $compose_src（移除 build 段）到 $readme_dest"
-fi
-
-if [[ -n "$PROJECT" && "$PROJECT" == */* ]]; then
-    org="${PROJECT%%/*}"
-    repo="${PROJECT##*/}"
-    if [[ -n "$org" && -n "$repo" ]]; then
-        replace_in_file "$readme_dest" 'ORG/REPO' "${org}/${repo}"
-        echo "已替换 README.md 中的 ORG/REPO 为 ${org}/${repo}"
-    fi
-fi
+# 注意：docker/compose.yaml 内嵌到 README.md 的逻辑已移至本脚本末尾的「compose.yaml 下发」段之后，
+# 确保占位符（__APP_*__）已完成 -p 替换后再内嵌，README 与落地文件保持一致。
 
 #------------------------------------------------------------
 # 文档工作流下发（--docs）
@@ -477,6 +453,37 @@ else
         replace_in_file "docker/compose.yaml" '__APP_CONTAINER__' "$comp_repo"
         replace_in_file "docker/compose.yaml" '__APP_HOST__' "$comp_repo"
         echo "已替换 docker/compose.yaml 中的占位符（org=${comp_org}, repo=${comp_repo}）"
+    fi
+fi
+
+# 5.3 将 docker/compose.yaml 内容内嵌到项目 README.md
+# 必须在 5.1/5.2 占位符替换之后执行，保证内嵌的是替换后的最终内容（而非 __APP_*__ 模板）。
+# 无论本次是否新下发（目标已存在则跳过下发），只要 docker/compose.yaml 存在即内嵌其当前内容。
+# 内嵌时移除 build: 段，仅保留 image 拉取（ghcr pull）方式。
+compose_src="docker/compose.yaml"
+if [[ -f "$compose_src" && -n "${readme_dest:-}" ]]; then
+    {
+        printf '\n'
+        printf '#### docker/compose.yaml\n\n'
+        printf '```yaml\n'
+        # 去掉 build: 段（从 "    build:" 到下一个顶层键 "    ports:" 之前），仅保留 image 拉取方式
+        awk '
+            /^    build:/ { skip=1 }
+            /^    ports:/ { skip=0 }
+            !skip { print }
+        ' "$compose_src"
+        printf '```\n'
+    } >> "$readme_dest"
+    echo "已内嵌 $compose_src（移除 build 段）到 $readme_dest"
+fi
+
+# 5.4 若 -p 含 ORG/REPO，将 README.md 追加内容中的 ORG/REPO 占位替换为组织与仓库名
+if [[ -n "$PROJECT" && "$PROJECT" == */* ]]; then
+    org="${PROJECT%%/*}"
+    repo="${PROJECT##*/}"
+    if [[ -n "$org" && -n "$repo" ]]; then
+        replace_in_file "$readme_dest" 'ORG/REPO' "${org}/${repo}"
+        echo "已替换 README.md 中的 ORG/REPO 为 ${org}/${repo}"
     fi
 fi
 
