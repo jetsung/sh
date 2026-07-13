@@ -20,7 +20,7 @@ jobs:
   build-linux:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
             submodules: true
       - name: Extract tag name
@@ -43,6 +43,7 @@ jobs:
       - name: Install target for Linux
         run: |
           for arch in x86_64 aarch64 loongarch64; do
+            rustup target add $arch-unknown-linux-gnu
             rustup target add $arch-unknown-linux-musl
           done
       - name: Install dependencies
@@ -51,31 +52,48 @@ jobs:
           sudo apt install -y musl-tools musl-dev
       - name: Install cargo-zigbuild
         run: cargo install cargo-zigbuild
+      - name: Install cargo-deb and cargo-generate-rpm
+        run: |
+          cargo install cargo-deb
+          cargo install cargo-generate-rpm
       - name: Update submodules
         run: git submodule update --init --recursive
       - name: Build for Linux
         run: |
           for arch in x86_64 aarch64 loongarch64; do
+            # gnu binaries -> deb/rpm
+            cargo-zigbuild zigbuild -p APP --release --target $arch-unknown-linux-gnu
+            # musl static binaries -> tar.xz (for Alpine/docker-musl)
             cargo-zigbuild zigbuild -p APP --release --target $arch-unknown-linux-musl
-          done          
-      - name: Create release tarballs
+          done
+      - name: Package .deb, .rpm and musl tarball
         run: |
           mkdir ${{ env.RELEASE_DIR }}
           for arch in x86_64 aarch64 loongarch64; do
+            # .deb (gnu)
+            cargo deb --target $arch-unknown-linux-gnu --no-build
+            mv target/$arch-unknown-linux-gnu/debian/*.deb ${{ env.RELEASE_DIR }}/
+
+            # .rpm (gnu)
+            cargo generate-rpm --target-dir target/generate-rpm-$arch-gnu --target $arch-unknown-linux-gnu
+            mv target/generate-rpm-$arch-gnu/*.rpm ${{ env.RELEASE_DIR }}/
+
+            # gnu tarball
+            tar -cJf "${{ env.RELEASE_DIR }}/APP-v${{ steps.tag.outputs.VERSION }}-$arch-unknown-linux-gnu.tar.xz" -C target/$arch-unknown-linux-gnu/release APP
+
+            # musl static tarball (for Alpine / musl-based docker)
             tar -cJf "${{ env.RELEASE_DIR }}/APP-v${{ steps.tag.outputs.VERSION }}-$arch-unknown-linux-musl.tar.xz" -C target/$arch-unknown-linux-musl/release APP
           done
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
         with:
-          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
-          files: ${{ env.RELEASE_DIR }}/*.tar.xz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: packages-linux
+          path: ${{ env.RELEASE_DIR }}/*
 
   build-macos:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
             submodules: true
       - name: Extract tag name
@@ -100,25 +118,23 @@ jobs:
         run: |
           for arch in x86_64 aarch64; do
             cargo build -p APP --release --target $arch-apple-darwin
-          done          
+          done
       - name: Create release tarballs
         run: |
           mkdir ${{ env.RELEASE_DIR }}
           for arch in x86_64 aarch64; do
             tar -cJf "${{ env.RELEASE_DIR }}/APP-v${{ steps.tag.outputs.VERSION }}-$arch-apple-darwin.tar.xz" -C target/$arch-apple-darwin/release APP
           done
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
         with:
-          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
-          files: ${{ env.RELEASE_DIR }}/*.tar.xz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: packages-macos
+          path: ${{ env.RELEASE_DIR }}/*
 
   build-windows:
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
             submodules: true
       - name: Extract tag name
@@ -149,7 +165,7 @@ jobs:
         run: |
           for arch in x86_64 aarch64; do
             cargo build -p APP --release --target $arch-pc-windows-msvc
-          done        
+          done
       - name: Create release zip files
         shell: bash
         run: |
@@ -157,10 +173,26 @@ jobs:
           for arch in x86_64 aarch64; do
             zip -j "${{ env.RELEASE_DIR }}/APP-v${{ steps.tag.outputs.VERSION }}-$arch-pc-windows-msvc.zip" target/$arch-pc-windows-msvc/release/APP.exe
           done
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
         with:
-          tag_name: ${{ steps.tag.outputs.TAG_NAME }}
-          files: ${{ env.RELEASE_DIR }}/*.zip
+          name: packages-windows
+          path: ${{ env.RELEASE_DIR }}/*
+
+  create-release:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: all-dist/
+          pattern: packages-*
+          merge-multiple: true
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: all-dist/*
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
