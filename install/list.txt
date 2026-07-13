@@ -17,6 +17,7 @@
 ./nvim.sh  |  Neovim 编辑器
 ./prek.sh  |  Git 钩子管理工具
 ./protoc.sh  |  protobuf 编译工具
+./relaydrop.sh  |  文件传输中继服务
 ./shellcheck.sh  |  Shell 脚本分析工具
 ./skim.sh  |  命令行模糊查找器
 ./static-web-server.sh  |  静态网站服务器
