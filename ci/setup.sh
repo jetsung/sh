@@ -44,9 +44,9 @@ Usage: setup.sh -l <language> [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e] [
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
   -r, --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
                            如 -l rust 则复制 rust/release.yml；配合 -a 的 REPO 名替换工作流内 APP 占位符
-  -L, --release-linux     开关：仅下发 Linux x86_64 单平台单架构发布工作流
+  -L, --release-linux     开关：额外下发 Linux x86_64 单平台单架构发布工作流
                            （.github/workflows/<lang>-release-linux.yml），不构建 macOS/Windows
-                           及 Linux 其他架构。与 --release 互斥，同时指定时以此为准。
+                           及 Linux 其他架构。与 --release 相互独立，同时指定时两个工作流并存。
   -e, --readme            开关：下发并更新项目根 README.md（复制 docker/README.md 并内嵌
                            docker/compose.yaml）。默认不触碰 README.md，需显式启用才生成/更新。
                            依赖 -R/--docker：须同时启用 --docker 才有 compose.yaml 可内嵌。
@@ -471,39 +471,9 @@ fi
 # 原生二进制发布工作流下发（--release）
 #------------------------------------------------------------
 
-if [[ -n "$RELEASE_LINUX_ENABLED" ]]; then
-    rel_src="${LANG_NAME}/release-linux.yml"
-    rel_dest=".github/workflows/release.yml"
-
-    # 4.1 源不存在（该语言无 linux 发布工作流）则警告并跳过，不中断其余脚手架
-    if ! curl -fsSL -o /dev/null "${BASE_URL%/}/${rel_src}"; then
-        echo "警告: 语言 ${LANG_NAME} 暂无 Linux 发布工作流（${rel_src}），已跳过 --release-linux。" >&2
-    else
-        # 4.2 写入目标工作流
-        maybe_write "$rel_dest" "$rel_src"
-        echo "已下发 Linux 发布工作流: $rel_dest"
-
-        # 4.3 若 -p 解析出 REPO 名，将工作流内 APP 占位符替换为仓库名
-        rel_repo=""
-        case "$PROJECT" in
-            /*)
-                rel_repo="${PROJECT#/}"
-                ;;
-            */*)
-                rel_repo="${PROJECT##*/}"
-                ;;
-        esac
-        if [[ -n "$rel_repo" ]]; then
-            replace_in_file "$rel_dest" 'APP' "$rel_repo"
-            echo "已替换 ${rel_dest} 中的 APP 为 ${rel_repo}"
-        fi
-
-        # 4.4 仅 rust：检查并补全 Cargo.toml 的 deb/rpm 元数据段
-        if [[ "$LANG_NAME" == "rust" ]]; then
-            rust_cargo_check
-        fi
-    fi
-elif [[ -n "$RELEASE_ENABLED" ]]; then
+# 4.0 --release 与 --release-linux 相互独立，各自下发对应文件到不同目标名
+# 避免互相覆盖；同时指定 -r -L 时两个工作流并存于 .github/workflows/
+if [[ -n "$RELEASE_ENABLED" ]]; then
     rel_src="${LANG_NAME}/release.yml"
     rel_dest=".github/workflows/release.yml"
 
@@ -531,6 +501,40 @@ elif [[ -n "$RELEASE_ENABLED" ]]; then
         fi
 
         # 4.4 仅 rust：检查并补全 Cargo.toml 的 deb/rpm 元数据段
+        if [[ "$LANG_NAME" == "rust" ]]; then
+            rust_cargo_check
+        fi
+    fi
+fi
+
+if [[ -n "$RELEASE_LINUX_ENABLED" ]]; then
+    rel_src="${LANG_NAME}/release-linux.yml"
+    rel_dest=".github/workflows/release-linux.yml"
+
+    # 4.5 源不存在（该语言无 linux 发布工作流）则警告并跳过，不中断其余脚手架
+    if ! curl -fsSL -o /dev/null "${BASE_URL%/}/${rel_src}"; then
+        echo "警告: 语言 ${LANG_NAME} 暂无 Linux 发布工作流（${rel_src}），已跳过 --release-linux。" >&2
+    else
+        # 4.6 写入目标工作流
+        maybe_write "$rel_dest" "$rel_src"
+        echo "已下发 Linux 发布工作流: $rel_dest"
+
+        # 4.7 若 -p 解析出 REPO 名，将工作流内 APP 占位符替换为仓库名
+        rel_repo=""
+        case "$PROJECT" in
+            /*)
+                rel_repo="${PROJECT#/}"
+                ;;
+            */*)
+                rel_repo="${PROJECT##*/}"
+                ;;
+        esac
+        if [[ -n "$rel_repo" ]]; then
+            replace_in_file "$rel_dest" 'APP' "$rel_repo"
+            echo "已替换 ${rel_dest} 中的 APP 为 ${rel_repo}"
+        fi
+
+        # 4.8 仅 rust：检查并补全 Cargo.toml 的 deb/rpm 元数据段
         if [[ "$LANG_NAME" == "rust" ]]; then
             rust_cargo_check
         fi
