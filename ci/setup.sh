@@ -22,42 +22,48 @@ BASE_URL="${BASE_URL:-https://git.asfd.cn/jetsung/sh/raw/branch/main/ci/}"
 LANG_NAME=""
 PROJECT=""
 FORCE_OVERWRITE=0
-DOCS_ENABLED=0          # 是否显式传入了 --docs / -d 开关
+DOCS_ENABLED=0          # 是否显式传入了 --docs / -o 开关
 DOCS_DOMAIN=""          # --domain / -D 的域名值（必须非空）
 RELEASE_ENABLED=0       # 是否显式传入了 --release / -r 开关
-README_ENABLED=0         # 是否显式传入了 --readme / -R 开关（默认不下发/更新 README.md）
+README_ENABLED=0        # 是否显式传入了 --readme / -e 开关（默认不下发/更新 README.md）
+DOCKER_ENABLED=0        # 是否下发 docker 资源（默认不下发；--docker 显式启用）
 
 usage() {
     cat <<'EOF'
-Usage: setup.sh -l <language> [-p <project>] [-d] [-D <domain>] [-r] [-R] [-f] [-h]
+Usage: setup.sh -l <language> [-a <project>] [-o] [-D <domain>] [-r] [-e] [-R] [-f] [-h]
 
   -l, --language <lang>   目标语言（必填），如 rust
-  -p, --project <value>   镜像归属，支持三种形态：
+  -a, --project <value>   镜像归属，支持三种形态：
                            ORG/REPO  同时设置 image_org 与 package_name
                            myorg     仅设置 image_org
                            /myrepo   仅设置 package_name
-  -d, --docs              开关：下发 MkDocs 文档构建工作流（.github/workflows/docs.yml）
+  -o, --docs              开关：下发 MkDocs 文档构建工作流（.github/workflows/docs.yml）
                            依赖通过 uv 在 docs.yml 中安装，无需 requirements.txt
   -D, --domain <domain>   自定义域名（必填值），配合 --docs 在目标项目生成
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
   -r, --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
-                           如 -l rust 则复制 rust/release.yml；配合 -p 的 REPO 名替换工作流内 APP 占位符
-  -R, --readme            开关：下发并更新项目根 README.md（复制 docker/README.md 并内嵌
+                           如 -l rust 则复制 rust/release.yml；配合 -a 的 REPO 名替换工作流内 APP 占位符
+  -e, --readme            开关：下发并更新项目根 README.md（复制 docker/README.md 并内嵌
                            docker/compose.yaml）。默认不触碰 README.md，需显式启用才生成/更新。
+                           依赖 -R/--docker：须同时启用 --docker 才有 compose.yaml 可内嵌。
+  -R, --docker            开关：下发 docker 资源（docker/* 目录、.github/workflows/docker-*.yml、
+                           Dockerfile 合并、docker/compose.yaml 下发及 README 内嵌）。
+                           默认不下发；需要容器化的项目显式加 --docker 一并下发。
   -f, --force             强制覆盖已存在文件，跳过逐文件确认
   -h, --help              显示本帮助并退出
 
 说明:
-  compose.yaml 会随脚手架自动下发到项目 docker/ 目录（docker/compose.yaml）：脱敏
+  compose.yaml 仅当 --docker 启用时下发到项目 docker/ 目录（docker/compose.yaml）：脱敏
   模板，默认拉取预构建镜像，同时保留 build 段（docker compose up --build 可本地构建）。
-  若目标已存在 docker/compose.yaml 则跳过（即使 -f）。配合 -p 的 REPO 名替换镜像与服务名占位符。
+  若目标已存在 docker/compose.yaml 则跳过（即使 -f）。配合 -a 的 REPO 名替换镜像与服务名占位符。
 
 示例:
   curl -fsSL <base>/ci/setup.sh | bash -s -- -l rust
-  bash setup.sh -l rust -p myorg/myrepo
+  bash setup.sh -l rust -a myorg/myrepo
   bash setup.sh -l rust --docs
   bash setup.sh -l rust --docs --domain example.com
-  bash setup.sh -l rust --release -p myorg/myrepo
+  bash setup.sh -l rust --release -a myorg/myrepo          # 纯 CLI，不发 docker/*
+  bash setup.sh -l rust -R -e --release -a myorg/myrepo   # 全量：含 docker、README、release
 EOF
 }
 
@@ -70,11 +76,11 @@ while [[ $# -gt 0 ]]; do
             LANG_NAME="${2:?"--language requires a value"}"
             shift 2
             ;;
-        -p|--project)
+        -a|--project)
             PROJECT="${2:?"--project requires a value"}"
             shift 2
             ;;
-        -d|--docs)
+        -o|--docs)
             DOCS_ENABLED=1
             shift
             ;;
@@ -82,8 +88,12 @@ while [[ $# -gt 0 ]]; do
             RELEASE_ENABLED=1
             shift
             ;;
-        -R|--readme)
+        -e|--readme)
             README_ENABLED=1
+            shift
+            ;;
+        -R|--docker)
+            DOCKER_ENABLED=1
             shift
             ;;
         -D|--domain)
@@ -168,61 +178,151 @@ replace_in_file() {
     rm -f "${file}.bak"
 }
 
+# rust_cargo_check：检查当前目录 Cargo.toml 的 [package.metadata.deb] 与
+# [package.metadata.generate-rpm] 段，缺失则补齐（用项目名替换 relaydrop），
+# 已存在则提示跳过。仅当 Cargo.toml 存在时执行。
+rust_cargo_check() {
+    local cargo_file="Cargo.toml"
+    if [[ ! -f "$cargo_file" ]]; then
+        return 0
+    fi
+
+    # 项目名称：依次尝试 Cargo.toml 的 package.name、-p 的 REPO、relaydrop
+    local pkg_name=""
+    pkg_name="$(grep -m1 '^\s*name\s*=' "$cargo_file" 2>/dev/null | sed -E 's/.*=\s*"([^"]+)".*/\1/')"
+    if [[ -z "$pkg_name" ]]; then
+        case "${PROJECT:-}" in
+            /*)    pkg_name="${PROJECT#/}" ;;
+            */*)  pkg_name="${PROJECT##*/}" ;;
+            *)     pkg_name="${PROJECT:-relaydrop}" ;;
+        esac
+    fi
+
+    # 回显头：无论是否存在，先输出建议内容（项目名称已替换）
+    echo "--- Cargo.toml 建议补全段（package=${pkg_name}）---"
+    if ! grep -q '^\s*\[\s*package\.metadata\.deb\s*\]' "$cargo_file"; then
+        cat <<DEB
+
+[package.metadata.deb]
+maintainer = "Jetsung Chan <i@jetsung.com>"
+assets = [
+    ["target/release/${pkg_name}", "usr/bin/${pkg_name}", "755"],
+]
+DEB
+    fi
+    if ! grep -q '^\s*\[\s*package\.metadata\.generate-rpm\s*\]' "$cargo_file"; then
+        cat <<RPM
+
+[package.metadata.generate-rpm]
+maintainer = "Jetsung Chan <i@jetsung.com>"
+assets = [
+    ["target/release/${pkg_name}", "/usr/bin/${pkg_name}", "755"],
+]
+RPM
+    fi
+    echo "--- 建议结束 ---"
+
+    # 1) [package.metadata.deb]
+    if grep -q '^\s*\[\s*package\.metadata\.deb\s*\]' "$cargo_file"; then
+        echo "[package.metadata.deb] 已存在，跳过。"
+    else
+        # 末尾有换行则直追加，否则先补换行
+        if [[ -s "$cargo_file" ]] && [[ "$(tail -c1 "$cargo_file" | wc -l)" -eq 0 ]]; then
+            printf '\n' >> "$cargo_file"
+        fi
+        cat >> "$cargo_file" <<DEB
+
+[package.metadata.deb]
+maintainer = "Jetsung Chan <i@jetsung.com>"
+assets = [
+    ["target/release/${pkg_name}", "usr/bin/${pkg_name}", "755"],
+]
+DEB
+        echo "已追加 [package.metadata.deb] 到 ${cargo_file}。"
+    fi
+
+    # 2) [package.metadata.generate-rpm]
+    if grep -q '^\s*\[\s*package\.metadata\.generate-rpm\s*\]' "$cargo_file"; then
+        echo "[package.metadata.generate-rpm] 已存在，跳过。"
+    else
+        if [[ -s "$cargo_file" ]] && [[ "$(tail -c1 "$cargo_file" | wc -l)" -eq 0 ]]; then
+            printf '\n' >> "$cargo_file"
+        fi
+        cat >> "$cargo_file" <<RPM
+
+[package.metadata.generate-rpm]
+maintainer = "Jetsung Chan <i@jetsung.com>"
+assets = [
+    ["target/release/${pkg_name}", "/usr/bin/${pkg_name}", "755"],
+]
+RPM
+        echo "已追加 [package.metadata.generate-rpm] 到 ${cargo_file}。"
+    fi
+}
+
 #------------------------------------------------------------
 # 目录准备与文件下载
 #------------------------------------------------------------
 
-# 工作流
-maybe_write ".github/workflows/docker-dev.yml" "docker/docker-dev.yml"
-maybe_write ".github/workflows/docker-release.yml" "docker/docker-release.yml"
+# 工作流 与 bake/dockerignore/Dockerfile 合并/compose.yaml 下发：
+# 全部属于「docker 资源」，由 -R/--docker 控制（默认不下发）。
+# 未启用 --docker 时整段跳过，仅保留工作流（--release）与文档（--docs）等。
+if [[ "$DOCKER_ENABLED" -eq 1 ]]; then
+    # 工作流
+    maybe_write ".github/workflows/docker-dev.yml" "docker/docker-dev.yml"
+    maybe_write ".github/workflows/docker-release.yml" "docker/docker-release.yml"
 
-# bake 与 dockerignore
-maybe_write "docker/docker-bake.hcl" "docker/docker-bake.hcl"
-maybe_write ".dockerignore" "docker/.dockerignore"
+    # bake 与 dockerignore
+    maybe_write "docker/docker-bake.hcl" "docker/docker-bake.hcl"
+    maybe_write ".dockerignore" "docker/.dockerignore"
 
-# 2.4 对需要源码触发的语言，向 dev 工作流的 on.push.paths 追加 "src/**"
-# 仅 rust 等从 src/ 构建的语言需要；直接在 paths: 下一行插入
-case "$LANG_NAME" in
-    rust|go|python|node)
-        dev_wf=".github/workflows/docker-dev.yml"
-        if [[ -f "$dev_wf" ]] && ! grep -q 'src/\*\*' "$dev_wf"; then
-            tmp_wf="$(mktemp)"
-            inserted=0
-            while IFS= read -r line; do
-                printf '%s\n' "$line" >> "$tmp_wf"
-                if [[ "$inserted" -eq 0 && "$line" == *"paths:"* ]]; then
-                    printf '      - "src/**"\n' >> "$tmp_wf"
-                    inserted=1
-                fi
-            done < "$dev_wf"
-            mv "$tmp_wf" "$dev_wf"
-            echo "已追加 src/** 到 $dev_wf"
-        fi
-        ;;
-esac
-
-# 2.5 根据 -p 形态写入 docker-release.yml 的 env.image_org / env.package_name
-if [[ -n "$PROJECT" ]]; then
-    rel_wf=".github/workflows/docker-release.yml"
-    if [[ -f "$rel_wf" ]]; then
-        if [[ "$PROJECT" == /* ]]; then
-            # 仅 REPO：形如 /myrepo
-            repo="${PROJECT#/}"
-            [[ -n "$repo" ]] && replace_in_file "$rel_wf" 'package_name:.*' "package_name: '${repo}'"
-        elif [[ "$PROJECT" == */* ]]; then
-            # ORG/REPO：两半均非空
-            org="${PROJECT%%/*}"
-            repo="${PROJECT##*/}"
-            if [[ -n "$org" && -n "$repo" ]]; then
-                replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${org}'"
-                replace_in_file "$rel_wf" 'package_name:.*' "package_name: '${repo}'"
+    # 2.4 对需要源码触发的语言，向 dev 工作流的 on.push.paths 追加 "src/**"
+    # 仅 rust 等从 src/ 构建的语言需要；直接在 paths: 下一行插入
+    case "$LANG_NAME" in
+        rust|go|python|node)
+            dev_wf=".github/workflows/docker-dev.yml"
+            if [[ -f "$dev_wf" ]] && ! grep -q 'src/\*\*' "$dev_wf"; then
+                tmp_wf="$(mktemp)"
+                inserted=0
+                while IFS= read -r line; do
+                    printf '%s\n' "$line" >> "$tmp_wf"
+                    if [[ "$inserted" -eq 0 && "$line" == *"paths:"* ]]; then
+                        printf '      - "src/**"\n' >> "$tmp_wf"
+                        inserted=1
+                    fi
+                done < "$dev_wf"
+                mv "$tmp_wf" "$dev_wf"
+                echo "已追加 src/** 到 $dev_wf"
             fi
-        else
-            # 仅 ORG：形如 myorg
-            replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${PROJECT}'"
+            ;;
+    esac
+
+    # 2.5 根据 -p 形态写入 docker-release.yml 的 env.image_org / env.package_name
+    if [[ -n "$PROJECT" ]]; then
+        rel_wf=".github/workflows/docker-release.yml"
+        if [[ -f "$rel_wf" ]]; then
+            if [[ "$PROJECT" == /* ]]; then
+                # 仅 REPO：形如 /myrepo
+                repo="${PROJECT#/}"
+                [[ -n "$repo" ]] && replace_in_file "$rel_wf" 'package_name:.*' "package_name: '${repo}'"
+                _app="${repo}"
+            elif [[ "$PROJECT" == */* ]]; then
+                # ORG/REPO：两半均非空
+                org="${PROJECT%%/*}"
+                repo="${PROJECT##*/}"
+                if [[ -n "$org" && -n "$repo" ]]; then
+                    replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${org}'"
+                    replace_in_file "$rel_wf" 'package_name:.*' "package_name: '${repo}'"
+                fi
+            else
+                # 仅 ORG：形如 myorg
+                replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${PROJECT}'"
+            fi
+            echo "已应用 -p ${PROJECT} 到 ${rel_wf}"
         fi
-        echo "已应用 -p ${PROJECT} 到 ${rel_wf}"
     fi
+else
+    echo "已跳过 docker 资源（未启用 --docker）。"
 fi
 
 # 2.6 复制 docker/README.md 到项目根 README.md（仅 --readme 启用时）
@@ -389,81 +489,90 @@ if [[ "$RELEASE_ENABLED" -eq 1 ]]; then
             replace_in_file "$rel_dest" 'APP' "$rel_repo"
             echo "已替换 ${rel_dest} 中的 APP 为 ${rel_repo}"
         fi
-    fi
-fi
 
-#------------------------------------------------------------
-# 多阶段 Dockerfile 合并
-#------------------------------------------------------------
-
-# 3.0 若目标 docker/Dockerfile 已存在，无论 -f 与否均跳过，保留用户原有文件
-if [[ -f "docker/Dockerfile" ]]; then
-    echo "已存在: docker/Dockerfile，已跳过合并生成（-f 不影响此文件）。"
-else
-    build_stage="$(mktemp)"
-    runtime_stage="$(mktemp)"
-    trap 'rm -f "$build_stage" "$runtime_stage"' EXIT
-
-    # 3.1 编译层: <lang>.<n>.Dockerfile
-    fetch_file "docker/${LANG_NAME}.1.Dockerfile" "$build_stage"
-
-# 3.2 运行时层: cc-debian13.Dockerfile
-fetch_file "docker/cc-debian13.Dockerfile" "$runtime_stage"
-
-# 3.3 合并：编译层在前，runtime 在后
-mkdir -p docker
-cat "$build_stage" > docker/Dockerfile
-echo "" >> docker/Dockerfile
-cat "$runtime_stage" >> docker/Dockerfile
-echo "已生成: docker/Dockerfile"
-
-    # 3.4 对 rust 且 -p 含有 REPO 的语言，将 Dockerfile 中 myapp 替换为项目名称
-    if [[ "$LANG_NAME" == "rust" && -n "$PROJECT" ]]; then
-        repo=""
-        case "$PROJECT" in
-            /*)
-                repo="${PROJECT#/}"
-                ;;
-            */*)
-                repo="${PROJECT##*/}"
-                ;;
-        esac
-        if [[ -n "$repo" ]]; then
-            replace_in_file "docker/Dockerfile" 'myapp' "$repo"
-            echo "已替换 Dockerfile 中的 myapp 为 ${repo}"
+        # 4.4 仅 rust：检查并补全 Cargo.toml 的 deb/rpm 元数据段
+        if [[ "$LANG_NAME" == "rust" ]]; then
+            rust_cargo_check
         fi
     fi
 fi
 
 #------------------------------------------------------------
-# compose.yaml 下发（脱敏模板，跳过已存在）
+# 多阶段 Dockerfile 合并（docker 资源，受 -R/--docker 控制）
+#------------------------------------------------------------
+
+# 3.0 若目标 docker/Dockerfile 已存在，无论 -f 与否均跳过，保留用户原有文件
+if [[ "$DOCKER_ENABLED" -eq 1 ]]; then
+    if [[ -f "docker/Dockerfile" ]]; then
+        echo "已存在: docker/Dockerfile，已跳过合并生成（-f 不影响此文件）。"
+    else
+        build_stage="$(mktemp)"
+        runtime_stage="$(mktemp)"
+        trap 'rm -f "$build_stage" "$runtime_stage"' EXIT
+
+        # 3.1 编译层: <lang>.<n>.Dockerfile
+        fetch_file "docker/${LANG_NAME}.1.Dockerfile" "$build_stage"
+
+    # 3.2 运行时层: cc-debian13.Dockerfile
+    fetch_file "docker/cc-debian13.Dockerfile" "$runtime_stage"
+
+    # 3.3 合并：编译层在前，runtime 在后
+    mkdir -p docker
+    cat "$build_stage" > docker/Dockerfile
+    echo "" >> docker/Dockerfile
+    cat "$runtime_stage" >> docker/Dockerfile
+    echo "已生成: docker/Dockerfile"
+
+        # 3.4 对 rust 且 -p 含有 REPO 的语言，将 Dockerfile 中 myapp 替换为项目名称
+        if [[ "$LANG_NAME" == "rust" && -n "$PROJECT" ]]; then
+            repo=""
+            case "$PROJECT" in
+                /*)
+                    repo="${PROJECT#/}"
+                    ;;
+                */*)
+                    repo="${PROJECT##*/}"
+                    ;;
+            esac
+            if [[ -n "$repo" ]]; then
+                replace_in_file "docker/Dockerfile" 'myapp' "$repo"
+                echo "已替换 Dockerfile 中的 myapp 为 ${repo}"
+            fi
+        fi
+    fi
+fi
+
+#------------------------------------------------------------
+# compose.yaml 下发（脱敏模板，跳过已存在；受 -R/--docker 控制）
 #------------------------------------------------------------
 
 # 5.1 若目标 docker/compose.yaml 已存在（无论 -f 与否）则跳过，保留用户原有文件
-if [[ -f "docker/compose.yaml" ]]; then
-    echo "已存在: docker/compose.yaml，已跳过下发（-f 不影响此文件）。"
-else
-    maybe_write "docker/compose.yaml" "docker/compose.yaml"
-    echo "已下发: docker/compose.yaml"
+if [[ "$DOCKER_ENABLED" -eq 1 ]]; then
+    if [[ -f "docker/compose.yaml" ]]; then
+        echo "已存在: docker/compose.yaml，已跳过下发（-f 不影响此文件）。"
+    else
+        maybe_write "docker/compose.yaml" "docker/compose.yaml"
+        echo "已下发: docker/compose.yaml"
 
-    # 5.2 若 -p 解析出 REPO 名，覆盖镜像与服务名占位符
-    comp_repo=""
-    comp_org="jetsung"
-    case "$PROJECT" in
-        /*)
-            comp_repo="${PROJECT#/}"
-            ;;
-        */*)
-            comp_org="${PROJECT%%/*}"
-            comp_repo="${PROJECT##*/}"
-            ;;
-    esac
-    if [[ -n "$comp_repo" ]]; then
-        replace_in_file "docker/compose.yaml" '__APP_IMAGE__' "ghcr.io/${comp_org}/${comp_repo}"
-        replace_in_file "docker/compose.yaml" '__APP_NAME__' "$comp_repo"
-        replace_in_file "docker/compose.yaml" '__APP_CONTAINER__' "$comp_repo"
-        replace_in_file "docker/compose.yaml" '__APP_HOST__' "$comp_repo"
-        echo "已替换 docker/compose.yaml 中的占位符（org=${comp_org}, repo=${comp_repo}）"
+        # 5.2 若 -p 解析出 REPO 名，覆盖镜像与服务名占位符
+        comp_repo=""
+        comp_org="jetsung"
+        case "$PROJECT" in
+            /*)
+                comp_repo="${PROJECT#/}"
+                ;;
+            */*)
+                comp_org="${PROJECT%%/*}"
+                comp_repo="${PROJECT##*/}"
+                ;;
+        esac
+        if [[ -n "$comp_repo" ]]; then
+            replace_in_file "docker/compose.yaml" '__APP_IMAGE__' "ghcr.io/${comp_org}/${comp_repo}"
+            replace_in_file "docker/compose.yaml" '__APP_NAME__' "$comp_repo"
+            replace_in_file "docker/compose.yaml" '__APP_CONTAINER__' "$comp_repo"
+            replace_in_file "docker/compose.yaml" '__APP_HOST__' "$comp_repo"
+            echo "已替换 docker/compose.yaml 中的占位符（org=${comp_org}, repo=${comp_repo}）"
+        fi
     fi
 fi
 
@@ -471,6 +580,7 @@ fi
 # 必须在 5.1/5.2 占位符替换之后执行，保证内嵌的是替换后的最终内容（而非 __APP_*__ 模板）。
 # 无论本次是否新下发（目标已存在则跳过下发），只要 docker/compose.yaml 存在即内嵌其当前内容。
 # 内嵌时移除 build: 段，仅保留 image 拉取（ghcr pull）方式。
+# 依赖 docker 资源：未启用 --docker 时 compose.yaml 不存在，自然跳过。
 compose_src="docker/compose.yaml"
 if [[ -f "$compose_src" && -n "${readme_dest:-}" ]]; then
     {
@@ -499,4 +609,4 @@ if [[ -n "${readme_dest:-}" && -n "$PROJECT" && "$PROJECT" == */* ]]; then
     fi
 fi
 
-echo "完成：Docker CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}${DOCS_ENABLED:+, docs=enabled${DOCS_DOMAIN:+, domain=${DOCS_DOMAIN}}}${README_ENABLED:+, readme=enabled}）。"
+echo "完成：CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}${DOCKER_ENABLED:+, docker=enabled}${DOCS_ENABLED:+, docs=enabled${DOCS_DOMAIN:+, domain=${DOCS_DOMAIN}}}${README_ENABLED:+, readme=enabled}）。"
