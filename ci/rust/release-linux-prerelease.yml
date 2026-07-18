@@ -1,12 +1,12 @@
-name: Build Release (Linux)
+name: Build Prerelease (Linux)
 
 on:
   push:
     tags:
-      - 'v*'
-  release:
-    types:
-      - created
+      - 'v*-preview*'
+      - 'v*-rc*'
+      - 'v*-alpha*'
+      - 'v*-beta*'
   workflow_dispatch:
 
 permissions:
@@ -76,5 +76,6 @@ jobs:
         with:
           files: all-dist/*
           generate_release_notes: true
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

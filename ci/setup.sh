@@ -25,7 +25,7 @@ FORCE_OVERWRITE=0
 DOCS_ENABLED=""         # 是否显式传入了 --docs / -o 开关
 DOCS_DOMAIN=""          # --domain / -D 的域名值（必须非空）
 RELEASE_ENABLED=""      # 是否显式传入了 --release / -r 开关
-RELEASE_LINUX_ENABLED=""  # 是否显式传入了 --release-linux / -L 开关（仅 Linux x86_64）
+RELEASE_LINUX_ENABLED=""  # 是否显式传入了 --release-linux / -L 开关（仅 Linux x86_64 预发布）
 README_ENABLED=""       # 是否显式传入了 --readme / -e 开关（默认不下发/更新 README.md）
 DOCKER_ENABLED=""       # 是否下发 docker 资源（默认不下发；--docker 显式启用）
 
@@ -44,9 +44,10 @@ Usage: setup.sh -l <language> [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e] [
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
   -r, --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
                            如 -l rust 则复制 rust/release.yml；配合 -a 的 REPO 名替换工作流内 APP 占位符
-  -L, --release-linux     开关：额外下发 Linux x86_64 单平台单架构发布工作流
-                           （.github/workflows/<lang>-release-linux.yml），不构建 macOS/Windows
-                           及 Linux 其他架构。与 --release 相互独立，同时指定时两个工作流并存。
+  -L, --release-linux     开关：额外下发 Linux x86_64 单平台单架构预发布工作流
+                           （.github/workflows/<lang>-release-linux-prerelease.yml），仅响应
+                           v*-preview* / v*-rc* / v*-alpha* / v*-beta* 标签，自动标记为 prerelease。
+                           与 --release 相互独立，同时指定时两个工作流并存。
   -e, --readme            开关：下发并更新项目根 README.md（复制 docker/README.md 并内嵌
                            docker/compose.yaml）。默认不触碰 README.md，需显式启用才生成/更新。
                            依赖 -R/--docker：须同时启用 --docker 才有 compose.yaml 可内嵌。
@@ -508,8 +509,8 @@ if [[ -n "$RELEASE_ENABLED" ]]; then
 fi
 
 if [[ -n "$RELEASE_LINUX_ENABLED" ]]; then
-    rel_src="${LANG_NAME}/release-linux.yml"
-    rel_dest=".github/workflows/release-linux.yml"
+    rel_src="${LANG_NAME}/release-linux-prerelease.yml"
+    rel_dest=".github/workflows/release-linux-prerelease.yml"
 
     # 4.5 源不存在（该语言无 linux 发布工作流）则警告并跳过，不中断其余脚手架
     if ! curl -fsSL -o /dev/null "${BASE_URL%/}/${rel_src}"; then
