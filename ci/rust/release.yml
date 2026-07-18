@@ -92,6 +92,7 @@ jobs:
         with:
           name: packages-linux
           path: ${{ env.RELEASE_DIR }}/*
+          retention-days: 1
 
   build-macos:
     runs-on: macos-26
@@ -133,6 +134,7 @@ jobs:
         with:
           name: packages-macos
           path: ${{ env.RELEASE_DIR }}/*
+          retention-days: 1
 
   build-windows:
     runs-on: windows-2025
@@ -181,6 +183,7 @@ jobs:
         with:
           name: packages-windows
           path: ${{ env.RELEASE_DIR }}/*
+          retention-days: 1
 
   create-release:
     needs: [build-linux, build-macos, build-windows]
