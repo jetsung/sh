@@ -3,11 +3,9 @@ name: Build Release
 on:
   push:
     tags:
-      - 'v*'
-  release:
-    types:
-      - created
-  workflow_dispatch:
+      # 仅匹配正式版标签 vX.Y.Z（如 v1.0.0、v10.20.30），排除预发布版本（如 v1.0.0-alpha、v1.0.0-rc1）
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+      - '!v[0-9]*.[0-9]*.[0-9]*-*'
 
 permissions:
   contents: write
