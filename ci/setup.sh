@@ -22,15 +22,16 @@ BASE_URL="${BASE_URL:-https://git.asfd.cn/jetsung/sh/raw/branch/main/ci/}"
 LANG_NAME=""
 PROJECT=""
 FORCE_OVERWRITE=0
-DOCS_ENABLED=0          # 是否显式传入了 --docs / -o 开关
+DOCS_ENABLED=""         # 是否显式传入了 --docs / -o 开关
 DOCS_DOMAIN=""          # --domain / -D 的域名值（必须非空）
-RELEASE_ENABLED=0       # 是否显式传入了 --release / -r 开关
-README_ENABLED=0        # 是否显式传入了 --readme / -e 开关（默认不下发/更新 README.md）
-DOCKER_ENABLED=0        # 是否下发 docker 资源（默认不下发；--docker 显式启用）
+RELEASE_ENABLED=""      # 是否显式传入了 --release / -r 开关
+RELEASE_LINUX_ENABLED=""  # 是否显式传入了 --release-linux / -L 开关（仅 Linux x86_64）
+README_ENABLED=""       # 是否显式传入了 --readme / -e 开关（默认不下发/更新 README.md）
+DOCKER_ENABLED=""       # 是否下发 docker 资源（默认不下发；--docker 显式启用）
 
 usage() {
     cat <<'EOF'
-Usage: setup.sh -l <language> [-a <project>] [-o] [-D <domain>] [-r] [-e] [-R] [-f] [-h]
+Usage: setup.sh -l <language> [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e] [-R] [-f] [-h]
 
   -l, --language <lang>   目标语言（必填），如 rust
   -a, --project <value>   镜像归属，支持三种形态：
@@ -43,6 +44,9 @@ Usage: setup.sh -l <language> [-a <project>] [-o] [-D <domain>] [-r] [-e] [-R] [
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
   -r, --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
                            如 -l rust 则复制 rust/release.yml；配合 -a 的 REPO 名替换工作流内 APP 占位符
+  -L, --release-linux     开关：仅下发 Linux x86_64 单平台单架构发布工作流
+                           （.github/workflows/<lang>-release-linux.yml），不构建 macOS/Windows
+                           及 Linux 其他架构。与 --release 互斥，同时指定时以此为准。
   -e, --readme            开关：下发并更新项目根 README.md（复制 docker/README.md 并内嵌
                            docker/compose.yaml）。默认不触碰 README.md，需显式启用才生成/更新。
                            依赖 -R/--docker：须同时启用 --docker 才有 compose.yaml 可内嵌。
@@ -86,6 +90,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -r|--release)
             RELEASE_ENABLED=1
+            shift
+            ;;
+        -L|--release-linux)
+            RELEASE_LINUX_ENABLED=1
             shift
             ;;
         -e|--readme)
@@ -463,7 +471,39 @@ fi
 # 原生二进制发布工作流下发（--release）
 #------------------------------------------------------------
 
-if [[ "$RELEASE_ENABLED" -eq 1 ]]; then
+if [[ -n "$RELEASE_LINUX_ENABLED" ]]; then
+    rel_src="${LANG_NAME}/release-linux.yml"
+    rel_dest=".github/workflows/release.yml"
+
+    # 4.1 源不存在（该语言无 linux 发布工作流）则警告并跳过，不中断其余脚手架
+    if ! curl -fsSL -o /dev/null "${BASE_URL%/}/${rel_src}"; then
+        echo "警告: 语言 ${LANG_NAME} 暂无 Linux 发布工作流（${rel_src}），已跳过 --release-linux。" >&2
+    else
+        # 4.2 写入目标工作流
+        maybe_write "$rel_dest" "$rel_src"
+        echo "已下发 Linux 发布工作流: $rel_dest"
+
+        # 4.3 若 -p 解析出 REPO 名，将工作流内 APP 占位符替换为仓库名
+        rel_repo=""
+        case "$PROJECT" in
+            /*)
+                rel_repo="${PROJECT#/}"
+                ;;
+            */*)
+                rel_repo="${PROJECT##*/}"
+                ;;
+        esac
+        if [[ -n "$rel_repo" ]]; then
+            replace_in_file "$rel_dest" 'APP' "$rel_repo"
+            echo "已替换 ${rel_dest} 中的 APP 为 ${rel_repo}"
+        fi
+
+        # 4.4 仅 rust：检查并补全 Cargo.toml 的 deb/rpm 元数据段
+        if [[ "$LANG_NAME" == "rust" ]]; then
+            rust_cargo_check
+        fi
+    fi
+elif [[ -n "$RELEASE_ENABLED" ]]; then
     rel_src="${LANG_NAME}/release.yml"
     rel_dest=".github/workflows/release.yml"
 
@@ -609,4 +649,4 @@ if [[ -n "${readme_dest:-}" && -n "$PROJECT" && "$PROJECT" == */* ]]; then
     fi
 fi
 
-echo "完成：CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}${DOCKER_ENABLED:+, docker=enabled}${DOCS_ENABLED:+, docs=enabled${DOCS_DOMAIN:+, domain=${DOCS_DOMAIN}}}${README_ENABLED:+, readme=enabled}）。"
+echo "完成：CI 脚手架已下发（language=${LANG_NAME}${PROJECT:+, project=${PROJECT}}${DOCKER_ENABLED:+, docker=enabled}${DOCS_ENABLED:+, docs=enabled${DOCS_DOMAIN:+, domain=${DOCS_DOMAIN}}}${README_ENABLED:+, readme=enabled}${RELEASE_LINUX_ENABLED:+, release=enabled (linux)}${RELEASE_ENABLED:+, release=enabled}）。"
