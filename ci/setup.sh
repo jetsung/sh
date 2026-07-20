@@ -225,7 +225,7 @@ DEB
 [package.metadata.generate-rpm]
 maintainer = "Jetsung Chan <i@jetsung.com>"
 assets = [
-    ["target/release/${pkg_name}", "/usr/bin/${pkg_name}", "755"],
+    { source = "target/release/${pkg_name}", dest = "/usr/bin/${pkg_name}", mode = "755" },
 ]
 RPM
     fi
@@ -262,7 +262,7 @@ DEB
 [package.metadata.generate-rpm]
 maintainer = "Jetsung Chan <i@jetsung.com>"
 assets = [
-    ["target/release/${pkg_name}", "/usr/bin/${pkg_name}", "755"],
+    { source = "target/release/${pkg_name}", dest = "/usr/bin/${pkg_name}", mode = "755" },
 ]
 RPM
         echo "已追加 [package.metadata.generate-rpm] 到 ${cargo_file}。"
