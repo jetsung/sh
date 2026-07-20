@@ -160,6 +160,11 @@ main() {
         NO_HTTPS=$(check_remove_https "$CDN_URL")
 
         DOWNLOAD_URL="$(get_download_url atuinsh/atuin)"
+
+        if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
+            echo "Error: Could not find a download URL for $OS-$ARCH"
+            exit 1
+        fi
     else
         NO_HTTPS=""
         echo "使用指定下载地址: $DOWNLOAD_URL"

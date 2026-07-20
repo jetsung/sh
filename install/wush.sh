@@ -131,7 +131,11 @@ install_with_package() {
     fi
 
     _download_url=$(get_download_url "$REPO" "$_pkg_ext")
-    _download_url=$(do_remove_https "${CDN_URL}${_download_url}") 
+    if [[ -z "$_download_url" || "$_download_url" == "null" ]]; then
+        echo "Error: Could not find a download URL for $OS-$ARCH"
+        exit 1
+    fi
+    _download_url=$(do_remove_https "${CDN_URL}${_download_url}")
 
     local _pkg_file="${download_file}.${_pkg_ext}"
 
@@ -162,7 +166,11 @@ install_with_binary() {
     trap cleanup EXIT
 
     _download_url=$(get_download_url "$REPO" "tar.gz")
-    _download_url=$(do_remove_https "${CDN_URL}${_download_url}") 
+    if [[ -z "$_download_url" || "$_download_url" == "null" ]]; then
+        echo "Error: Could not find a download URL for $OS-$ARCH"
+        exit 1
+    fi
+    _download_url=$(do_remove_https "${CDN_URL}${_download_url}")
 
     pushd "$TMP_DIR" >/dev/null
 
