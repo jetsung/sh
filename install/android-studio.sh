@@ -39,6 +39,12 @@ install_android_studio() {
     else
         echo "使用指定下载地址: $DOWNLOAD_URL"
     fi
+
+    if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
+        echo "Error: Could not find a download URL for android-studio"
+        exit 1
+    fi
+
     echo "download_url: $DOWNLOAD_URL"
 
     if ! curl -fsSL "$DOWNLOAD_URL" -o "$download_file"; then
