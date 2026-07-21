@@ -54,6 +54,16 @@ def arch_from_filename(filename: str) -> str | None:
     return None
 
 
+LOCALE_ALIASES = {"cn": "zh-CN"}
+
+
+def normalize_locale(code: str) -> str:
+    """Normalize a locale code. Only the alias ``cn`` expands to ``zh-CN``;
+    any other value is treated as a full locale code (e.g. zh-CN, zh-HK, en-UK)."""
+    code = code.strip()
+    return LOCALE_ALIASES.get(code.lower(), code)
+
+
 def get_release(repo: str, version: str | None) -> tuple[str, str, list[dict]]:
     if version:
         url = f"{GITHUB_API_BASE}/repos/{repo}/releases/tags/v{version}"
@@ -137,17 +147,23 @@ def generate_locale(
     repo_info: dict,
     locale: str = "en-US",
     publisher: str | None = None,
+    author: str | None = None,
+    package_name: str | None = None,
+    short_description: str | None = None,
     license_url: str | None = None,
     copyright: str | None = None,
     copyright_url: str | None = None,
     release_notes_url: str | None = None,
     tags: list[str] | None = None,
+    documentations: list[tuple[str, str]] | None = None,
+    is_default_locale: bool = True,
 ) -> str:
     user, project = repo.split("/", 1)
     publisher = publisher or user
-    package_name = project
+    author = author or publisher
+    package_name = package_name or project
     homepage = (repo_info.get("homepage") or f"https://github.com/{repo}").rstrip("/")
-    description = repo_info.get("description") or ""
+    description = short_description if short_description is not None else (repo_info.get("description") or "")
     license_name = repo_info.get("license", {}).get("spdx_id") or ""
     license_url = license_url or f"https://github.com/{repo}/blob/main/LICENSE"
     copyright = copyright or f"Copyright (c) {publisher}"
@@ -155,29 +171,51 @@ def generate_locale(
     release_notes_url = release_notes_url or f"https://github.com/{repo}/releases/tag/v{version}"
     tags = tags or ["cli", "tool"]
     tags_yaml = "\n".join(f"  - {tag}" for tag in tags)
+    docs_yaml = "\n".join(
+        f"- DocumentLabel: {label}\n  DocumentUrl: {url}" for label, url in documentations
+    ) if documentations else ""
 
-    return f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.{MANIFEST_VERSION}.schema.json
+    schema_kind = "defaultLocale" if is_default_locale else "locale"
+    manifest_type = "defaultLocale" if is_default_locale else "locale"
 
-PackageIdentifier: {package_id}
-PackageVersion: {version}
-PackageLocale: {locale}
-Publisher: {publisher}
-PublisherUrl: https://github.com/{user}
-PublisherSupportUrl: https://github.com/{repo}/issues
-PackageName: {package_name}
-PackageUrl: {homepage}
-License: {license_name}
-LicenseUrl: {license_url}
-Copyright: {copyright}
-CopyrightUrl: {copyright_url}
-ShortDescription: {description}
-Moniker: {package_name}
-Tags:
-{tags_yaml}
-ReleaseNotesUrl: {release_notes_url}
-ManifestType: defaultLocale
-ManifestVersion: {MANIFEST_VERSION}
+    lines = [
+        f"PackageIdentifier: {package_id}",
+        f"PackageVersion: {version}",
+        f"PackageLocale: {locale}",
+        f"Publisher: {publisher}",
+        f"PublisherUrl: https://github.com/{user}",
+        f"PublisherSupportUrl: https://github.com/{repo}/issues",
+        f"Author: {author}",
+        f"PackageName: {package_name}",
+        f"PackageUrl: {homepage}",
+    ]
+    if is_default_locale:
+        lines += [
+            f"License: {license_name}",
+            f"LicenseUrl: {license_url}",
+            f"Copyright: {copyright}",
+            f"CopyrightUrl: {copyright_url}",
+        ]
+    lines += [
+        f"ShortDescription: {description}",
+        f"Moniker: {package_name}",
+        "Tags:",
+        tags_yaml,
+        f"ReleaseNotesUrl: {release_notes_url}",
+    ]
+    if documentations:
+        lines.append(docs_yaml)
+    lines += [
+        f"ManifestType: {manifest_type}",
+        f"ManifestVersion: {MANIFEST_VERSION}",
+    ]
+    body = "\n".join(lines)
+
+    return f"""# yaml-language-server: $schema=https://aka.ms/winget-manifest.{schema_kind}.{MANIFEST_VERSION}.schema.json
+
+{body}
 """
+
 
 
 def generate_version(package_id: str, version: str, locale: str = "en-US") -> str:
@@ -198,6 +236,8 @@ def main() -> int:
     python generate-winget-manifest.py jetsung/xskill
     python generate-winget-manifest.py jetsung/xskill 0.1.0
     python generate-winget-manifest.py jetsung/xskill --exe-name xskill.exe --tags cli,tool
+    python generate-winget-manifest.py certimate-me/certimate --lang zh-CN,zh-HK,en-UK
+    python generate-winget-manifest.py certimate-me/certimate --lang cn
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -224,6 +264,11 @@ def main() -> int:
         help="Publisher name (default: GitHub user's display name)",
     )
     parser.add_argument(
+        "--author",
+        default=None,
+        help="Author name (default: same as publisher)",
+    )
+    parser.add_argument(
         "--license-url",
         default=None,
         help="License URL (default: https://github.com/user/repo/blob/main/LICENSE)",
@@ -247,6 +292,22 @@ def main() -> int:
         "--tags",
         default=None,
         help="Comma-separated tags (default: cli,tool)",
+    )
+    parser.add_argument(
+        "--doc",
+        action="append",
+        default=None,
+        metavar="LABEL|URL",
+        help="Documentation entry in 'Label|URL' form. Repeatable.",
+    )
+    parser.add_argument(
+        "--lang",
+        action="append",
+        default=None,
+        metavar="CODE",
+        help="Additional locale manifests to generate, e.g. zh-CN,zh-HK,en-UK. "
+        "Only the shorthand 'cn' is expanded to 'zh-CN'; other values must be full locale codes. "
+        "Repeatable or comma-separated.",
     )
     args = parser.parse_args()
 
@@ -280,6 +341,15 @@ def main() -> int:
     (output_dir / f"{package_id}.installer.yaml").write_text(installer_yaml, encoding="utf-8")
 
     tags = [t.strip() for t in args.tags.split(",")] if args.tags else None
+    documentations = None
+    if args.doc:
+        documentations = []
+        for entry in args.doc:
+            if "|" not in entry:
+                print(f"Error: --doc must be 'Label|URL', got: {entry}", file=sys.stderr)
+                return 1
+            label, url = entry.split("|", 1)
+            documentations.append((label.strip(), url.strip()))
     locale_yaml = generate_locale(
         package_id,
         version,
@@ -287,13 +357,44 @@ def main() -> int:
         repo_info,
         locale=args.locale,
         publisher=publisher,
+        author=args.author,
         license_url=args.license_url,
         copyright=args.copyright,
         copyright_url=args.copyright_url,
         release_notes_url=args.release_notes_url,
         tags=tags,
+        documentations=documentations,
     )
     (output_dir / f"{package_id}.locale.{args.locale}.yaml").write_text(locale_yaml, encoding="utf-8")
+
+    if args.lang:
+        requested = []
+        for item in args.lang:
+            requested.extend(part.strip() for part in item.split(",") if part.strip())
+        generated = set()
+        for raw in requested:
+            locale = normalize_locale(raw)
+            if locale == args.locale or locale in generated:
+                continue
+            generated.add(locale)
+            extra_yaml = generate_locale(
+                package_id,
+                version,
+                args.repo,
+                repo_info,
+                locale=locale,
+                publisher=publisher,
+                author=args.author,
+                license_url=args.license_url,
+                copyright=args.copyright,
+                copyright_url=args.copyright_url,
+                release_notes_url=args.release_notes_url,
+                tags=tags,
+                documentations=documentations,
+                is_default_locale=False,
+            )
+            (output_dir / f"{package_id}.locale.{locale}.yaml").write_text(extra_yaml, encoding="utf-8")
+            print(f"Generated {locale} locale manifest.")
 
     version_yaml = generate_version(package_id, version, args.locale)
     (output_dir / f"{package_id}.yaml").write_text(version_yaml, encoding="utf-8")
