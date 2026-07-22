@@ -26,15 +26,12 @@ mkdir -p "$output_dir"
 deb_abs_path="$(cd "$(dirname "$deb_file")" && pwd)/$(basename "$deb_file")"
 output_abs_path="$(cd "$output_dir" && pwd)"
 
-image_name="deb2rpm:latest"
+image_name="${DEB2RPM_IMAGE:-ghcr.io/jetsung/deb2rpm}"
 
-# 镜像不存在时自动构建
+# 镜像不存在时提示用户先拉取
 if ! docker image inspect "$image_name" >/dev/null 2>&1; then
-    echo "Building Docker image: $image_name"
-    docker build \
-        -f "$(dirname "$0")/deb2rpm.Dockerfile" \
-        -t "$image_name" \
-        "$(dirname "$0")"
+    echo "Error: image '$image_name' not found. Run: docker pull $image_name"
+    exit 1
 fi
 
 echo "Converting $deb_abs_path -> $output_abs_path"
