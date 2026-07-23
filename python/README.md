@@ -15,5 +15,3 @@
 
 | **标题** | **URL** | **描述** |
 |:---|:---|:---|
-| [**generate-winget-manifest**](./generate-winget-manifest.py) | [https://fx4.cn/winget](https://fx4.cn/winget) | 从 GitHub Release 资源生成 WinGet 清单文件 |
-| [**totp2md**](./totp2md.py) | [https://s.fx4.cn/](https://s.fx4.cn/) | 将 TOTP 二维码转换为 Markdown 表格 |
