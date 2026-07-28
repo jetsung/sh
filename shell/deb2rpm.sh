@@ -16,8 +16,30 @@ else
     set -euo pipefail
 fi
 
-deb_path="$1"
+deb_input="$1"
 extract_dir="$2"
+
+# 支持通过 URL 下载 deb 包
+if [[ "$deb_input" == http://* || "$deb_input" == https://* ]]; then
+    echo "Downloading deb package from URL: $deb_input"
+    deb_filename=$(basename "$deb_input")
+    deb_path="$extract_dir/$deb_filename"
+    mkdir -p "$extract_dir"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fL -o "$deb_path" "$deb_input"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -O "$deb_path" "$deb_input"
+    else
+        echo "Error: neither curl nor wget is available to download the deb package"
+        exit 1
+    fi
+    if [[ ! -s "$deb_path" ]]; then
+        echo "Error: failed to download deb package: $deb_input"
+        exit 1
+    fi
+else
+    deb_path="$deb_input"
+fi
 
 if [[ ! -f "$deb_path" ]]; then
     echo "Error: deb file not found: $deb_path"
@@ -178,13 +200,21 @@ echo "Creating source tarball..."
 cd "$rpm_build_dir_abs/BUILD"
 tar czf "$rpm_build_dir_abs/SOURCES/$pkg_name-$rpm_version.tar.gz" "$pkg_name"
 
+# 构建 RPM 前清理可能存在的旧 rpm，避免误用上次构建的结果
+find "$rpm_build_dir_abs/RPMS" -name "*.rpm" -type f -delete 2>/dev/null || true
+
 # 构建 RPM
 echo "Building RPM package..."
 cd "$rpm_build_dir_abs"
 QA_RPATHS=$(( 0x0002 | 0x0004 | 0x0010 )) rpmbuild -bb --define "_topdir $rpm_build_dir_abs" "$spec_file"
 
-# 输出结果
-rpm_file=$(find "$rpm_build_dir_abs/RPMS" -name "*.rpm" -type f | head -1)
+# 输出结果（按当前包名/版本/架构确定性地选择最新生成的 rpm）
+rpm_file="$rpm_build_dir_abs/RPMS/$rpm_arch/$pkg_name-$rpm_version-$rpm_release.$rpm_arch.rpm"
+if [[ ! -f "$rpm_file" ]]; then
+    # 兜底：取构建目录中最新生成的 rpm
+    rpm_file=$(find "$rpm_build_dir_abs/RPMS" -name "*.rpm" -type f -printf '%T@ %p\n' 2>/dev/null \
+        | sort -nr | head -1 | awk '{print $2}')
+fi
 if [[ -n "$rpm_file" && -f "$rpm_file" ]]; then
     cp "$rpm_file" "$extract_dir/"
     final_rpm="$extract_dir/$(basename "$rpm_file")"
