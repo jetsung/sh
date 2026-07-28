@@ -24,7 +24,7 @@ if [[ "$deb_file" == http://* || "$deb_file" == https://* ]]; then
     # URL 方式：直接透传给容器内的 deb2rpm.sh 处理下载
     echo "Download URL: $deb_file"
     container_deb="$deb_file"
-    volume_opts="-v \"$output_abs_path:/output\""
+    volume_opts=(-v "$output_abs_path:/output")
 else
     # 本地文件方式：检查并挂载只读文件
     if [[ ! -f "$deb_file" ]]; then
@@ -33,7 +33,7 @@ else
     fi
     deb_abs_path="$(cd "$(dirname "$deb_file")" && pwd)/$(basename "$deb_file")"
     container_deb="/input.deb"
-    volume_opts="-v \"$deb_abs_path:/input.deb:ro\" -v \"$output_abs_path:/output\""
+    volume_opts=(-v "$deb_abs_path:/input.deb:ro" -v "$output_abs_path:/output")
 fi
 
 image_name="${DEB2RPM_IMAGE:-ghcr.io/jetsung/deb2rpm}"
@@ -46,10 +46,9 @@ fi
 
 echo "Converting $deb_file -> $output_abs_path"
 
-# shellcheck disable=SC2086
 docker run --rm \
     -e "HOST_UID=$(id -u)" \
     -e "HOST_GID=$(id -g)" \
-    $volume_opts \
+    "${volume_opts[@]}" \
     "$image_name" \
     "$container_deb" /output
