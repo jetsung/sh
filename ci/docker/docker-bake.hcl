@@ -25,6 +25,10 @@ target "_common" {
       VERSION = "${VERSION}"
     }
     no-cache = true
+    attest = [
+      "type=provenance,disabled=true",
+      "type=sbom,disabled=true",
+    ]
 }
 
 target "default" {
