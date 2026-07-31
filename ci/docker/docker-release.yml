@@ -172,13 +172,12 @@ jobs:
       run: |
           skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:$DEST_TAG
           skopeo copy --all $SRC_IMAGE docker://$DEST_REPO:latest
-    - uses: actions/delete-package-versions@v5
-      continue-on-error: true
+    - name: Delete old package versions
+      uses: dataaxiom/ghcr-cleanup-action@v1
       with:
         package-name: ${{ needs.build.outputs.package_name }}
-        package-type: 'container'
-        min-versions-to-keep: 2
-        delete-only-untagged-versions: 'true'
+        delete-untagged: true
+        keep-n-tagged: 5
 
   sync-to-aliyun:
     needs: build

@@ -14,7 +14,7 @@ env:
 permissions:
   contents: read
   packages: write
-
+  
 jobs:
   build:
     strategy:
@@ -51,13 +51,13 @@ jobs:
       #   id: meta
       #   uses: docker/metadata-action@v6
       #   with:
-      #     images: ${{ env.GHCR_SLUG }}
-      #     labels: |
-      #       org.opencontainers.image.title=${{ env.package_name }}
-      #       org.opencontainers.image.vendor=Jetsung Chan
-      #       org.opencontainers.image.email=i@jetsung.com
-      #       org.opencontainers.image.url=https://i.jetsung.com
-      #     tags: ${{ matrix.tag }}
+        #   images: ${{ env.GHCR_SLUG }}
+        #   labels: |
+        #     org.opencontainers.image.title=${{ env.package_name }}
+        #     org.opencontainers.image.vendor=Jetsung Chan
+        #     org.opencontainers.image.email=i@jetsung.com
+        #     org.opencontainers.image.url=https://i.jetsung.com
+        #   tags: ${{ matrix.tag }}
 
       # - name: Set up Docker Buildx
       #   uses: docker/setup-buildx-action@v4
@@ -65,11 +65,11 @@ jobs:
       # - name: Build (without push)
       #   uses: docker/bake-action@v7
       #   with:
-      #     files: |
-      #       ./docker/docker-bake.hcl
-      #       cwd://${{ steps.meta.outputs.bake-file }}
-      #     targets: ${{ matrix.tag }}
-      #     push: ${{ github.event_name != 'pull_request' }}
+        #     files: |
+        #       ./docker/docker-bake.hcl
+        #       cwd://${{ steps.meta.outputs.bake-file }}
+        #     targets: ${{ matrix.tag }}
+        #     push: ${{ github.event_name != 'pull_request' }}
 
       - name: Build and push
         uses: docker/build-push-action@v7
@@ -79,6 +79,8 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.GHCR_SLUG }}:${{ matrix.tag }}
+          provenance: false
+          sbom: false
 
   manifest:
     needs: build
@@ -94,6 +96,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+
       - name: Create and push multi-arch manifest
         run: |
           docker buildx imagetools create --tag ${{ env.GHCR_SLUG }}:dev \
@@ -101,10 +104,10 @@ jobs:
             ${{ env.GHCR_SLUG }}:dev-arm64
         shell: bash
 
-      - uses: actions/delete-package-versions@v5
-        continue-on-error: true
+      - name: Delete old package versions
+        uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           package-name: ${{ needs.build.outputs.package_name }}
-          package-type: 'container'
-          min-versions-to-keep: 2
-          delete-only-untagged-versions: 'true'
+          delete-untagged: true
+          keep-n-tagged: 5
+
