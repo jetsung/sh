@@ -59,7 +59,7 @@ extract_dir=$(cd "$extract_dir" && pwd)
 echo "Extracting deb package..."
 dpkg-deb -x "$deb_path" "$extract_dir"
 
-# 删除 ELF build-id 调试标识文件
+# 删除 ELF build-id 调试标识文件（若 deb 内自带）
 # 多个 Electron 应用使用相同版本的 Electron 二进制时，/usr/lib/.build-id
 # 下的文件内容完全相同，打包进 RPM 会导致与其他 Electron 应用安装时
 # 文件冲突（例如: /usr/lib/.build-id/f2/1efa6a9c... conflicts with ...）
@@ -175,6 +175,11 @@ BuildArch:      $rpm_arch
 AutoReqProv:    no
 # 禁用 debuginfo 包
 %global debug_package %{nil}
+# 禁用 build-id 链接生成：rpmbuild 默认(_build_id_links=compat)会为每个 ELF
+# 二进制在 /usr/lib/.build-id 下生成符号链接并自动加入主包。相同 Electron
+# 二进制的 build-id 相同，会导致与其他 Electron 应用安装时文件冲突
+# （例如: /usr/lib/.build-id/f2/1efa6a9c... conflicts with ...）
+%global _build_id_links none
 
 %description
 ${pkg_summary:-No description provided}
