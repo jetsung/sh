@@ -59,6 +59,12 @@ extract_dir=$(cd "$extract_dir" && pwd)
 echo "Extracting deb package..."
 dpkg-deb -x "$deb_path" "$extract_dir"
 
+# 删除 ELF build-id 调试标识文件
+# 多个 Electron 应用使用相同版本的 Electron 二进制时，/usr/lib/.build-id
+# 下的文件内容完全相同，打包进 RPM 会导致与其他 Electron 应用安装时
+# 文件冲突（例如: /usr/lib/.build-id/f2/1efa6a9c... conflicts with ...）
+rm -rf "$extract_dir/usr/lib/.build-id"
+
 # 提取控制信息
 echo "Extracting control information..."
 control_dir="$extract_dir/DEBIAN"
