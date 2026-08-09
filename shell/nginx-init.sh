@@ -273,7 +273,6 @@ add_header Strict-Transport-Security "max-age=15768000; includeSubDomains; prelo
 add_header Alt-Svc 'h3=":443"; ma=86400';
 ssl_stapling off;
 ssl_stapling_verify off;
-error_page 403 https://$host$request_uri;
 EOF
 
 [ ! -f "$NGINX_ROOT/extend/http_to_https.conf" ] && cat <<'EOF' >"$NGINX_ROOT/extend/http_to_https.conf"
