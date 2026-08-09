@@ -157,9 +157,9 @@ show_help() {
 
 选项:
   -h, --help            显示此帮助信息
-  --init                初始化尚未准备好的备份仓库
-  --show [仓库]         查看快照（不指定则显示所有仓库；可传 local 或完整地址）
-  --prune               清理旧快照（保留最近3个 + 每月1日tag）
+  --init [目标]         初始化指定的备份仓库
+  --show [目标]         查看快照
+  --prune [目标]        清理旧快照（保留最近3个 + 每月1日tag）
   --install             安装登录和关机自动备份服务
   --install-login       仅安装登录时自动备份服务
   --install-shutdown    仅安装关机时自动备份服务 (需要 sudo)
@@ -180,14 +180,24 @@ Tag 规则:
 
 保留策略:
   --prune 保留最近 3 个快照 + 所有带 monthly-* tag 的快照
+  (自动 --retry-lock 处理陈旧锁，单个仓库失败不影响其它仓库)
+
+仓库目标 [目标] 优先级:
+  1. local                -> 本地仓库
+  2. 文件路径(支持 ~)      -> 从该文件的逐行内容读取仓库列表
+  3. 单一仓库地址          -> 指定仓库，如 rclone:qcloud:restic-<bucket-id>/<hostname>
+  4. 不传参数              -> 全部仓库(本地 + 远程)
 
 示例:
-  $(basename "$0")              # 执行备份
-  $(basename "$0") --show       # 查看所有快照
-  $(basename "$0") --show local # 查看本地仓库快照
-  $(basename "$0") --prune      # 清理旧快照
-  $(basename "$0") --init    # 初始化所有仓库
-  $(basename "$0") -h        # 查看帮助
+  $(basename "$0")                               # 执行备份
+  $(basename "$0") --show                        # 查看所有快照
+  $(basename "$0") --show local                  # 查看本地仓库快照
+  $(basename "$0") --prune                       # 清理所有仓库
+  $(basename "$0") --prune local                 # 仅清理本地仓库
+  $(basename "$0") --prune ~/.config/restic-backup/repos.txt  # 按文件列表清理
+  $(basename "$0") --prune rclone:qcloud:restic-<bucket-id>/<hostname>  # 清理指定仓库
+  $(basename "$0") --init                        # 初始化所有仓库
+  $(basename "$0") -h                        # 查看帮助
 
 新增远程仓库:
   1. 在 $REPOS_FILE 中添加一行
@@ -200,11 +210,62 @@ Tag 规则:
 EOF
 }
 
+# 解析仓库目标。优先级:
+#   1) "local"            -> 本地仓库
+#   2) 指定为文件路径      -> 从文件读取仓库列表(逐行)
+#   3) 指定为单一仓库地址  -> 该仓库
+#   4) 不传参数            -> 所有仓库(本地 + 远程)
+# 结果写入全局数组 RESOLVED_REPOS
+resolve_repos() {
+  RESOLVED_REPOS=()
+  local target="${1:-}"
+
+  if [[ -z "$target" ]]; then
+    # 全部仓库
+    [[ "$LOCAL_REPO_EXISTS" == "true" ]] && RESOLVED_REPOS+=("$LOCAL_REPO_URL")
+    RESOLVED_REPOS+=("${REMOTE_REPOS[@]}")
+    return
+  fi
+
+  # 1) 本地简写
+  if [[ "$target" == "local" ]]; then
+    if [[ "$LOCAL_REPO_EXISTS" != "true" ]]; then
+      echo "ERROR: Local repository does not exist ($LOCAL_REPO)"
+      return 1
+    fi
+    RESOLVED_REPOS=("$LOCAL_REPO_URL")
+    return
+  fi
+
+  # 展开 ~ 后判断是否为文件
+  local expanded="$target"
+  [[ "$target" == "~"* ]] && expanded="$HOME${target:1}"
+  if [[ -f "$expanded" ]]; then
+    if [[ ! -r "$expanded" ]]; then
+      echo "ERROR: Cannot read repository list file: $expanded"
+      return 1
+    fi
+    while IFS= read -r line; do
+      [[ -n "$line" ]] && RESOLVED_REPOS+=("$line")
+    done < "$expanded"
+    return
+  fi
+
+  # 3) 单一仓库地址
+  RESOLVED_REPOS=("$target")
+}
+
 # 初始化仓库
 init_repos() {
-  local all_repos=()
-  [[ "$LOCAL_REPO_EXISTS" == "true" ]] && all_repos+=("$LOCAL_REPO_URL")
-  all_repos+=("${REMOTE_REPOS[@]}")
+  if ! resolve_repos "${1:-}"; then
+    exit 1
+  fi
+  local all_repos=("${RESOLVED_REPOS[@]}")
+
+  if [[ ${#all_repos[@]} -eq 0 ]]; then
+    echo "ERROR: No repositories available"
+    exit 1
+  fi
 
   for repo in "${all_repos[@]}"; do
     echo "------------------------------------------------"
@@ -230,22 +291,38 @@ clean_configs() {
 
 # 清理旧快照
 prune_snapshots() {
-  local all_repos=()
-  [[ "$LOCAL_REPO_EXISTS" == "true" ]] && all_repos+=("$LOCAL_REPO_URL")
-  all_repos+=("${REMOTE_REPOS[@]}")
+  if ! resolve_repos "${1:-}"; then
+    exit 1
+  fi
+  local all_repos=("${RESOLVED_REPOS[@]}")
 
+  if [[ ${#all_repos[@]} -eq 0 ]]; then
+    echo "ERROR: No repositories available"
+    exit 1
+  fi
+
+  local failed=0
   for repo in "${all_repos[@]}"; do
     echo "------------------------------------------------"
     echo "Pruning repository: $repo"
 
+    # 单个仓库失败不中断其它仓库
     if ! restic -r "$repo" snapshots >/dev/null 2>&1; then
       echo "ERROR: Repository not initialized. Run '$(basename "$0") --init' first."
+      failed=1
       continue
     fi
 
     echo "Keeping: last 3 snapshots + all monthly-* tagged snapshots"
-    restic -r "$repo" forget --group-by '' --keep-last 3 --keep-tag "monthly-*" --prune
+    if ! restic -r "$repo" forget --retry-lock 10s \
+              --group-by '' --keep-last 3 --keep-tag "monthly-*" --prune; then
+      echo "ERROR: Prune failed for repository: $repo"
+      failed=1
+    fi
   done
+
+  # 任一仓库失败则以非零码退出
+  [[ "$failed" -eq 0 ]] || return 1
 }
 
 # 查看快照
@@ -282,7 +359,7 @@ case "${1:-}" in
   exit 0
   ;;
 --init)
-  init_repos
+  init_repos "${2:-}"
   exit 0
   ;;
 --show)
@@ -295,11 +372,7 @@ case "${1:-}" in
   exit 0
   ;;
 --prune)
-  prune_snapshots
-  exit 0
-  ;;
---cron)
-  install_cron
+  prune_snapshots "${2:-}"
   exit 0
   ;;
 --install|--install-login|--install-shutdown|--uninstall)
