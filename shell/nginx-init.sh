@@ -163,6 +163,18 @@ echo "正在初始化 Nginx 配置结构于: $NGINX_ROOT ..."
 mkdir -p "$NGINX_ROOT"/{extend,wildcard,conf.d,acme/{letsencrypt,zerossl,google},modules,ssl}
 mkdir -p /data/wwwlogs /data/wwwroot/default
 
+# --- 重命名已存在的默认站点配置 ---
+DEFAULT_CONF="$NGINX_ROOT/conf.d/default.conf"
+if [[ -f "$DEFAULT_CONF" ]]; then
+  if [[ ! -f "$DEFAULT_CONF.bak" ]]; then
+    echo "检测到 conf.d/default.conf，已重命名为 conf.d/default.conf.bak"
+    mv "$DEFAULT_CONF" "$DEFAULT_CONF.bak"
+  else
+    echo "conf.d/default.conf.bak 已存在，跳过重命名"
+    rm -f "$DEFAULT_CONF"
+  fi
+fi
+
 # --- 创建示例站点配置模板 ---
 # 10. wildcard/example.com.conf (SSL 证书配置模板)
 [ ! -f "$NGINX_ROOT/wildcard/example.com.conf" ] && cat <<'EOF' >"$NGINX_ROOT/wildcard/example.com.conf"
