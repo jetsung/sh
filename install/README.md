@@ -42,6 +42,7 @@ done
 | [**protoc**](./protoc.sh) |  | protobuf 编译工具 |
 | [**rclone**](./rclone.sh) | [https://fx4.cn/rclone](https://fx4.cn/rclone) | 安装 rclone 命令行工具 |
 | [**relaydrop**](./relaydrop.sh) | [https://fx4.cn/relaydrop](https://fx4.cn/relaydrop) | 文件传输中继服务 |
+| [**restic**](./restic.sh) | [https://fx4.cn/restic](https://fx4.cn/restic) | 安装 Restic 备份工具 |
 | [**shellcheck**](./shellcheck.sh) | [https://fx4.cn/shellcheck](https://fx4.cn/shellcheck) | Shell 脚本分析工具 |
 | [**skim**](./skim.sh) | [https://fx4.cn/skim](https://fx4.cn/skim) | 命令行模糊查找器 |
 | [**static-web-server**](./static-web-server.sh) | [https://fx4.cn/sws](https://fx4.cn/sws) | 静态网站服务器 |

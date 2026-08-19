@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+
+#============================================================
+# File: restic.sh
+# Description: 安装 Restic 备份工具
+# URL: https://fx4.cn/restic
+# Author: Jetsung Chan <i@jetsung.com>
+# Version: 0.1.0
+# CreatedAt: 2026-08-19
+# UpdatedAt: 2026-08-19
+#============================================================
+
+if [[ -n "${DEBUG:-}" ]]; then
+    set -eux
+else
+    set -euo pipefail
+fi
+
+CDN_URL="${CDN:-https://fastfile.asfd.cn/}"
+
+USER_ID="$(id -u)"
+
+sudo_exec() {
+    if [[ "$USER_ID" -ne 0 ]]; then
+        sudo "$@"
+    else
+        "$@"
+    fi
+}
+
+check_is_command() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+check_in_china() {
+    if [[ -n "${CN:-}" ]]; then
+        return 0 # 手动指定
+    fi
+    if [[ "$(curl -s -m 3 -o /dev/null -w "%{http_code}" https://www.google.com)" == "000" ]]; then
+        return 0 # 中国网络
+    fi
+    return 1 # 非中国网络
+}
+
+# 若为 https://xxx.xx 不以 / 结尾，则组合时去掉加速网址的 https://
+#   格式为 https://file.xxx.io/github.com/
+# 若为 https://xxx.xx/ 以 / 结尾，则组合时保留加速网址的 https://
+#   格式为 https://xxx.xx/https://github.com/
+check_remove_https() {
+    if [[ -n "$1" && "${1: -1}" != "/" ]]; then
+        echo 1
+    fi
+}
+
+do_remove_https() {
+    local url="$1"
+    if [[ -n "$NO_HTTPS" ]]; then
+        # shellcheck disable=SC2001
+        echo "$url" | sed 's|https:/||2'
+
+    else
+        echo "$url"
+    fi
+}
+
+########################## 以上为通用函数 #########################
+
+get_download_url() {
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${1}/releases/latest")
+    curl -fsSL "$repo_api_url" | jq -r --arg arch "$ARCH" --arg os "$OS" '.assets[] | select(.name | test("\($os)_\($arch)")) | .browser_download_url'
+}
+
+download_exact() {
+    local download_file="restic.bz2"
+    TMP_DIR=$(mktemp -d /tmp/restic.XXXXXX)
+
+    cleanup() {
+        rm -rf -- "$TMP_DIR"
+    }
+    trap cleanup EXIT
+
+    pushd "$TMP_DIR" >/dev/null
+
+    if [[ -z "${CUSTOM_URL:-}" ]]; then
+        _download_url=$(do_remove_https "${CDN_URL}${DOWNLOAD_URL}")
+    else
+        _download_url="$CUSTOM_URL"
+    fi
+    if ! curl -fsSL "$_download_url" -o "$download_file"; then
+        echo "Error: Failed to download $download_file"
+        exit 1
+    fi
+
+    if ! bunzip2 -f "$download_file"; then
+        echo "Error: Extraction failed"
+        rm -f "$download_file"
+        exit 1
+    fi
+
+    sudo_exec mv "${download_file%%.bz2}" /usr/local/bin/restic
+    sudo_exec chmod +x /usr/local/bin/restic
+
+    popd >/dev/null
+}
+
+main() {
+    # 解析命令行参数
+    CUSTOM_URL=""
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url)
+                CUSTOM_URL="$2"
+                shift 2
+                ;;
+            *)
+                echo "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    # 优先级：命令行参数 > 环境变量 > 默认流程
+    DOWNLOAD_URL="${CUSTOM_URL:-${URL:-}}"
+
+    OS="$(uname | tr '[:upper:]' '[:lower:]')"
+    case "$(uname -m)" in
+        x86_64)
+            ARCH="amd64"
+            ;;
+        aarch64)
+            ARCH="arm64"
+            ;;
+        *)
+            echo "Unsupported architecture"
+            exit 1
+            ;;
+    esac
+
+    if [[ -z "$DOWNLOAD_URL" ]]; then
+
+        if ! check_in_china; then
+            CDN_URL=""
+        fi
+
+        NO_HTTPS=$(check_remove_https "$CDN_URL")
+
+        DOWNLOAD_URL="$(get_download_url restic/restic)"
+
+        if [[ -z "$DOWNLOAD_URL" || "$DOWNLOAD_URL" == "null" ]]; then
+            echo "Error: Could not find a download URL for $OS-$ARCH"
+            exit 1
+        fi
+    else
+        echo "使用指定下载地址: $DOWNLOAD_URL"
+    fi
+
+    download_exact
+
+    echo ""
+
+    if ! check_is_command "restic"; then
+        echo "restic has not been installed successfully."
+        echo ""
+        exit 1
+    fi
+
+    echo ""
+    echo "restic has been installed successfully!"
+    echo ""
+    restic help
+    echo ""
+    restic version
+    echo ""
+}
+
+main "$@"
