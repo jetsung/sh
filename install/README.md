@@ -40,6 +40,7 @@ done
 | [**obscura**](./obscura.sh) | [https://fx4.cn/obscura](https://fx4.cn/obscura) | 无头浏览器 (obscura) |
 | [**prek**](./prek.sh) | [https://fx4.cn/prek](https://fx4.cn/prek) | Git 钩子管理工具 |
 | [**protoc**](./protoc.sh) |  | protobuf 编译工具 |
+| [**rclone**](./rclone.sh) | [https://fx4.cn/rclone](https://fx4.cn/rclone) | 安装 rclone 命令行工具 |
 | [**relaydrop**](./relaydrop.sh) | [https://fx4.cn/relaydrop](https://fx4.cn/relaydrop) | 文件传输中继服务 |
 | [**shellcheck**](./shellcheck.sh) | [https://fx4.cn/shellcheck](https://fx4.cn/shellcheck) | Shell 脚本分析工具 |
 | [**skim**](./skim.sh) | [https://fx4.cn/skim](https://fx4.cn/skim) | 命令行模糊查找器 |
