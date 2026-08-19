@@ -103,9 +103,21 @@ elif [[ -n "$NGINX_ROOT" ]]; then
     NGINX_CONF="$potential_conf"
   fi
 else
-  NGINX_ROOT="."
-  if [[ -f "./nginx.conf" ]]; then
-    NGINX_CONF="./nginx.conf"
+  # 优先通过 nginx -t 提取真实配置路径，失败再回退到当前目录查找
+  if command -v nginx >/dev/null 2>&1; then
+    NGINX_T_OUTPUT=$(nginx -t 2>&1 || true)
+    NGINX_T_CONF=$(echo "$NGINX_T_OUTPUT" | grep -oE "the configuration file [^ ]+" | awk '{print $4}' | head -n 1)
+    if [[ -n "$NGINX_T_CONF" && -f "$NGINX_T_CONF" ]]; then
+      NGINX_CONF="$NGINX_T_CONF"
+      NGINX_ROOT=$(dirname "$(realpath "$NGINX_CONF")")
+    fi
+  fi
+
+  if [[ -z "$NGINX_CONF" ]]; then
+    NGINX_ROOT="."
+    if [[ -f "./nginx.conf" ]]; then
+      NGINX_CONF="./nginx.conf"
+    fi
   fi
 fi
 
