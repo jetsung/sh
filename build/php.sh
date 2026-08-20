@@ -619,8 +619,17 @@ setting_phpfpm() {
 
     # 修改监听方式为 Unix Socket（处理带或不带注释的情况）
     sed -i 's|^;*listen = 127.0.0.1:9000|listen = /usr/local/php/var/run/php-fpm.sock|' /usr/local/php/etc/php-fpm.d/www.conf
-    # 添加 socket 权限配置（如果不存在）
-    if ! grep -q "listen.owner" /usr/local/php/etc/php-fpm.d/www.conf; then
+
+    # 设置 socket 权限（幂等：无论是否已存在都统一为 www:www 0660）
+    if grep -q "^listen.owner" /usr/local/php/etc/php-fpm.d/www.conf; then
+        sed -i "s/^listen.owner = .*/listen.owner = www/" /usr/local/php/etc/php-fpm.d/www.conf
+        sed -i "s/^listen.group = .*/listen.group = www/" /usr/local/php/etc/php-fpm.d/www.conf
+        sed -i "s/^listen.mode = .*/listen.mode = 0660/" /usr/local/php/etc/php-fpm.d/www.conf
+    elif grep -q "^;listen.owner" /usr/local/php/etc/php-fpm.d/www.conf; then
+        sed -i "s/^;listen.owner = .*/listen.owner = www/" /usr/local/php/etc/php-fpm.d/www.conf
+        sed -i "s/^;listen.group = .*/listen.group = www/" /usr/local/php/etc/php-fpm.d/www.conf
+        sed -i "s/^;listen.mode = .*/listen.mode = 0660/" /usr/local/php/etc/php-fpm.d/www.conf
+    else
         sed -i '/^listen = .*\.sock$/a listen.owner = www\nlisten.group = www\nlisten.mode = 0660' /usr/local/php/etc/php-fpm.d/www.conf
     fi
 

@@ -328,7 +328,23 @@ upstream server1 {
 }
 EOF
 
-# 8. conf.d/http_80.conf
+# 8. extend/php.conf (PHP-FPM fastcgi 配置)
+# 说明：部分发行版自带 fastcgi.conf，部分没有，故默认注释掉 fastcgi.conf，
+# 仅使用通用存在的 fastcgi_params，并显式指定 SCRIPT_FILENAME 以防 404。
+[ ! -f "$NGINX_ROOT/extend/php.conf" ] && cat <<'EOF' >"$NGINX_ROOT/extend/php.conf"
+location ~ [^/]\.php(/|$) {
+    #fastcgi_pass remote_php_ip:9000;
+    #fastcgi_pass 127.0.0.1:9000;
+    #fastcgi_pass unix:/dev/shm/php-cgi.sock;
+    fastcgi_pass unix:/usr/local/php/var/run/php-fpm.sock;
+    fastcgi_index index.php;
+    #include fastcgi.conf;
+    include fastcgi_params;
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+}
+EOF
+
+# 9. conf.d/http_80.conf
 [ ! -f "$NGINX_ROOT/conf.d/http_80.conf" ] && cat <<'EOF' >"$NGINX_ROOT/conf.d/http_80.conf"
 server {
     listen       80 default_server;
@@ -373,6 +389,22 @@ EOF
 # --- 幂等性补全 nginx.conf 配置 ---
 if [[ -n "$NGINX_CONF" && -f "$NGINX_CONF" ]]; then
   echo "正在检查并幂等更新配置文件: $NGINX_CONF ..."
+
+  # 0. 确保 www 用户存在，并将 nginx 运行用户设为 www
+  if ! id "www" >/dev/null 2>&1; then
+    echo "创建 www 用户..."
+    useradd -r -s /sbin/nologin www
+  fi
+
+  if grep -qE "^[[:space:]]*user[[:space:]]+" "$NGINX_CONF"; then
+    if ! grep -qE "^[[:space:]]*user[[:space:]]+www;" "$NGINX_CONF"; then
+      echo "将 nginx 运行用户改为 www..."
+      sed -i -E "s/^[[:space:]]*user[[:space:]]+[^;]+;/user www;/" "$NGINX_CONF"
+    fi
+  else
+    echo "添加 nginx 运行用户: user www;"
+    sed -i "1i user www;" "$NGINX_CONF"
+  fi
 
   # 1. 补全 load_module
   MODULE_FILE="$NGINX_ROOT/modules/ngx_http_acme_module.so"
