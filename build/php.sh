@@ -63,6 +63,30 @@ do_remove_https() {
     fi
 }
 
+# 计算 make 并行任务数
+# 规则：
+#   1. 已通过参数/环境变量指定 MAKE_JOBS 时直接采用
+#   2. 未指定时取 CPU 核心数；若核心数 <= 2 则降为 1（避免低核心数下编译卡死）
+#   3. 结果至少为 1
+get_make_jobs() {
+    local jobs="${MAKE_JOBS:-}"
+    if [[ -n "$jobs" ]]; then
+        if [[ "$jobs" =~ ^[0-9]+$ && "$jobs" -ge 1 ]]; then
+            echo "$jobs"
+            return 0
+        fi
+        echo "⚠️  MAKE_JOBS=$jobs 非法，已忽略，使用自动计算值" >&2
+    fi
+
+    local cores
+    cores="$(nproc 2>/dev/null || echo 1)"
+    if [[ "$cores" -le 2 ]]; then
+        echo 1
+    else
+        echo "$cores"
+    fi
+}
+
 ########################## 以上为通用函数 #########################
 
 # 编译日志配置
@@ -347,8 +371,9 @@ build() {
     log_separator
     log ">>> make 开始 $(date) <<<"
 
-    # make -j6
-    make "-j$(nproc)" 2>&1 | tee -a "$LOG_FILE"
+    MAKE_JOBS_NUM="$(get_make_jobs)"
+    log "🚀 make 并行任务数: -j${MAKE_JOBS_NUM}"
+    make "-j${MAKE_JOBS_NUM}" 2>&1 | tee -a "$LOG_FILE"
 
     log_separator
     log ">>> make install 开始 $(date) <<<"
@@ -669,6 +694,7 @@ main() {
             -u|--user)      FPM_USER="$2"; shift 2 ;;
             -e|--extensions) EXTENSIONS="$2"; shift 2 ;;
             -c|--configure) CONFIGURE_ARGS="$2"; shift 2 ;;
+            -j|--jobs)      MAKE_JOBS="$2"; shift 2 ;;
             -h|--help)
                 cat <<EOF
 Usage: $0 [OPTIONS]
@@ -681,6 +707,7 @@ Options:
   -u, --user USER            PHP-FPM user and group (default: www)
   -e, --extensions EXTS      Additional PECL extensions to install
   -c, --configure ARGS       Extra configure arguments
+  -j, --jobs JOBS            make parallel jobs (default: nproc, min 1 when nproc<=2)
   -h, --help                 Show this help message
 EOF
                 exit 0
