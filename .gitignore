@@ -1,6 +1,10 @@
 .marscode/
 **/tmp/
 
+# Python
+__pycache__/
+*.pyc
+
 # act
 .actrc
 .artifacts
