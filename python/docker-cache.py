@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 #============================================================
 # File: docker-cache.py
@@ -38,7 +37,7 @@ Docker 镜像复制工具
     export GITHUB_TOKEN=ghp_xxx
     python3 scripts/docker-cache.py copy --source-image ghcr.io/hello/world
 
-    # 3. 远程复制后再拉取到本地，并重命名为源镜像名（--pull）
+    # 3. 远程复制后再拉取到本地，并重命名为源镜像名，删除旧的目标镜像标签（--pull）
     python3 scripts/docker-cache.py copy \
         --repo jetsung/docker-build-sync --branch dev \
         --source-image alpine:latest --target-image jetsung/world --pull
@@ -70,7 +69,7 @@ Docker 镜像复制工具
         -w, --workflow               工作流文件名（默认 docker-cache.yml）
         -T, --token                  GitHub Token，需具备 actions: write 权限
         -K, --keep-run               保留该次流水线运行（默认复制成功后自动删除）
-        -p, --pull                   复制完成后拉取目标镜像到本地并重命名为源镜像名
+        -p, --pull                   复制完成后拉取目标镜像到本地并重命名为源镜像名，删除旧的目标镜像标签
 
     gen-secret  生成 target_auth_secret（只输出，不触发流水线）
         -r, --registry               从 ~/.docker/config.json 读取哪个注册表
@@ -109,7 +108,7 @@ Docker 镜像复制工具
     DBS_GITHUB_BRANCH        触发分支（默认 main）
     DBS_WORKFLOW_FILE        工作流文件名（默认 docker-cache.yml）
     DBS_KEEP_RUN            设为 1/true/yes 时保留该次流水线运行记录（默认复制成功后自动删除）
-    DBS_PULL                设为 1/true/yes 时复制完成后拉取目标镜像到本地并重命名为源镜像名
+    DBS_PULL                设为 1/true/yes 时复制完成后拉取目标镜像到本地并重命名为源镜像名，删除旧的目标镜像标签
     GITHUB_TOKEN             GitHub Token，用于触发远程工作流（也可用 --token 传入）
 
 配置文件 ~/.dbsrc（KEY=VALUE 格式，键名同环境变量名，支持 # 注释）示例:
@@ -340,7 +339,7 @@ DBS_WORKFLOW_FILE=docker-cache.yml
 
 # 复制成功后自动删除该次流水线运行；设为 1 则保留
 # DBS_KEEP_RUN=1
-# 复制完成后拉取目标镜像到本地并重命名为源镜像名；设为 1 则开启
+# 复制完成后拉取目标镜像到本地并重命名为源镜像名，删除旧的目标镜像标签；设为 1 则开启
 # DBS_PULL=1
 
 # 以下为敏感/具体值，请自行填写
@@ -646,13 +645,15 @@ def delete_workflow_run(repo: str, run_id: int, token: str) -> bool:
 
 
 def pull_to_local(source_image: str, target_image: str) -> int:
-    """复制成功后，将目标镜像拉取到本地并重命名为源镜像名（--pull）。"""
+    """复制成功后，将目标镜像拉取到本地并重命名为源镜像名（--pull），
+    随后删除旧的目标镜像标签，本地只保留源镜像名。"""
     if shutil.which("docker") is None:
         print("错误: 未找到 docker 命令，请先安装 Docker", file=sys.stderr)
         return 1
     run_cmd(["docker", "pull", target_image])
     run_cmd(["docker", "tag", target_image, source_image])
-    print(f"已拉取 {target_image} 并重命名为 {source_image}（本地）")
+    run_cmd(["docker", "rmi", target_image])
+    print(f"已拉取 {target_image} 并重命名为 {source_image}，已删除旧镜像 {target_image}（本地）")
     return 0
 
 
@@ -820,8 +821,8 @@ def main() -> int:
     parser_copy.add_argument(
         "-p", "--pull",
         action="store_true",
-        help="复制完成后将目标镜像拉取到本地并重命名为源镜像名（远程触发模式会等待复制"
-        "成功后再拉取；也可用 ~/.dbsrc 或环境变量 DBS_PULL=1 开启）",
+        help="复制完成后将目标镜像拉取到本地并重命名为源镜像名，删除旧的目标镜像标签"
+        "（远程触发模式会等待复制成功后再拉取；也可用 ~/.dbsrc 或环境变量 DBS_PULL=1 开启）",
     )
 
     parser_gen = sub.add_parser(
