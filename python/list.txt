@@ -1,3 +1,4 @@
+./docker-cache.py  |  Docker 镜像复制工具：本地执行或触发远程 GitHub Actions
 ./extract_base64_images.py  |  从 Markdown 文件中提取 base64 图片并保存为本地文件
 ./generate-winget-manifest.py  |  从 GitHub Release 资源生成 WinGet 清单文件
 ./restore_obsidian_trash.py  |  从 .trash 目录根据日志恢复被误删的 Obsidian 文件
