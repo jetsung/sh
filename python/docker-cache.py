@@ -3,12 +3,13 @@
 #============================================================
 # File: docker-cache.py
 # Description: Docker 镜像复制工具：本地执行或触发远程 GitHub Actions
-#              docker-cache.yml 工作流复制镜像，成功后自动删除该次流水线运行
+#              docker-cache.yml 工作流复制镜像，成功后自动删除该次流水线运行；
+#              支持从中转站拉取已缓存的镜像到本地
 # URL: https://fx4.cn/dockercache
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.2.0
 # CreatedAt: 2026-08-22
-# UpdatedAt: 2026-08-22
+# UpdatedAt: 2026-08-23
 #============================================================
 
 """
@@ -74,6 +75,15 @@ Docker 镜像复制工具
     gen-secret  生成 target_auth_secret（只输出，不触发流水线）
         -r, --registry               从 ~/.docker/config.json 读取哪个注册表
         -k, --target-auth-key        加密密钥（必填）
+
+    pull       从中转站拉取已缓存的镜像到本地并重命名为源镜像名
+        -s, --source-image           源镜像名（必填，仅支持命令行传入）
+        -t, --target-image           中转站镜像；可省略注册表域名（缺省自动组合）
+        -r, --registry               中转站注册表域名（默认 registry.cn-guangzhou.aliyuncs.com）
+        -d, --default-target-image   默认镜像路径（默认 jetsung/myimage）
+        -a, --target-auth-secret     中转站注册表 auth 值经密钥加密后的结果（本地已登录时可省略；
+                                     未登录时必填，同 copy）
+        -k, --target-auth-key        解密密钥（本地已登录中转站时可省略；未登录时必填）
 
     doc        打印完整使用教程并退出
 
@@ -143,6 +153,24 @@ Docker 镜像复制工具
     未指定 --target-image 时，自动组合目标镜像
     （DBS_REGISTRY + DBS_DEFAULT_TARGET_IMAGE + 源镜像名作标签）:
         ghcr.io/hello/world -> registry.cn-guangzhou.aliyuncs.com/jetsung/myimage:world
+
+用法示例（pull 从中转站拉取已缓存的镜像，重新打 tag 为源镜像名）:
+    # 中转站必须已存在该镜像（即目标镜像）；不存在时提示并给出对应的 copy 命令
+    # 本地已登录中转站（~/.docker/config.json 有该注册表登录信息）时无需 secret/key，直接拉取；
+    # 未登录时需提供 target_auth_secret 与 target_auth_key（命令行 > ~/.dbsrc > 环境变量），
+    # 本地解密后登录中转站
+    # 自动组合中转站镜像（同 copy 规则）:
+    #   ghcr.io/hello/world -> registry.cn-guangzhou.aliyuncs.com/jetsung/myimage:world
+    python3 scripts/docker-cache.py pull --source-image ghcr.io/hello/world
+
+    # 显式指定中转站镜像
+    python3 scripts/docker-cache.py pull \
+        --source-image ghcr.io/hello/world \
+        --target-image registry.cn-guangzhou.aliyuncs.com/jetsung/myimage:world
+
+    # 本地未登录中转站时需提供认证（与 copy 相同方式生成 target_auth_secret）
+    python3 scripts/docker-cache.py pull --source-image ghcr.io/hello/world \
+        --target-auth-secret U2FsdGVkX1... --target-auth-key "你的密钥"
 
 生成 target_auth_secret（只输出，不触发流水线）:
     python3 scripts/docker-cache.py gen-secret --target-auth-key "你的密钥"
@@ -657,6 +685,114 @@ def pull_to_local(source_image: str, target_image: str) -> int:
     return 0
 
 
+def image_exists_on_registry(image: str) -> bool:
+    """通过 docker manifest inspect 检查镜像是否已存在于中转站（不实际下载镜像）。"""
+    proc = subprocess.run(
+        ["docker", "manifest", "inspect", image],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return proc.returncode == 0
+
+
+def is_logged_in(registry: str) -> bool:
+    """检查本地 ~/.docker/config.json 中是否已存在该注册表的登录信息（docker login 过）。"""
+    config_path = os.path.expanduser("~/.docker/config.json")
+    if not os.path.isfile(config_path):
+        return False
+    try:
+        with open(config_path, encoding="utf-8") as fh:
+            config = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return False
+    auths = config.get("auths", {}) or {}
+    if not auths:
+        return False
+    # config.json 的键可能是裸域名或带 https:// 前缀，两种都匹配
+    candidates = {registry, f"https://{registry}", f"http://{registry}"}
+    return any(key in candidates for key in auths)
+
+
+def print_copy_hint(
+    source_image: str,
+    target_image: str,
+    registry: str,
+    target_auth_secret: str,
+    target_auth_key: str,
+) -> None:
+    """中转站缺少镜像时，提示并给出对应的 copy 命令和参数（可直接复制执行）。"""
+    print(
+        f"错误: 中转站中不存在镜像 {target_image}（若已存在，请确认已执行 docker login {registry or '对应注册表'}）",
+        file=sys.stderr,
+    )
+    print("请先执行以下命令将镜像复制到中转站:", file=sys.stderr)
+    cmd = ["python3 scripts/docker-cache.py copy", f"-s {source_image}", f"-t {target_image}"]
+    if registry:
+        cmd.append(f"-r {registry}")
+    if target_auth_secret:
+        cmd.append(f"-a {target_auth_secret}")
+    if target_auth_key:
+        cmd.append(f"-k {target_auth_key}")
+    print("    " + " \\\n    ".join(cmd), file=sys.stderr)
+    if not target_auth_secret or not target_auth_key:
+        print(
+            "    提示: copy 本地模式需要 target_auth_secret 与 target_auth_key"
+            "（--target-auth-secret / --target-auth-key 或 ~/.dbsrc、环境变量）",
+            file=sys.stderr,
+        )
+
+
+def pull_cached(
+    source_image: str,
+    target_image: str,
+    registry: str,
+    target_auth_secret: str,
+    target_auth_key: str,
+) -> int:
+    """从中转站拉取已缓存的镜像到本地并重命名为源镜像名（中转站必须已存在该镜像）。
+
+    先检查本地 ~/.docker/config.json 是否已登录中转站：已登录则跳过解密与 docker login，
+    直接拉取；未登录才要求 target_auth_secret 与 target_auth_key（取值优先级:
+    命令行 > ~/.dbsrc > 环境变量），解密后登录中转站。镜像不存在时提示并给出对应的
+    copy 命令；无需再从源站复制到中转站。"""
+    if shutil.which("docker") is None:
+        print("错误: 未找到 docker 命令，请先安装 Docker", file=sys.stderr)
+        return 1
+    reg = registry or extract_registry(target_image)
+
+    # 本地已登录中转站时，无需解密与 docker login，直接使用现有登录状态
+    if not is_logged_in(reg):
+        missing = []
+        if not target_auth_secret:
+            missing.append("target_auth_secret（--target-auth-secret 或环境变量 DBS_TARGET_AUTH_SECRET）")
+        if not target_auth_key:
+            missing.append("target_auth_key（--target-auth-key 或环境变量 DBS_TARGET_AUTH_KEY）")
+        if missing:
+            print(f"错误: 缺少以下参数: {'、'.join(missing)}", file=sys.stderr)
+            return 1
+        if shutil.which("openssl") is None:
+            print("错误: 未找到 openssl 命令", file=sys.stderr)
+            return 1
+        try:
+            auth = decrypt_auth(target_auth_secret, target_auth_key)
+            username, password = parse_credentials(auth)
+        except (RuntimeError, ValueError) as exc:
+            print(f"错误: {exc}", file=sys.stderr)
+            return 1
+        print(f"registry: {reg}")
+        proc = subprocess.run(
+            ["docker", "login", reg, "--username", username, "--password-stdin"],
+            input=password.encode(),
+        )
+        if proc.returncode != 0:
+            print(f"错误: 登录 {reg} 失败 (exit {proc.returncode})", file=sys.stderr)
+            return 1
+    if not image_exists_on_registry(target_image):
+        print_copy_hint(source_image, target_image, registry, target_auth_secret, target_auth_key)
+        return 1
+    return pull_to_local(source_image, target_image)
+
+
 def trigger_workflow(
     repo: str,
     branch: str,
@@ -840,6 +976,39 @@ def main() -> int:
         help="加密所用密钥（必填，缺省读取 ~/.dbsrc 或环境变量 DBS_TARGET_AUTH_KEY）",
     )
 
+    parser_pull = sub.add_parser(
+        "pull",
+        help="从中转站拉取已缓存的镜像到本地并重命名为源镜像名",
+        description="从中转站拉取已缓存的镜像：docker pull 中转站镜像 -> docker tag 为源镜像名 -> "
+        "删除中转站标签。中转站必须已存在该镜像，若不存在则提示并给出对应的 copy 命令和参数",
+    )
+    parser_pull.add_argument("-s", "--source-image", help="源镜像名（必填，仅支持命令行传入）")
+    parser_pull.add_argument(
+        "-t", "--target-image",
+        help="中转站镜像；可省略注册表域名（缺省用 DBS_REGISTRY 补全；不指定时用 DBS_REGISTRY + "
+        "DBS_DEFAULT_TARGET_IMAGE + 源镜像名作标签组合而成，与 copy 的目标镜像规则一致）",
+    )
+    parser_pull.add_argument(
+        "-r", "--registry",
+        help="中转站注册表域名，如 registry.cn-guangzhou.aliyuncs.com、docker.io"
+        "（缺省读取 ~/.dbsrc 或环境变量 DBS_REGISTRY，默认 registry.cn-guangzhou.aliyuncs.com）",
+    )
+    parser_pull.add_argument(
+        "-d", "--default-target-image",
+        help="未指定目标镜像时使用的默认镜像路径（不含注册表，缺省读取 ~/.dbsrc 或环境变量"
+        "DBS_DEFAULT_TARGET_IMAGE，默认 jetsung/myimage）",
+    )
+    parser_pull.add_argument(
+        "-a", "--target-auth-secret",
+        help="中转站注册表 auth 值经密钥加密后的结果（本地已登录中转站时可省略；未登录时必填，"
+        "缺省读取 ~/.dbsrc 或环境变量 DBS_TARGET_AUTH_SECRET，本地解密后登录中转站）",
+    )
+    parser_pull.add_argument(
+        "-k", "--target-auth-key",
+        help="解密密钥（本地已登录中转站时可省略；未登录时必填，缺省读取 ~/.dbsrc 或环境变量"
+        "DBS_TARGET_AUTH_KEY）",
+    )
+
     sub.add_parser(
         "doc",
         help="打印完整使用教程并退出",
@@ -911,6 +1080,37 @@ def main() -> int:
             args.registry or config.get("DBS_REGISTRY") or "",
             args.target_auth_key or config.get("DBS_TARGET_AUTH_KEY")
             or os.environ.get("DBS_TARGET_AUTH_KEY"),
+        )
+
+    # ---- pull 子命令：从中转站拉取已缓存的镜像，重新打 tag 为源镜像名 ----
+    if args.command == "pull":
+        if not args.source_image:
+            print("错误: 缺少 source_image（pull -s/--source-image，必填）", file=sys.stderr)
+            return 1
+
+        default_registry = pick(
+            args.registry, config, "DBS_REGISTRY", "registry.cn-guangzhou.aliyuncs.com"
+        )
+        default_target_image = pick(
+            args.default_target_image, config, "DBS_DEFAULT_TARGET_IMAGE", "jetsung/myimage"
+        )
+        # 与 copy 一致：未指定目标镜像时自动组合，显式指定但省略注册表时补全
+        target_image = pick(args.target_image, config, "DBS_TARGET_IMAGE")
+        if not target_image:
+            try:
+                target_image = compose_target_image(args.source_image, default_registry, default_target_image)
+            except ValueError as exc:
+                print(f"错误: {exc}", file=sys.stderr)
+                return 1
+            print(f"未指定 target_image，使用默认中转站镜像: {target_image}")
+        else:
+            target_image = ensure_registry(target_image, default_registry)
+
+        # 与 copy 本地模式一致：secret/key 按 命令行 > ~/.dbsrc > 环境变量 读取，必填并解密登录
+        target_auth_secret = pick(args.target_auth_secret, config, "DBS_TARGET_AUTH_SECRET")
+        target_auth_key = pick(args.target_auth_key, config, "DBS_TARGET_AUTH_KEY")
+        return pull_cached(
+            args.source_image, target_image, default_registry, target_auth_secret, target_auth_key
         )
 
     # ---- copy 子命令 ----
