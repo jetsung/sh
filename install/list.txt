@@ -7,6 +7,8 @@
 ./bore.sh  |  网络穿透工具
 ./chromium.sh  |  Ungoogled Chromium
 ./croc.sh  |  文件传输工具
+./delta.sh  |  增强 git diff 的彩色显示工具
+./direnv.sh  |  Shell 环境变量管理工具
 ./flutter.sh  |  安装 Flutter SDK
 ./frp.sh  |  网络穿透工具
 ./gitlab-runner.sh  |  GitLab Runner
