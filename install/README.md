@@ -29,6 +29,8 @@ done
 | [**bore**](./bore.sh) | [https://fx4.cn/bore](https://fx4.cn/bore) | 网络穿透工具 |
 | [**chromium**](./chromium.sh) | [https://fx4.cn/chromium](https://fx4.cn/chromium) | Ungoogled Chromium |
 | [**croc**](./croc.sh) | [https://fx4.cn/croc](https://fx4.cn/croc) | 文件传输工具 |
+| [**delta**](./delta.sh) | [https://fx4.cn/delta](https://fx4.cn/delta) | 增强 git diff 的彩色显示工具 |
+| [**direnv**](./direnv.sh) | [https://fx4.cn/direnv](https://fx4.cn/direnv) | Shell 环境变量管理工具 |
 | [**flutter**](./flutter.sh) | [https://fx4.cn/flutter](https://fx4.cn/flutter) | 安装 Flutter SDK |
 | [**frp**](./frp.sh) | [https://fx4.cn/frp](https://fx4.cn/frp) | 网络穿透工具 |
 | [**gitlab-runner**](./gitlab-runner.sh) | [https://fx4.cn/gitlab-runner](https://fx4.cn/gitlab-runner) | GitLab Runner |
