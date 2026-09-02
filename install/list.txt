@@ -42,6 +42,7 @@
 ./ttyd.sh  |  ttyd SSH Web 终端
 ./vsd.sh  |  m3u8 下载器 （vsd）
 ./websocat.sh  |  WebSocket 客户端工具，用于在终端进行 WebSocket 通信
+./worktrunk.sh  |  管理 Git worktree 的 CLI，专为并行 AI Agent 工作流设计
 ./wush.sh  |  wush 网络穿透工具
 ./yq.sh  |  便携式命令行 YAML/JSON/XML/CSV/TOML 等多种格式处理工具
 ./zed.sh  |  Zed 编辑器
