@@ -3,6 +3,7 @@
 #============================================================
 # File: restic.sh
 # Description: 安装 Restic 备份工具
+# Source: https://github.com/restic/restic
 # URL: https://fx4.cn/restic
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

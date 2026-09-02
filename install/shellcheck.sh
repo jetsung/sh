@@ -3,6 +3,7 @@
 #============================================================
 # File: shellcheck.sh
 # Description: Shell 脚本分析工具
+# Source: https://github.com/koalaman/shellcheck
 # URL: https://fx4.cn/shellcheck
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1

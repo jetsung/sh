@@ -3,6 +3,7 @@
 #============================================================
 # File: vsd.sh
 # Description: m3u8 下载器 （vsd）
+# Source: https://github.com/forkdo/vsd
 # URL: https://fx4.cn/vsd
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

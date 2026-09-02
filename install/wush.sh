@@ -3,6 +3,7 @@
 #============================================================
 # File: wush.sh
 # Description: wush 网络穿透工具
+# Source: https://github.com/coder/wush
 # URL: https://fx4.cn/wush
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

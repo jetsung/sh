@@ -3,6 +3,7 @@
 #============================================================
 # File: textadept.sh
 # Description: Textadept 编辑器
+# Source: https://github.com/orbitalquark/textadept
 # URL: https://fx4.cn/textadept
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

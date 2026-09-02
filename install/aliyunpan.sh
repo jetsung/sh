@@ -3,6 +3,7 @@
 #============================================================
 # File: aliyunpan.sh
 # Description: 阿里网盘命令行工具
+# Source: https://github.com/tickstep/aliyunpan
 # URL: https://fx4.cn/aliyunpan
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

@@ -3,6 +3,7 @@
 #============================================================
 # File: gitlab-runner.sh
 # Description: GitLab Runner
+# Source: https://gitlab.com/gitlab-org/gitlab-runner
 # URL: https://fx4.cn/gitlab-runner
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

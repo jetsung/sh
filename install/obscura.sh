@@ -3,6 +3,7 @@
 #============================================================
 # File: obscura.sh
 # Description: 无头浏览器 (obscura)
+# Source: https://github.com/h4ckf0r0day/obscura
 # URL: https://fx4.cn/obscura
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

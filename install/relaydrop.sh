@@ -3,6 +3,7 @@
 #============================================================
 # File: relaydrop.sh
 # Description: 文件传输中继服务
+# Source: https://github.com/jetsung/relaydrop
 # URL: https://fx4.cn/relaydrop
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

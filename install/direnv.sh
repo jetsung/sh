@@ -3,6 +3,7 @@
 #============================================================
 # File: direnv.sh
 # Description: Shell 环境变量管理工具
+# Source: https://github.com/direnv/direnv
 # URL: https://fx4.cn/direnv
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

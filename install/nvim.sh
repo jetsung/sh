@@ -3,6 +3,7 @@
 #============================================================
 # File: nvim.sh
 # Description: Neovim 编辑器
+# Source: https://github.com/neovim/neovim
 # URL: https://fx4.cn/nvim
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.2.0

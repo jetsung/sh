@@ -3,6 +3,7 @@
 #============================================================
 # File: delta.sh
 # Description: 增强 git diff 的彩色显示工具
+# Source: https://github.com/dandavison/delta
 # URL: https://fx4.cn/delta
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

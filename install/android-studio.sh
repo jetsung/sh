@@ -3,6 +3,7 @@
 #============================================================
 # File: android-studio.sh
 # Description: Android Studio
+# Source: https://developer.android.com/studio
 # URL: https://developer.android.com/studio
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
