@@ -3,6 +3,7 @@
 #============================================================
 # File: zed.sh
 # Description: Zed 编辑器
+# Source: https://github.com/zed-industries/zed
 # URL: https://fx4.cn/zed
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

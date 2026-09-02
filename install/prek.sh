@@ -3,6 +3,7 @@
 #============================================================
 # File: prek.sh
 # Description: Git 钩子管理工具
+# Source: https://github.com/j178/prek
 # URL: https://fx4.cn/prek
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1

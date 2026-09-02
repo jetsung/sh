@@ -3,6 +3,7 @@
 #============================================================
 # File: flutter.sh
 # Description: 安装 Flutter SDK
+# Source: https://github.com/flutter/flutter
 # URL: https://fx4.cn/flutter
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

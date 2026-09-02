@@ -3,6 +3,7 @@
 #============================================================
 # File: bore.sh
 # Description: 网络穿透工具
+# Source: https://github.com/ekzhang/bore
 # URL: https://fx4.cn/bore
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1

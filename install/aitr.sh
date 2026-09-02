@@ -3,6 +3,7 @@
 #============================================================
 # File: aitr.sh
 # Description: AI 文档翻译工具
+# Source: https://github.com/jetsung/ai-translator
 # URL: https://fx4.cn/aitr
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

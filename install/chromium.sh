@@ -3,6 +3,7 @@
 #============================================================
 # File: chromium.sh
 # Description: Ungoogled Chromium
+# Source: https://github.com/ungoogled-software/ungoogled-chromium-portablelinux
 # URL: https://fx4.cn/chromium
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.4.2

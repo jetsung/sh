@@ -3,6 +3,7 @@
 #============================================================
 # File: just.sh
 # Description: 构建工具
+# Source: https://github.com/casey/just
 # URL: https://fx4.cn/just
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1

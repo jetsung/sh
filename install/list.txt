@@ -3,26 +3,38 @@
 ./aliyunpan.sh  |  阿里网盘命令行工具
 ./android-studio.sh  |  Android Studio
 ./asciinema.sh  |  录制和直播终端会话的命令行工具
+./ast-grep.sh  |  基于语法树的代码结构搜索、lint 与重写 CLI 工具（ast-grep）
 ./atuin.sh  |  Shell 历史记录管理工具
+./bat.sh  |  带语法高亮的 cat 增强工具
 ./bore.sh  |  网络穿透工具
+./bottom.sh  |  跨平台的图形化进程/系统监控工具
 ./chromium.sh  |  Ungoogled Chromium
 ./croc.sh  |  文件传输工具
 ./delta.sh  |  增强 git diff 的彩色显示工具
+./difftastic.sh  |  能理解语法的结构化 diff 工具
 ./direnv.sh  |  Shell 环境变量管理工具
+./dust.sh  |  用 Rust 编写的更直观的磁盘占用分析（du）工具
+./eza.sh  |  ls 的现代替代工具
+./fd.sh  |  简单快速的 find 替代工具
 ./flutter.sh  |  安装 Flutter SDK
 ./frp.sh  |  网络穿透工具
 ./gitlab-runner.sh  |  GitLab Runner
 ./goreleaser.sh  |  Go语言程序构建工具
 ./hugo.sh  |  静态网站生成器
+./jed.sh  |  用 sed 语法处理 JSON 的命令行工具
 ./just.sh  |  构建工具
+./lsd.sh  |  下一代 ls 命令：彩色、带图标、更现代的目录列表工具
 ./m3u8-downloader.sh  |  m3u8 下载器 (m3u8-downloader)
 ./nvim.sh  |  Neovim 编辑器
 ./obscura.sh  |  无头浏览器 (obscura)
 ./prek.sh  |  Git 钩子管理工具
+./procs.sh  |  用 Rust 编写的现代 ps 进程查看替代工具
 ./protoc.sh  |  protobuf 编译工具
 ./rclone.sh  |  安装 rclone 命令行工具
 ./relaydrop.sh  |  文件传输中继服务
 ./restic.sh  |  安装 Restic 备份工具
+./ripgrep.sh  |  极速递归搜索文件内容的正则工具，遵循 gitignore 规则
+./rtk.sh  |  降低 LLM token 消耗的 CLI 代理工具
 ./shellcheck.sh  |  Shell 脚本分析工具
 ./skim.sh  |  命令行模糊查找器
 ./static-web-server.sh  |  静态网站服务器
@@ -31,5 +43,6 @@
 ./vsd.sh  |  m3u8 下载器 （vsd）
 ./websocat.sh  |  WebSocket 客户端工具，用于在终端进行 WebSocket 通信
 ./wush.sh  |  wush 网络穿透工具
+./yq.sh  |  便携式命令行 YAML/JSON/XML/CSV/TOML 等多种格式处理工具
 ./zed.sh  |  Zed 编辑器
 ./zoxide.sh  |  zoxide 智能 CD 命令行工具

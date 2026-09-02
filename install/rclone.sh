@@ -3,6 +3,7 @@
 #============================================================
 # File: rclone.sh
 # Description: 安装 rclone 命令行工具
+# Source: https://github.com/rclone/rclone
 # URL: https://fx4.cn/rclone
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

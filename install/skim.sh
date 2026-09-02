@@ -3,6 +3,7 @@
 #============================================================
 # File: skim.sh
 # Description: 命令行模糊查找器
+# Source: https://github.com/skim-rs/skim
 # URL: https://fx4.cn/skim
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

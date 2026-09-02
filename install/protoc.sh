@@ -3,7 +3,8 @@
 #============================================================
 # File: protoc.sh
 # Description: protobuf 编译工具
-# URL: 
+# Source: https://github.com/protocolbuffers/protobuf
+# URL: https://fx4.cn/protoc
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2025-

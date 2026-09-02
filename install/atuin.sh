@@ -3,6 +3,7 @@
 #============================================================
 # File: atuin.sh
 # Description: Shell 历史记录管理工具
+# Source: https://github.com/atuinsh/atuin
 # URL: https://fx4.cn/atuin
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.1

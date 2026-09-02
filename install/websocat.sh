@@ -3,6 +3,7 @@
 #============================================================
 # File: websocat.sh
 # Description: WebSocket 客户端工具，用于在终端进行 WebSocket 通信
+# Source: https://github.com/vi/websocat
 # URL: https://fx4.cn/websocat
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

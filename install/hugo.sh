@@ -3,6 +3,7 @@
 #============================================================
 # File: hugo.sh
 # Description: 静态网站生成器
+# Source: https://github.com/gohugoio/hugo
 # URL: https://fx4.cn/hugo
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0

@@ -3,6 +3,7 @@
 #============================================================
 # File: asciinema.sh
 # Description: 录制和直播终端会话的命令行工具
+# Source: https://github.com/asciinema/asciinema
 # URL: https://fx4.cn/asciinema
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
