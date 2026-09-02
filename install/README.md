@@ -64,6 +64,7 @@ done
 | [**ttyd**](./ttyd.sh) | [https://fx4.cn/ttyd](https://fx4.cn/ttyd) | ttyd SSH Web 终端 |
 | [**vsd**](./vsd.sh) | [https://fx4.cn/vsd](https://fx4.cn/vsd) | m3u8 下载器 （vsd） |
 | [**websocat**](./websocat.sh) | [https://fx4.cn/websocat](https://fx4.cn/websocat) | WebSocket 客户端工具，用于在终端进行 WebSocket 通信 |
+| [**worktrunk**](./worktrunk.sh) | [https://fx4.cn/wt](https://fx4.cn/wt) | 管理 Git worktree 的 CLI，专为并行 AI Agent 工作流设计 |
 | [**wush**](./wush.sh) | [https://fx4.cn/wush](https://fx4.cn/wush) | wush 网络穿透工具 |
 | [**yq**](./yq.sh) | [https://fx4.cn/yq](https://fx4.cn/yq) | 便携式命令行 YAML/JSON/XML/CSV/TOML 等多种格式处理工具 |
 | [**zed**](./zed.sh) | [https://fx4.cn/zed](https://fx4.cn/zed) | Zed 编辑器 |
