@@ -114,14 +114,23 @@ download_exact() {
     fi
 
     # 自动定位可执行文件：兼容「包内含顶层目录」与「包内直接是二进制」两种结构
+    # bottom 的二进制文件名为 btm（而非 bottom），需在候选名称中包含
     local _src=""
-    if [[ -s raw_bin ]]; then
-        _src="raw_bin"
-    elif [[ -f "$file_bin" ]]; then
-        _src="$file_bin"
-    else
-        _src=$(find extract -type f -name "$file_bin" 2>/dev/null | head -n 1)
-    fi
+    local name
+    for name in "$file_bin" "btm"; do
+        if [[ -s raw_bin ]]; then
+            _src="raw_bin"
+            break
+        fi
+        if [[ -f "$name" ]]; then
+            _src="$name"
+            break
+        fi
+        _src=$(find extract -type f -name "$name" 2>/dev/null | head -n 1)
+        if [[ -n "$_src" ]]; then
+            break
+        fi
+    done
     if [[ -z "$_src" ]]; then
         _src=$(find extract -type f -perm -u+x 2>/dev/null | head -n 1)
     fi
