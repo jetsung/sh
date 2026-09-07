@@ -4,8 +4,8 @@
 # Description: Restic 备份工具 - 支持本地/远程多仓库备份、自动触发（登录/关机/cron）、快照管理
 # URL: https://fx4.cn/resticbackup
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.6.0
-# UpdatedAt: 2026-07-01
+# Version: 0.7.0
+# UpdatedAt: 2026-09-07
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -45,11 +45,13 @@ if [[ -f "$REPOS_FILE" ]]; then
   done < "$REPOS_FILE"
 fi
 
-# 从 sources.txt 读取备份目标（每行一个，支持 $HOME 展开）
+# 从 sources.txt 读取备份目标（每行一个，# 开头为注释行，支持 $HOME 展开）
 BACKUP_SOURCES=()
 if [[ -f "$SOURCES_FILE" ]]; then
   while IFS= read -r line; do
-    [[ -n "$line" ]] && BACKUP_SOURCES+=("$(eval echo "$line")")
+    # 跳过空行与 # 开头的注释行
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    BACKUP_SOURCES+=("$(eval echo "$line")")
   done < "$SOURCES_FILE"
 fi
 
@@ -169,10 +171,11 @@ show_help() {
 
 备份行为:
   所有可用仓库（本地 + 远程）均执行备份，快照独立
+  备份时默认排除所有 .git 文件夹
 
 配置文件:
   $REPOS_FILE      远程仓库列表（每行一个）
-  $SOURCES_FILE    备份目标列表（每行一个，支持 \$HOME）
+  $SOURCES_FILE    备份目标列表（每行一个，# 开头为注释，空行忽略，支持 \$HOME）
   $PASSWORD_FILE   restic 仓库密码
 
 Tag 规则:
@@ -414,6 +417,9 @@ if [[ "$TODAY" == "01" ]]; then
   echo "Monthly backup detected, adding tag: $MONTH_TAG"
 fi
 
+# 默认排除项：跳过所有 .git 文件夹
+EXCLUDE_ARGS=(--exclude .git)
+
 # 构建仓库列表：本地 + 远程
 ALL_REPOS=()
 if [[ "$LOCAL_REPO_EXISTS" == "true" ]]; then
@@ -436,7 +442,7 @@ for repo in "${ALL_REPOS[@]}"; do
     continue
   fi
 
-  restic backup -r "$repo" "${TAG_ARGS[@]}" "${BACKUP_SOURCES[@]}"
+  restic backup -r "$repo" "${TAG_ARGS[@]}" "${EXCLUDE_ARGS[@]}" "${BACKUP_SOURCES[@]}"
 done
 
 echo "------------------------------------------------"
