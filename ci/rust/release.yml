@@ -6,6 +6,14 @@ on:
       # 仅匹配正式版标签 vX.Y.Z（如 v1.0.0、v10.20.30），排除预发布版本（如 v1.0.0-alpha、v1.0.0-rc1）
       - 'v[0-9]*.[0-9]*.[0-9]*'
       - '!v[0-9]*.[0-9]*.[0-9]*-*'
+      # 支持 beta 版（如 v1.0.0-beta、v1.0.0-beta.1）
+      - 'v[0-9]*.[0-9]*.[0-9]*-beta*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: '要补发资产的已有 tag（如 v1.0.0），留空则使用当前分支/引用'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -24,7 +32,8 @@ jobs:
       - name: Extract tag name
         id: tag
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
+          TAG="${{ inputs.tag_name || github.ref }}"
+          TAG="${TAG#refs/tags/}"
           VERSION="${TAG#v}"
           echo "TAG_NAME=$TAG" >> $GITHUB_OUTPUT
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
@@ -194,12 +203,17 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ needs.extract-version.outputs.tag }}
           files: all-dist/*
           generate_release_notes: true
+          # beta 版在 GitHub 上标记为 prerelease
+          prerelease: ${{ contains(needs.extract-version.outputs.tag, '-beta') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-crates:
+    # beta 版本不发布到 crates.io
+    if: ${{ !contains(needs.extract-version.outputs.tag, '-beta') }}
     needs: [extract-version, create-release]
     runs-on: ubuntu-24.04
     steps:
