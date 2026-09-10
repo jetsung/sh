@@ -3,7 +3,7 @@
 #============================================================
 # File: setup.sh
 # Description: 一键下发 Docker CI 脚手架到目标项目
-# URL: https://git.asfd.cn/jetsung/sh/raw/branch/main/ci/setup.sh
+# URL: https://fx4.cn/githubci
 # Author: Jetsung Chan <i@jetsung.com>
 # Version: 0.1.0
 # CreatedAt: 2026-07-11
