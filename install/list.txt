@@ -25,6 +25,7 @@
 ./just.sh  |  构建工具
 ./lsd.sh  |  下一代 ls 命令：彩色、带图标、更现代的目录列表工具
 ./m3u8-downloader.sh  |  m3u8 下载器 (m3u8-downloader)
+./mtrans.sh  |  Docker 镜像复制工具，可将源镜像同步到目标 registry 并拉取到本地
 ./nvim.sh  |  Neovim 编辑器
 ./obscura.sh  |  无头浏览器 (obscura)
 ./prek.sh  |  Git 钩子管理工具

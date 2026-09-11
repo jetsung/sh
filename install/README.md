@@ -47,6 +47,7 @@ done
 | [**just**](./just.sh) | [https://fx4.cn/just](https://fx4.cn/just) | 构建工具 |
 | [**lsd**](./lsd.sh) | [https://fx4.cn/lsd](https://fx4.cn/lsd) | 下一代 ls 命令：彩色、带图标、更现代的目录列表工具 |
 | [**m3u8-downloader**](./m3u8-downloader.sh) | [https://fx4.cn/m3u8-downloader](https://fx4.cn/m3u8-downloader) | m3u8 下载器 (m3u8-downloader) |
+| [**mtrans**](./mtrans.sh) | [https://fx4.cn/mtrans](https://fx4.cn/mtrans) | Docker 镜像复制工具，可将源镜像同步到目标 registry 并拉取到本地 |
 | [**nvim**](./nvim.sh) | [https://fx4.cn/nvim](https://fx4.cn/nvim) | Neovim 编辑器 |
 | [**obscura**](./obscura.sh) | [https://fx4.cn/obscura](https://fx4.cn/obscura) | 无头浏览器 (obscura) |
 | [**prek**](./prek.sh) | [https://fx4.cn/prek](https://fx4.cn/prek) | Git 钩子管理工具 |

@@ -2,12 +2,12 @@
 
 #============================================================
 # File: setup.sh
-# Description: 一键下发 Docker CI 脚手架到目标项目
+# Description: 一键下发 GitHub CI 脚手架（docker / 原生发布 / 文档）到目标项目
 # URL: https://fx4.cn/githubci
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.1
+# Version: 0.2.0
 # CreatedAt: 2026-07-11
-# UpdatedAt: 2026-09-11
+# UpdatedAt: 2026-09-12
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -34,12 +34,16 @@ usage() {
 Usage: setup.sh -l <language> [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e] [-R] [-f] [-h]
 
   -l, --language <lang>   目标语言（必填），如 rust
-  -a, --project <value>   镜像归属，支持三种形态：
-                           ORG/REPO  同时设置 image_org 与 package_name
-                           myorg     仅设置 image_org
-                           /myrepo   仅设置 package_name
-  -o, --docs              开关：下发 MkDocs 文档构建工作流（.github/workflows/docs.yml）
-                           依赖通过 uv 在 docs.yml 中安装，无需 requirements.txt
+  -a, --project <value>   项目归属（组织/项目名），支持三种形态：
+                           ORG/REPO  同时设置组织与项目名
+                           myorg     仅设置组织名
+                           /myrepo   仅设置项目名
+                           项目名（REPO）用于替换发布工作流（release*.yml）内的 APP、
+                           Dockerfile 与 compose.yaml 内的应用名；组织名/项目名还会写入
+                           docker-release.yml 的 image_org/package_name 及 zensical.toml 的
+                           ORG/REPO。不构建 docker 镜像（仅 --release 等）时同样适用。
+  -o, --docs              开关：下发 Zensical 文档构建工作流（.github/workflows/docs.yml）
+                           构建依赖 zensical 在 docs.yml 中通过 pip 安装，无需 requirements.txt
   -D, --domain <domain>   自定义域名（必填值），配合 --docs 在目标项目生成
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
   -r, --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
@@ -196,7 +200,7 @@ rust_cargo_check() {
         return 0
     fi
 
-    # 项目名称：依次尝试 Cargo.toml 的 package.name、-p 的 REPO、relaydrop
+    # 项目名称：依次尝试 Cargo.toml 的 package.name、-a 的 REPO、relaydrop
     local pkg_name=""
     pkg_name="$(grep -m1 '^\s*name\s*=' "$cargo_file" 2>/dev/null | sed -E 's/.*=\s*"([^"]+)".*/\1/')"
     if [[ -z "$pkg_name" ]]; then
@@ -333,7 +337,7 @@ if [[ "$DOCKER_ENABLED" -eq 1 ]]; then
             ;;
     esac
 
-    # 2.5 根据 -p 形态写入 docker-release.yml 的 env.image_org / env.package_name
+    # 2.5 根据 -a 形态写入 docker-release.yml 的 env.image_org / env.package_name
     if [[ -n "$PROJECT" ]]; then
         rel_wf=".github/workflows/docker-release.yml"
         if [[ -f "$rel_wf" ]]; then
@@ -354,7 +358,7 @@ if [[ "$DOCKER_ENABLED" -eq 1 ]]; then
                 # 仅 ORG：形如 myorg
                 replace_in_file "$rel_wf" 'image_org:.*' "image_org: '${PROJECT}'"
             fi
-            echo "已应用 -p ${PROJECT} 到 ${rel_wf}"
+            echo "已应用 -a ${PROJECT} 到 ${rel_wf}"
         fi
     fi
 else
@@ -382,7 +386,7 @@ if [[ "$README_ENABLED" -eq 1 ]]; then
 fi
 
 # 注意：docker/compose.yaml 内嵌到 README.md 的逻辑已移至本脚本末尾的「compose.yaml 下发」段之后，
-# 确保占位符（__APP_*__）已完成 -p 替换后再内嵌，README 与落地文件保持一致。
+# 确保占位符（__APP_*__）已完成 -a 替换后再内嵌，README 与落地文件保持一致。
 
 #------------------------------------------------------------
 # 文档工作流下发（--docs）
@@ -420,38 +424,38 @@ if [[ "$DOCS_ENABLED" -eq 1 ]]; then
     fi
     rm -f "$docs_tmp"
 
-    # 3.2.1 下发 mkdocs.yml 到项目根（docs.yml 工作流监听 mkdocs.yml 变更）
+    # 3.2.1 下发 zensical.toml 到项目根（docs.yml 工作流监听 zensical.toml 变更）
     # 若目标已存在（无论 -f 与否）则跳过，保留用户原有文件
-    mkdocs_dest="mkdocs.yml"
-    if [[ -f "$mkdocs_dest" ]]; then
-        echo "已存在: $mkdocs_dest，已跳过下发（-f 不影响此文件）。"
+    cfg_dest="zensical.toml"
+    if [[ -f "$cfg_dest" ]]; then
+        echo "已存在: $cfg_dest，已跳过下发（-f 不影响此文件）。"
     else
-        maybe_write "$mkdocs_dest" "docs/mkdocs.yml"
+        maybe_write "$cfg_dest" "docs/zensical.toml"
     fi
 
-    # 3.2.2 若提供了 -p，将 mkdocs.yml 中的 ORG/REPO 占位分别替换为组织与仓库名
+    # 3.2.2 若提供了 -a，将 zensical.toml 中的 ORG/REPO 占位分别替换为组织与项目名
     if [[ -n "$PROJECT" ]]; then
-        mkdocs_org=""
-        mkdocs_repo=""
+        cfg_org=""
+        cfg_repo=""
         if [[ "$PROJECT" == /* ]]; then
             # 仅 REPO：形如 /myrepo，org 缺省为作者默认 org
-            mkdocs_repo="${PROJECT#/}"
-            mkdocs_org="jetsung"
+            cfg_repo="${PROJECT#/}"
+            cfg_org="jetsung"
         elif [[ "$PROJECT" == */* ]]; then
             # ORG/REPO：两半均非空
-            mkdocs_org="${PROJECT%%/*}"
-            mkdocs_repo="${PROJECT##*/}"
+            cfg_org="${PROJECT%%/*}"
+            cfg_repo="${PROJECT##*/}"
         else
             # 仅 ORG：形如 myorg，repo 未知，仅替换 org
-            mkdocs_org="$PROJECT"
+            cfg_org="$PROJECT"
         fi
-        if [[ -n "$mkdocs_org" ]]; then
-            replace_in_file "$mkdocs_dest" 'ORG' "$mkdocs_org"
-            echo "已替换 mkdocs.yml 中的 ORG 为 ${mkdocs_org}"
+        if [[ -n "$cfg_org" ]]; then
+            replace_in_file "$cfg_dest" 'ORG' "$cfg_org"
+            echo "已替换 zensical.toml 中的 ORG 为 ${cfg_org}"
         fi
-        if [[ -n "$mkdocs_repo" ]]; then
-            replace_in_file "$mkdocs_dest" 'REPO' "$mkdocs_repo"
-            echo "已替换 mkdocs.yml 中的 REPO 为 ${mkdocs_repo}"
+        if [[ -n "$cfg_repo" ]]; then
+            replace_in_file "$cfg_dest" 'REPO' "$cfg_repo"
+            echo "已替换 zensical.toml 中的 REPO 为 ${cfg_repo}"
         fi
     fi
 
@@ -483,7 +487,7 @@ if [[ "$DOCS_ENABLED" -eq 1 ]]; then
         fi
     fi
 
-    # 4.2 确保 MkDocs 构建产物 site/ 被 git 忽略
+    # 4.2 确保 Zensical 构建产物 site/ 被 git 忽略
     # 不存在则创建；已存在但无 site/ 行则追加；已有则跳过，避免重复
     gitignore_dest=".gitignore"
     if [[ ! -f "$gitignore_dest" ]]; then
@@ -513,8 +517,7 @@ if [[ -n "$RELEASE_ENABLED" ]]; then
         maybe_write "$rel_dest" "$rel_src"
         echo "已下发发布工作流: $rel_dest"
 
-        # 4.3 若 -p 解析出 REPO 名，将工作流内 APP 占位符替换为仓库名
-        rel_repo=""
+        # 4.3 若 -a 解析出 REPO 名，将工作流内 APP 占位符替换为项目名
         case "$PROJECT" in
             /*)
                 rel_repo="${PROJECT#/}"
@@ -547,7 +550,7 @@ if [[ -n "$RELEASE_LINUX_ENABLED" ]]; then
         maybe_write "$rel_dest" "$rel_src"
         echo "已下发 Linux 发布工作流: $rel_dest"
 
-        # 4.7 若 -p 解析出 REPO 名，将工作流内 APP 占位符替换为仓库名
+        # 4.7 若 -a 解析出 REPO 名，将工作流内 APP 占位符替换为项目名
         rel_repo=""
         case "$PROJECT" in
             /*)
@@ -595,7 +598,7 @@ if [[ "$DOCKER_ENABLED" -eq 1 ]]; then
     cat "$runtime_stage" >> docker/Dockerfile
     echo "已生成: docker/Dockerfile"
 
-        # 3.4 对 rust 且 -p 含有 REPO 的语言，将 Dockerfile 中 myapp 替换为项目名称
+        # 3.4 对 rust 且 -a 解析出 REPO 名时，将 Dockerfile 中 myapp 替换为项目名
         if [[ "$LANG_NAME" == "rust" && -n "$PROJECT" ]]; then
             repo=""
             case "$PROJECT" in
@@ -626,7 +629,7 @@ if [[ "$DOCKER_ENABLED" -eq 1 ]]; then
         maybe_write "docker/compose.yaml" "docker/compose.yaml"
         echo "已下发: docker/compose.yaml"
 
-        # 5.2 若 -p 解析出 REPO 名，覆盖镜像与服务名占位符
+        # 5.2 若 -a 解析出 REPO 名，覆盖镜像与服务名占位符
         comp_repo=""
         comp_org="jetsung"
         case "$PROJECT" in
@@ -670,7 +673,7 @@ if [[ -f "$compose_src" && -n "${readme_dest:-}" ]]; then
     echo "已内嵌 $compose_src（移除 build 段）到 $readme_dest"
 fi
 
-# 5.4 若 -p 含 ORG/REPO，将 README.md 追加内容中的 ORG/REPO 占位替换为组织与仓库名
+# 5.4 若 -a 含 ORG/REPO，将 README.md 追加内容中的 ORG/REPO 占位替换为组织与项目名
 # 仅当 README 已下发（readme_dest 非空，即启用 --readme）时才执行
 if [[ -n "${readme_dest:-}" && -n "$PROJECT" && "$PROJECT" == */* ]]; then
     org="${PROJECT%%/*}"
