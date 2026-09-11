@@ -62,7 +62,7 @@ done
 | [**static-web-server**](./static-web-server.sh) | [https://fx4.cn/sws](https://fx4.cn/sws) | 静态网站服务器 |
 | [**textadept**](./textadept.sh) | [https://fx4.cn/textadept](https://fx4.cn/textadept) | Textadept 编辑器 |
 | [**ttyd**](./ttyd.sh) | [https://fx4.cn/ttyd](https://fx4.cn/ttyd) | ttyd SSH Web 终端 |
-| [**vsd**](./vsd.sh) | [https://fx4.cn/vsd](https://fx4.cn/vsd) | m3u8 下载器 （vsd） |
+| [**vsd**](./vsd.sh) | [https://fx4.cn/vsd](https://fx4.cn/vsd) | HLS (m3u8) / DASH (mpd) 流媒体下载工具 |
 | [**websocat**](./websocat.sh) | [https://fx4.cn/websocat](https://fx4.cn/websocat) | WebSocket 客户端工具，用于在终端进行 WebSocket 通信 |
 | [**worktrunk**](./worktrunk.sh) | [https://fx4.cn/wt](https://fx4.cn/wt) | 管理 Git worktree 的 CLI，专为并行 AI Agent 工作流设计 |
 | [**wush**](./wush.sh) | [https://fx4.cn/wush](https://fx4.cn/wush) | wush 网络穿透工具 |
