@@ -5,9 +5,9 @@
 # Description: 一键下发 Docker CI 脚手架到目标项目
 # URL: https://fx4.cn/githubci
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.1.1
 # CreatedAt: 2026-07-11
-# UpdatedAt: 2026-07-12
+# UpdatedAt: 2026-09-11
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -210,6 +210,7 @@ rust_cargo_check() {
     # 回显头：无论是否存在，先输出建议内容（项目名称已替换）
     echo "--- Cargo.toml 建议补全段（package=${pkg_name}）---"
     if ! grep -q '^\s*\[\s*package\.metadata\.deb\s*\]' "$cargo_file"; then
+        _rust_meta_missing=1
         cat <<DEB
 
 [package.metadata.deb]
@@ -220,6 +221,7 @@ assets = [
 DEB
     fi
     if ! grep -q '^\s*\[\s*package\.metadata\.generate-rpm\s*\]' "$cargo_file"; then
+        _rust_meta_missing=1
         cat <<RPM
 
 [package.metadata.generate-rpm]
@@ -230,6 +232,31 @@ assets = [
 RPM
     fi
     echo "--- 建议结束 ---"
+
+    # 若本次新增了任一 deb/rpm 配置段，加亮提示需放置于 [package] 段下
+    if [[ -n "${_rust_meta_missing:-}" ]]; then
+        local c_reset c_yellow c_cyan
+        c_reset="$(tput sgr0 2>/dev/null || true)"
+        c_yellow="$(tput setaf 3 2>/dev/null || true)"
+        c_cyan="$(tput setaf 6 2>/dev/null || true)"
+        # 上述段应插入 [package] 段内（而非文件末尾），否则 cargo-deb / cargo-generate-rpm 无法读取
+        printf '%s⚠️  注意:%s 以上新配置段必须放在 %s[package]%s 段下（而不是追加到文件末尾），%s\n' \
+            "$c_yellow" "$c_reset" "$c_cyan" "$c_reset" "$c_reset"
+        printf '%s否则 cargo deb / cargo generate-rpm 将无法识别。%s\n' "$c_yellow" "$c_reset"
+    fi
+
+    # 检测 [package] 段下是否有 description 属性（deb/rpm 打包必需），缺失则加亮提示
+    if ! sed -n '/^\s*\[\s*package\s*\]/,/^\s*\[/p' "$cargo_file" | grep -q '^\s*description\s*='; then
+        local c_reset2 c_yellow2 c_cyan2 c_bold2
+        c_reset2="$(tput sgr0 2>/dev/null || true)"
+        c_yellow2="$(tput setaf 3 2>/dev/null || true)"
+        c_cyan2="$(tput setaf 6 2>/dev/null || true)"
+        c_bold2="$(tput bold 2>/dev/null || true)"
+        printf '%s⚠️  提醒:%s %s[package]%s 段下缺少 %sdescription%s 属性，deb/rpm 打包需要它，%s\n' \
+            "$c_yellow2" "$c_reset2" "$c_cyan2" "$c_reset2" "$c_bold2" "$c_reset2" "$c_reset2"
+        printf '%s请手动添加，例如：%s description = "一句话项目简介"%s\n' \
+            "$c_yellow2" "$c_cyan2" "$c_reset2"
+    fi
 
     # 1) [package.metadata.deb]
     if grep -q '^\s*\[\s*package\.metadata\.deb\s*\]' "$cargo_file"; then
