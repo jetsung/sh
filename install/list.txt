@@ -40,7 +40,7 @@
 ./static-web-server.sh  |  静态网站服务器
 ./textadept.sh  |  Textadept 编辑器
 ./ttyd.sh  |  ttyd SSH Web 终端
-./vsd.sh  |  m3u8 下载器 （vsd）
+./vsd.sh  |  HLS (m3u8) / DASH (mpd) 流媒体下载工具
 ./websocat.sh  |  WebSocket 客户端工具，用于在终端进行 WebSocket 通信
 ./worktrunk.sh  |  管理 Git worktree 的 CLI，专为并行 AI Agent 工作流设计
 ./wush.sh  |  wush 网络穿透工具
