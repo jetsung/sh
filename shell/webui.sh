@@ -50,9 +50,11 @@ PI_PAT='[p]i-web --hostname'
 OMP_PAT='[o]mp-web --hostname'
 
 # cbc = CodeBuddy 隔离启动器（逻辑内联自 ~/.local/bin/cbs），--serve 自带 Web UI。
-# 进程经 exec 后命令行是 <node> .../codebuddy --serve ...，按此匹配。
+# 进程经 exec 后命令行是 <node> .../codebuddy --serve --host 0.0.0.0 --port 30140 --auth none。
+# 匹配到 --host 0.0.0.0 为止：WorkBuddy 内嵌 codebuddy（/opt/WorkBuddy/...）同样以
+# `codebuddy --serve ...` 起进程但不带 --host，裸匹配会误判 cbc 已在运行。
 CBC_PORT=30140
-CBC_PAT='[c]odebuddy --serve'
+CBC_PAT='[c]odebuddy --serve --host 0.0.0.0'
 # CodeBuddy 配置目录（与 WorkBuddy 的 ~/.workbuddy 完全隔离）
 CBC_CONFIG_DIR="${CB_CONFIG_DIR:-$HOME/.codebuddy}"
 
@@ -83,12 +85,15 @@ else
 fi
 
 running() { pgrep -f "$1" >/dev/null; }
-pids_of() { pgrep -f "$1" | tr '\n' ' '; }
+# pgrep 无匹配时退出码非零，|| true 抵消 pipefail，避免调用处被 set -e 波及
+pids_of() { pgrep -f "$1" 2>/dev/null | tr '\n' ' ' || true; }
 
-# 监听指定端口的进程 pid（取自 ss，最可靠——pid 文件/匹配串都可能抓到别的实例）
+# 监听指定端口的进程 pid（取自 ss，最可靠——pid 文件/匹配串都可能抓到别的实例）。
+# 端口无人监听时管道会以非零退出（pipefail），|| true 保证函数恒返回 0，
+# 否则 set -e 会在 status 循环中途杀掉整个脚本。
 port_pid() { # $1=端口
   ss -lntpH 2>/dev/null | awk -v p=":$1\$" '$4 ~ p' \
-    | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u | head -1
+    | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u | head -1 || true
 }
 
 start_one() { # $1=名 $2=bin(命令名) $3=端口 $4=匹配串 $5=启动参数 $6=可选:额外环境(如 BROWSER=/bin/false)
@@ -156,10 +161,11 @@ stop_one() { # $1=名 $2=匹配串 $3=端口
   pkill -f "$2" 2>/dev/null || true
   rm -f "$pf"
 
-  # 最后兜底：按端口清理残留（fork 出去的 bun / next-server 命令行里没有关键字）
+  # 最后兜底：按端口清理残留（fork 出去的 bun / next-server 命令行里没有关键字）。
+  # 端口无人监听时 grep 无匹配会因 pipefail 使赋值非零，|| true 防 set -e 中断。
   local holder
   holder="$(ss -lntpH 2>/dev/null | awk -v p=":$port\$" '$4 ~ p {print $NF}' \
-            | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u)"
+            | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u || true)"
   if [[ -n "$holder" ]]; then
     # holder 是换行分隔的多个 pid，有意按空白拆分传给 kill
     # shellcheck disable=SC2086
@@ -244,7 +250,15 @@ start_t() { # $1=目标
         "webui --host 0.0.0.0 --port $AC_PORT --no-telemetry" \
         "export BROWSER=/bin/false"
       ;;
-    all) start_t pi; start_t omp; start_t cbc; start_t dsh; start_t atomcode ;;
+    # 逐个启动；单渠道失败（返回 1）不应中止其余渠道，故逐个 || true。
+    # start_t 内部有自己的报错输出，失败原因已在 stderr 展示。
+    all)
+      start_t pi      || true
+      start_t omp     || true
+      start_t cbc     || true
+      start_t dsh     || true
+      start_t atomcode || true
+      ;;
     *) echo "用法: webui start [pi|omp|cbc|dsh|atomcode]" >&2; exit 2 ;;
   esac
 }
