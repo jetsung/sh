@@ -8,6 +8,9 @@
 # UpdatedAt: 2026-09-07
 #============================================================
 
+# cron/systemd 环境的 PATH 不含 /usr/local/bin（restic 所在目录），显式补全
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
 if [[ -n "${DEBUG:-}" ]]; then
   set -eux
 else
@@ -45,6 +48,39 @@ if [[ -f "$REPOS_FILE" ]]; then
   done < "$REPOS_FILE"
 fi
 
+# 启动时一次性依赖检查：restic 必装；存在远程仓库时 rclone 必装
+# 且 repos.txt 中的渠道必须已在 rclone 中配置（登录），否则直接报错退出
+check_dependencies() {
+  local missing=()
+  command -v restic >/dev/null 2>&1 || missing+=(restic)
+  if (( ${#REMOTE_REPOS[@]} > 0 )); then
+    command -v rclone >/dev/null 2>&1 || missing+=(rclone)
+  fi
+  if (( ${#missing[@]} > 0 )); then
+    echo "ERROR: Missing required commands: ${missing[*]} (PATH=$PATH)"
+    exit 1
+  fi
+
+  if (( ${#REMOTE_REPOS[@]} > 0 )); then
+    local configured remote repo not_logged_in=()
+    configured="$(rclone listremotes 2>/dev/null || true)"
+    for repo in "${REMOTE_REPOS[@]}"; do
+      [[ "$repo" == rclone:* ]] || continue
+      remote="${repo#rclone:}"
+      remote="${remote%%:*}"
+      if ! grep -qix -- "${remote}:" <<< "$configured"; then
+        not_logged_in+=("$remote")
+      fi
+    done
+    if (( ${#not_logged_in[@]} > 0 )); then
+      echo "ERROR: rclone remote(s) not configured (not logged in): ${not_logged_in[*]}"
+      echo "Run 'rclone config' to add them, or fix $REPOS_FILE"
+      exit 1
+    fi
+  fi
+}
+check_dependencies
+
 # 从 sources.txt 读取备份目标（每行一个，# 开头为注释行，支持 $HOME 展开）
 BACKUP_SOURCES=()
 if [[ -f "$SOURCES_FILE" ]]; then
@@ -60,8 +96,26 @@ fi
 #   [ -e "$f" ] && BACKUP_SOURCES+=("$f")
 # done
 
+# 仅桌面环境支持登录备份：graphical-session.target 依赖图形会话，无桌面的主机（VPS/服务器）不得安装
+require_desktop() {
+  if [[ -n "${XDG_CURRENT_DESKTOP:-}" || -n "${DISPLAY:-}" || -n "${WAYLAND_DISPLAY:-}" ]] \
+    || systemctl --user is-active graphical-session.target >/dev/null 2>&1; then
+    return 0
+  fi
+  echo "ERROR: Login backup requires a desktop Linux environment (no graphical session detected)."
+  echo "On headless servers (VPS), use --cron for scheduled backups."
+  return 1
+}
+
 # 安装登录触发服务 (用户级)
 install_login() {
+  # 登录服务面向桌面环境的普通用户，root 无图形会话，不得安装
+  if [[ "$EUID" -eq 0 ]]; then
+    echo "ERROR: Login backup must be installed as a normal user (not root)."
+    echo "Intended for desktop environments; on VPS/servers use --cron."
+    return 1
+  fi
+  require_desktop || return 1
   local service_dir="$HOME/.config/systemd/user"
   mkdir -p "$service_dir"
 
@@ -88,66 +142,102 @@ EOF
   echo "Login service installed and enabled."
 }
 
-# 安装关机触发服务 (系统级，需要 sudo)
-install_shutdown() {
-  # 复制脚本到系统目录（绕过 SELinux）
-  sudo cp -f "$SCRIPT_PATH" /usr/local/bin/restic-backup.sh 2>/dev/null || true
-  sudo chmod +x /usr/local/bin/restic-backup.sh
-  local system_script="/usr/local/bin/restic-backup.sh"
-
-  local env_line=""
-  if [[ -f "$ENV_FILE" ]]; then
-    env_line="EnvironmentFile=$ENV_FILE"
+# 卸载登录触发服务（--install-login 的逆向操作）
+uninstall_login() {
+  if ! [[ -f "$HOME/.config/systemd/user/restic-backup-login.service" ]]; then
+    echo "Login service not installed, nothing to do."
+    return 0
   fi
-
-  sudo tee /etc/systemd/system/restic-backup-shutdown.service <<EOF
-[Unit]
-Description=Restic Backup on Shutdown
-DefaultDependencies=no
-Before=shutdown.target reboot.target halt.target
-
-[Service]
-Type=oneshot
-ExecStart=$system_script
-RemainAfterExit=yes
-User=$(whoami)
-$env_line
-
-[Install]
-WantedBy=shutdown.target
-EOF
-
-  sudo systemctl daemon-reload
-  sudo systemctl enable restic-backup-shutdown.service
-  echo "Shutdown service installed and enabled."
+  systemctl --user disable restic-backup-login.service 2>/dev/null || true
+  rm -f "$HOME/.config/systemd/user/restic-backup-login.service"
+  systemctl --user daemon-reload
+  echo "Login service uninstalled."
 }
 
 # 卸载所有触发服务
 uninstall_all() {
-  # 用户级 - 登录服务
-  systemctl --user disable restic-backup-login.service 2>/dev/null || true
-  rm -f "$HOME/.config/systemd/user/restic-backup-login.service"
-  systemctl --user daemon-reload
+  uninstall_login
 
-  # 系统级 - 关机服务
+  # 历史遗留：清理旧版本的关机备份服务（如存在）
   sudo systemctl disable restic-backup-shutdown.service 2>/dev/null || true
   sudo rm -f /etc/systemd/system/restic-backup-shutdown.service
-  sudo systemctl daemon-reload
+  [[ -f /etc/systemd/system/restic-backup-shutdown.service ]] && sudo systemctl daemon-reload
 
-  # cron 任务
-  crontab -l 2>/dev/null | grep -v "$(basename "$SCRIPT_PATH")" | crontab - 2>/dev/null || true
+  # cron 任务：仅移除带管理标记的条目，避免误删用户自定义行
+  crontab -l 2>/dev/null | grep -v "# restic-backup-managed" | crontab - 2>/dev/null || true
 
   echo "All services uninstalled."
 }
 
-# 安装 cron 定时任务（凌晨随机时间）
-install_cron() {
-  local hour=$((RANDOM % 6))      # 0-5
-  local min=$((RANDOM % 60))      # 0-59
-  local cron_line="$min $hour * * * $SCRIPT_PATH >> /var/log/restic-backup.log 2>&1"
+# 校验 cron 时间字段（支持数字、*、步进 */n、范围 a-b、列表 a,b）
+validate_cron_fields() {
+  local fields=("$@")
+  local maxs=(59 23 31 12 7)
+  local names=("minute" "hour" "day" "month" "weekday")
+  local i part num
+  for ((i = 0; i < ${#fields[@]}; i++)); do
+    IFS=',' read -ra parts <<< "${fields[i]}"
+    for part in "${parts[@]}"; do
+      if [[ "$part" == \** ]]; then
+        [[ "$part" =~ ^\*(_/[0-9]+)?$ ]] || { echo "ERROR: Invalid cron field '${fields[i]}' (${names[i]})"; return 1; }
+        continue
+      fi
+      if [[ "$part" =~ ^([0-9]+)(-([0-9]+))?(/[0-9]+)?$ ]]; then
+        num="${BASH_REMATCH[1]}"
+        (( num <= maxs[i] )) || { echo "ERROR: ${names[i]} value $num out of range (0-${maxs[i]})"; return 1; }
+        if [[ -n "${BASH_REMATCH[3]:-}" ]]; then
+          (( BASH_REMATCH[3] <= maxs[i] )) || { echo "ERROR: ${names[i]} value ${BASH_REMATCH[3]} out of range (0-${maxs[i]})"; return 1; }
+        fi
+      else
+        echo "ERROR: Invalid cron field '$part' (${names[i]})"
+        return 1
+      fi
+    done
+  done
+  return 0
+}
 
-  # 移除旧的 restic-backup cron 条目，再添加新的
-  (crontab -l 2>/dev/null | grep -v "$(basename "$SCRIPT_PATH")"; echo "$cron_line") | crontab -
+# 安装 cron 定时任务（无参数：凌晨随机时间；或 --cron <字段...> 指定时间，1-5 个字段，缺省补 *）
+install_cron() {
+  # 幂等：安装前先移除本脚本的旧条目（含不同安装路径的历史残留）
+  local base
+  base="$(basename "$SCRIPT_PATH")"
+  crontab -l 2>/dev/null | grep -v "$base" | crontab - 2>/dev/null || true
+
+  local min hour state_file="$CONFIG_DIR/cron.time"
+
+  if [[ $# -eq 0 ]]; then
+    # 每台机器固定一个随机时间（写回状态文件，重装不漂移）
+    mkdir -p "$CONFIG_DIR"
+    if [[ -f "$state_file" ]]; then
+      read -r min hour <<< "$(cat "$state_file")"
+    else
+      min=$((RANDOM % 60))
+      hour=$((RANDOM % 6))   # 0-5 点
+      echo "$min $hour" > "$state_file"
+    fi
+    set -- "$min" "$hour"
+  fi
+
+  # 时间字段：分 时 日 月 周（1-5 个，不足 5 个用 * 补全）
+  if (( $# > 5 )); then
+    echo "Usage: $(basename "$0") --cron [分 [时 [日 [月 [周]]]]]"
+    echo "ERROR: Too many time fields (max 5: minute hour day month weekday)."
+    return 1
+  fi
+  local fields=("$@")
+  validate_cron_fields "${fields[@]}" || return 1
+  while (( ${#fields[@]} < 5 )); do
+    fields+=("*")
+  done
+
+  # cron 默认 PATH 只有 /usr/bin:/bin，需补上 restic 所在的 /usr/local/bin 及脚本所在目录
+  local script_dir
+  script_dir="$(dirname "$SCRIPT_PATH")"
+  local cron_line="${fields[*]} PATH=/usr/local/bin:/usr/bin:/bin:$script_dir restic-backup.sh >> /var/log/restic-backup.log 2>&1"
+
+  # 追加时给条目打上管理标记，便于 uninstall 精确移除
+  (crontab -l 2>/dev/null; echo "$cron_line # restic-backup-managed") | crontab -
 
   echo "Cron job installed: $cron_line"
 }
@@ -158,16 +248,15 @@ show_help() {
 用法: $(basename "$0") [选项]
 
 选项:
-  -h, --help            显示此帮助信息
-  --init [目标]         初始化指定的备份仓库
-  --show [目标]         查看快照
-  --prune [目标]        清理旧快照（保留最近3个 + 每月1日tag）
-  --install             安装登录和关机自动备份服务
-  --install-login       仅安装登录时自动备份服务
-  --install-shutdown    仅安装关机时自动备份服务 (需要 sudo)
-  --cron                添加 cron 定时任务（凌晨随机时间，日志写入 /var/log/restic-backup.log）
-  --sync                同步脚本到 /usr/local/bin/ (需要 sudo)
-  --uninstall           卸载所有自动备份服务
+  -h, -?, --help        显示此帮助信息
+  -i, --init [目标]     初始化指定的备份仓库
+  -s, --show [目标]     查看快照
+  -p, --prune [目标]    清理旧快照（保留最近3个 + 每月1日tag）
+  -I, --install         安装自动备份服务：登录备份（仅桌面版 Linux，VPS 自动跳过）+ cron 定时任务
+  -L, --install-login   仅安装登录时自动备份服务（仅桌面版 Linux）
+  -c, --cron [分 时 日 月 周]  添加 cron 定时任务（无参数：凌晨随机时间；1-5 个字段，缺省补 *，如 --cron 30 3）
+  -U, --uninstall-login 卸载登录时自动备份服务（--install-login 的逆向）
+  -u, --uninstall       卸载所有自动备份服务（登录服务 + cron 任务）
 
 备份行为:
   所有可用仓库（本地 + 远程）均执行备份，快照独立
@@ -312,6 +401,7 @@ prune_snapshots() {
     # 单个仓库失败不中断其它仓库
     if ! restic -r "$repo" snapshots >/dev/null 2>&1; then
       echo "ERROR: Repository not initialized. Run '$(basename "$0") --init' first."
+      restic -r "$repo" snapshots 2>&1 | tail -5
       failed=1
       continue
     fi
@@ -357,49 +447,50 @@ show_snapshots() {
 
 # 参数解析
 case "${1:-}" in
--h | --help)
+-h | -\? | --help)
   show_help
   exit 0
   ;;
---init)
+-i | --init)
   init_repos "${2:-}"
   exit 0
   ;;
---show)
+-s | --show)
   show_snapshots "${2:-}"
   exit 0
   ;;
---sync)
-  sudo cp -f "$SCRIPT_PATH" /usr/local/bin/restic-backup.sh
-  echo "Synced to /usr/local/bin/restic-backup.sh"
+-c | --cron)
+  install_cron "${@:2}"
   exit 0
   ;;
---prune)
+-p | --prune)
   prune_snapshots "${2:-}"
   exit 0
   ;;
---install|--install-login|--install-shutdown|--uninstall)
-  if [[ "$EUID" -eq 0 ]]; then
-    echo "ERROR: This option must be run as a normal user (not root)."
-    echo "Intended for desktop environments, not VPS/servers."
-    exit 1
-  fi
+-I | --install | -L | --install-login | -U | --uninstall-login | -u | --uninstall)
   case "${1:-}" in
-  --install)
+  -I | --install)
+    # 与 --uninstall 对称：登录备份 + cron 一起装
+    # 非桌面环境（VPS）登录备份不可用，跳过后继续安装 cron
+    install_login || true
+    install_cron
+    ;;
+  -L | --install-login)
     install_login
-    install_shutdown
     ;;
-  --install-login)
-    install_login
+  -U | --uninstall-login)
+    uninstall_login
     ;;
-  --install-shutdown)
-    install_shutdown
-    ;;
-  --uninstall)
+  -u | --uninstall)
     uninstall_all
     ;;
   esac
   exit 0
+  ;;
+-*|\?*)
+  echo "ERROR: Unknown option: $1"
+  show_help
+  exit 1
   ;;
 esac
 
@@ -439,6 +530,7 @@ for repo in "${ALL_REPOS[@]}"; do
 
   if ! restic -r "$repo" snapshots >/dev/null 2>&1; then
     echo "ERROR: Repository not initialized. Run '$(basename "$0") --init' first."
+    restic -r "$repo" snapshots 2>&1 | tail -5
     continue
   fi
 
