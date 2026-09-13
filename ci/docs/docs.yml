@@ -55,11 +55,14 @@ jobs:
             echo "install.sh not found, skip copy"
           fi
 
+      - name: Pack site
+        run: tar -czf docs-site.tar.gz -C site .
+
       - name: Upload docs site artifact
         uses: actions/upload-artifact@v7
         with:
           name: docs-site
-          path: site/
+          path: docs-site.tar.gz
           retention-days: 1
 
   ### GitHub Pages
@@ -72,7 +75,12 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: docs-site
-          path: site/
+          path: artifact/
+
+      - name: Unpack docs site
+        run: |
+          mkdir -p site
+          tar -xzf artifact/docs-site.tar.gz -C site
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
@@ -92,7 +100,12 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: docs-site
-          path: site/
+          path: artifact/
+
+      - name: Unpack docs site
+        run: |
+          mkdir -p site
+          tar -xzf artifact/docs-site.tar.gz -C site
 
       - name: Set up SSH
         uses: LuisEnMarroquin/setup-ssh-action@v3.0.0
@@ -136,7 +149,13 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: docs-site
-          path: site/
+          path: artifact/
+
+      - name: Unpack docs site
+        if: steps.cred.outputs.present == 'true'
+        run: |
+          mkdir -p site
+          tar -xzf artifact/docs-site.tar.gz -C site
 
       - name: Set up Node.js
         if: steps.cred.outputs.present == 'true'
