@@ -15,7 +15,7 @@
 - **按格式生成解压逻辑** —— tar.gz / tar.xz / tar.bz2 / tar.zst / tar / zip / gz / xz / bz2 / 裸二进制
 - **不猜目录结构** —— 解压后自动定位可执行文件，兼容"含顶层版本目录"和"包内直接是裸文件"两种打包方式
 - **平台匹配用正则集合** —— 覆盖 `amd64|x86_64|x64`、`arm64|aarch64|armv8`、`darwin|macos|osx` 等命名差异
-- **忠实复刻仓库模板** —— 通用函数、CDN 加速、`--url` 覆盖、`DEBUG` 模式与 `install/` 现有脚本完全一致
+- **忠实复刻仓库模板** —— 通用函数、CDN 加速、`--url` 覆盖、`DEBUG` 模式与仓库现有安装脚本完全一致
 - **落地到 install/** —— `--install` 把脚本移入 `install/`，目标已存在则拒绝覆盖；`list.txt` / `README.md` 由仓库维护者自行维护
 - **生成即可用** —— 自动 `bash -n` 自检；生成的脚本 shellcheck 零告警
 
@@ -115,7 +115,13 @@ main() {
 
 ## 已知限制
 
-- `install/README.md` 里的链接是 `https://fx4.cn/<name>` 短链，需要人工创建，生成器不会代劳
+- `install/README.md` 里的链接是 `https://fx4.cn/<name>` 短链，需要人工创建，生成器不会代劳。
+  短码默认取安装的主命令名（如 `ast-grep.sh → ag`），短链指向本仓库中的脚本文件
+  `<项目 URL 入口地址>/<文件相对路径>`（入口地址如
+  `https://git.asfd.cn/jetsung/sh/raw/branch/main/`，路径如 `install/gix.sh`），创建后回填脚本头部 `# URL:` 行，
+  并向用户回显短链及其目标地址（如 `https://fx4.cn/gix → <目标地址>`）。
+  短链创建优先用 shortener skill；若未安装，回退到 `shortener-cli` CLI（依赖 `$SHORTENER_URL` / `$SHORTENER_KEY`）。
+  详见 SKILL.md「短链约定」。
 - GitHub API 未认证限流 60 次/小时；密集批量添加时需注意
 - 只处理**有预编译包**的项目。需要 `cargo install` / `go install` / 源码编译的工具不适用
-- 生成的脚本装到 `/usr/local/bin`，与 `install/` 现有脚本保持一致
+- 生成的脚本装到 `/usr/local/bin`（模板内写死的默认安装路径），与脚本自身所在目录无关——脚本可以放在仓库任意目录，不影响安装目标

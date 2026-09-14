@@ -125,3 +125,13 @@ bash $S rtk-ai/rtk --url "https://github.com/rtk-ai/rtk/releases/download/v0.47.
 1. `install/README.md` 里补一行 `| [**name**](./name.sh) | [https://fx4.cn/name](https://fx4.cn/name) | 中文描述 |`
    （`fx4.cn` 短链需人工创建）
 2. 若 `--install` 时 `install/list.txt` 已有该条目，脚本会跳过登记并提示
+
+## 短链约定（fx4.cn）
+
+- **短码命名**：默认取安装的主命令名（`--bin-name`），不总是文件名/仓库名——如 `ast-grep.sh → ag`、`ripgrep.sh → rg`、`difftastic.sh → difft`
+- **指向目标**：短链指向本仓库中的脚本文件，而非 GitHub 项目地址。规则为
+  `<项目 URL 入口地址>/<文件相对路径>`，其中项目 URL 入口地址为
+  `https://git.asfd.cn/jetsung/sh/raw/branch/main/`，文件相对路径如 `install/gix.sh`
+- **回填头部**：创建短链后，把 `https://fx4.cn/<短码>` 回填到脚本头部 `# URL:` 行
+- **回显目标地址**：短链创建成功后，向用户回显短链及其指向的目标地址（如 `https://fx4.cn/gix → https://git.asfd.cn/jetsung/sh/raw/branch/main/install/gix.sh`），便于核对
+- 创建/管理短链：优先使用 **shortener skill**（用 `use_skill` 加载）；若未安装该 skill，则回退到 **`shortener-cli` CLI**（依赖环境变量 `$SHORTENER_URL` / `$SHORTENER_KEY`，如 `shortener-cli create <目标URL> <短码>`）。无论哪种方式，创建前都先 `get <短码>` 确认未被占用（404 才可创建）

@@ -41,6 +41,7 @@ done
 | [**flutter**](./flutter.sh) | [https://fx4.cn/flutter](https://fx4.cn/flutter) | 安装 Flutter SDK |
 | [**frp**](./frp.sh) | [https://fx4.cn/frp](https://fx4.cn/frp) | 网络穿透工具 |
 | [**gitlab-runner**](./gitlab-runner.sh) | [https://fx4.cn/gitlab-runner](https://fx4.cn/gitlab-runner) | GitLab Runner |
+| [**gix**](./gix.sh) | [https://fx4.cn/gix](https://fx4.cn/gix) | 纯 Rust 实现的轻量快速 Git 工具集 |
 | [**goreleaser**](./goreleaser.sh) | [https://fx4.cn/goreleaser](https://fx4.cn/goreleaser) | Go语言程序构建工具 |
 | [**hugo**](./hugo.sh) | [https://fx4.cn/hugo](https://fx4.cn/hugo) | 静态网站生成器 |
 | [**jed**](./jed.sh) | [https://fx4.cn/jed](https://fx4.cn/jed) | 用 sed 语法处理 JSON 的命令行工具 |

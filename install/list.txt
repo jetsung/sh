@@ -19,6 +19,7 @@
 ./flutter.sh  |  安装 Flutter SDK
 ./frp.sh  |  网络穿透工具
 ./gitlab-runner.sh  |  GitLab Runner
+./gix.sh  |  纯 Rust 实现的轻量快速 Git 工具集
 ./goreleaser.sh  |  Go语言程序构建工具
 ./hugo.sh  |  静态网站生成器
 ./jed.sh  |  用 sed 语法处理 JSON 的命令行工具
