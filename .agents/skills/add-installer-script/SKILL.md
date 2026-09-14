@@ -79,6 +79,16 @@ bash .agents/skills/add-installer-script/scripts/create-script.sh <owner/repo> \
 
 > `install/README.md` 需要 `https://fx4.cn/<name>` 短链，脚本无法自动生成短链，必须手动补一行。
 
+### 短链约定（fx4.cn）
+
+- **短码命名**：默认取安装的**主命令名**（`--bin-name`），不总是文件名/仓库名——如 `ast-grep.sh → ag`、`ripgrep.sh → rg`、`difftastic.sh → difft`
+- **指向目标**：短链指向**本仓库中的脚本文件**，而非 GitHub 项目地址。规则为：
+  `<项目 URL 入口地址>/<文件相对路径>`，其中项目 URL 入口地址为
+  `https://git.asfd.cn/jetsung/sh/raw/branch/main/`，文件相对路径如 `install/gix.sh`
+- **回填头部**：创建短链后，把 `https://fx4.cn/<短码>` 回填到脚本头部 `# URL:` 行
+- **回显目标地址**：短链创建成功后，向用户回显短链及其指向的目标地址（如 `https://fx4.cn/gix → https://git.asfd.cn/jetsung/sh/raw/branch/main/install/gix.sh`），便于核对
+- 创建/管理短链：优先使用 **shortener skill**（用 `use_skill` 加载）；若未安装该 skill，则回退到 **`shortener-cli` CLI**（依赖环境变量 `$SHORTENER_URL` / `$SHORTENER_KEY`，如 `shortener-cli create <目标URL> <短码>`）。无论哪种方式，创建前都先 `get <短码>` 确认未被占用（404 才可创建）
+
 ## 文件类型 → 解压逻辑映射
 
 探测到资产后按后缀决定生成哪段逻辑：
@@ -113,7 +123,7 @@ bash .agents/skills/add-installer-script/scripts/create-script.sh <owner/repo> \
 
 ## 平台匹配规则
 
-生成的脚本在运行时自己解析平台（保持与 `install/` 现有脚本一致：`uname` 原样取值），匹配用正则的"或"集合而非单一字面量：
+生成的脚本在运行时自己解析平台（与仓库现有安装脚本一致：`uname` 原样取值），匹配用正则的"或"集合而非单一字面量：
 
 | 实际平台 | OS 正则 | ARCH 正则 |
 |---------|--------|----------|
@@ -149,7 +159,7 @@ create-script.sh <INPUT> [选项]
 
 ## 生成的脚本结构
 
-与 `install/` 现有脚本保持一致：
+与仓库现有安装脚本保持一致：
 
 ```bash
 # 头部注释块（File / Description / Source / URL / Author / Version / 日期）
@@ -178,4 +188,4 @@ create-script.sh <INPUT> [选项]
 1. **GitHub API 有速率限制**（未认证 60 次/小时）。报"无法获取 release 信息"时先怀疑限流，不要反复重试。
 2. **仓库无 Linux 预编译包**时探测必然失败——这类工具（如需自行 `cargo install` / `go install` 的项目）不适合本模板，应告知用户。
 3. 探测到的资产文件名与实际命令名不一致时（如资产叫 `protoc-*.zip` 但解压后是 `bin/protoc`），依赖"自动定位"兜底；若定位不准，用 `--bin-name` 明确指定。
-4. 落地后**不要擅自补写** `install/README.md` 的短链行或 `install/list.txt` 条目，这两个文件由仓库维护者自行维护。
+4. 落地后**不要擅自补写** `install/README.md` 的短链行或 `install/list.txt` 条目，这两个文件由仓库维护者自行维护；但短链本身（fx4.cn）应通过 shortener skill 创建，并回填脚本头部 `# URL:`（见上文「短链约定」）。
