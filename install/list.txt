@@ -29,12 +29,14 @@
 ./mtrans.sh  |  Docker 镜像复制工具，可将源镜像同步到目标 registry 并拉取到本地
 ./nvim.sh  |  Neovim 编辑器
 ./obscura.sh  |  无头浏览器 (obscura)
+./oxipng.sh  |  多线程 Rust 编写的 PNG 压缩优化工具
 ./prek.sh  |  Git 钩子管理工具
 ./procs.sh  |  用 Rust 编写的现代 ps 进程查看替代工具
 ./protoc.sh  |  protobuf 编译工具
 ./rclone.sh  |  安装 rclone 命令行工具
 ./relaydrop.sh  |  文件传输中继服务
 ./restic.sh  |  安装 Restic 备份工具
+./rimage.sh  |  受 squoosh 启发的命令行图像压缩优化工具
 ./ripgrep.sh  |  极速递归搜索文件内容的正则工具，遵循 gitignore 规则
 ./rtk.sh  |  降低 LLM token 消耗的 CLI 代理工具
 ./shellcheck.sh  |  Shell 脚本分析工具
