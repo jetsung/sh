@@ -51,12 +51,14 @@ done
 | [**mtrans**](./mtrans.sh) | [https://fx4.cn/mtrans](https://fx4.cn/mtrans) | Docker 镜像复制工具，可将源镜像同步到目标 registry 并拉取到本地 |
 | [**nvim**](./nvim.sh) | [https://fx4.cn/nvim](https://fx4.cn/nvim) | Neovim 编辑器 |
 | [**obscura**](./obscura.sh) | [https://fx4.cn/obscura](https://fx4.cn/obscura) | 无头浏览器 (obscura) |
+| [**oxipng**](./oxipng.sh) | [https://fx4.cn/oxipng](https://fx4.cn/oxipng) | 多线程 Rust 编写的 PNG 压缩优化工具 |
 | [**prek**](./prek.sh) | [https://fx4.cn/prek](https://fx4.cn/prek) | Git 钩子管理工具 |
 | [**procs**](./procs.sh) | [https://fx4.cn/procs](https://fx4.cn/procs) | 用 Rust 编写的现代 ps 进程查看替代工具 |
 | [**protoc**](./protoc.sh) | [https://fx4.cn/protoc](https://fx4.cn/protoc) | protobuf 编译工具 |
 | [**rclone**](./rclone.sh) | [https://fx4.cn/rclone](https://fx4.cn/rclone) | 安装 rclone 命令行工具 |
 | [**relaydrop**](./relaydrop.sh) | [https://fx4.cn/relaydrop](https://fx4.cn/relaydrop) | 文件传输中继服务 |
 | [**restic**](./restic.sh) | [https://fx4.cn/restic](https://fx4.cn/restic) | 安装 Restic 备份工具 |
+| [**rimage**](./rimage.sh) | [https://fx4.cn/rimage](https://fx4.cn/rimage) | 受 squoosh 启发的命令行图像压缩优化工具 |
 | [**ripgrep**](./ripgrep.sh) | [https://fx4.cn/rg](https://fx4.cn/rg) | 极速递归搜索文件内容的正则工具，遵循 gitignore 规则 |
 | [**rtk**](./rtk.sh) | [https://fx4.cn/rtk](https://fx4.cn/rtk) | 降低 LLM token 消耗的 CLI 代理工具 |
 | [**shellcheck**](./shellcheck.sh) | [https://fx4.cn/shellcheck](https://fx4.cn/shellcheck) | Shell 脚本分析工具 |
