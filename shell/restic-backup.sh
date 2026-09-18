@@ -19,16 +19,31 @@ fi
 
 SCRIPT_PATH="$(realpath "$0")"
 CONFIG_DIR="$HOME/.config/restic-backup"
+
+# 从 ~/.config/restic-backup/env 读取环境变量（RESTIC_* 等），不依赖登录会话的 environment.d
+ENV_CONFIG="$CONFIG_DIR/env"
+if [[ -f "$ENV_CONFIG" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_CONFIG"
+  set +a
+fi
+
 REPOS_FILE="$CONFIG_DIR/repos.txt"
 SOURCES_FILE="$CONFIG_DIR/sources.txt"
-ENV_FILE="$HOME/.config/environment.d/99-my-env.conf"
 PASSWORD_FILE="$CONFIG_DIR/password"
+LOG_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/restic-backup/backup.log"
 
-# 从文件读取密码
+# 备份日志：将全部输出（含错误）追加写入用户级日志文件
+mkdir -p "$(dirname "$LOG_FILE")"
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+# 密码优先级：password 文件 > env 中的 RESTIC_PASSWORD（兜底）
 if [[ -f "$PASSWORD_FILE" ]]; then
   export RESTIC_PASSWORD_FILE="$PASSWORD_FILE"
-else
-  echo "WARNING: Password file not found at $PASSWORD_FILE"
+  unset RESTIC_PASSWORD
+elif [[ -z "${RESTIC_PASSWORD:-}" ]]; then
+  echo "WARNING: Neither $PASSWORD_FILE nor RESTIC_PASSWORD in $ENV_CONFIG found"
 fi
 
 # local 仓库：检查本地文件夹是否存在
@@ -82,12 +97,18 @@ check_dependencies() {
 check_dependencies
 
 # 从 sources.txt 读取备份目标（每行一个，# 开头为注释行，支持 $HOME 展开）
+# 仅保留实际存在的文件/文件夹，避免 restic 因部分源不可读返回退出码 3
 BACKUP_SOURCES=()
 if [[ -f "$SOURCES_FILE" ]]; then
   while IFS= read -r line; do
     # 跳过空行与 # 开头的注释行
     [[ -z "$line" || "$line" == \#* ]] && continue
-    BACKUP_SOURCES+=("$(eval echo "$line")")
+    local_path="$(eval echo "$line")"
+    if [[ -e "$local_path" ]]; then
+      BACKUP_SOURCES+=("$local_path")
+    else
+      echo "NOTE: backup source does not exist, skipped: $local_path"
+    fi
   done < "$SOURCES_FILE"
 fi
 
@@ -119,18 +140,13 @@ install_login() {
   local service_dir="$HOME/.config/systemd/user"
   mkdir -p "$service_dir"
 
-  local env_line=""
-  if [[ -f "$ENV_FILE" ]]; then
-    env_line="EnvironmentFile=$ENV_FILE"
-  fi
-
+  # 环境变量由脚本自身从 $CONFIG_DIR/env 读取，单元文件无需 EnvironmentFile
   cat > "$service_dir/restic-backup-login.service" <<EOF
 [Unit]
 Description=Restic Backup on Login
 
 [Service]
 Type=oneshot
-$env_line
 ExecStart=$SCRIPT_PATH
 
 [Install]
@@ -234,7 +250,7 @@ install_cron() {
   # cron 默认 PATH 只有 /usr/bin:/bin，需补上 restic 所在的 /usr/local/bin 及脚本所在目录
   local script_dir
   script_dir="$(dirname "$SCRIPT_PATH")"
-  local cron_line="${fields[*]} PATH=/usr/local/bin:/usr/bin:/bin:$script_dir restic-backup.sh >> /var/log/restic-backup.log 2>&1"
+  local cron_line="${fields[*]} PATH=/usr/local/bin:/usr/bin:/bin:$script_dir restic-backup.sh 2>&1"
 
   # 追加时给条目打上管理标记，便于 uninstall 精确移除
   (crontab -l 2>/dev/null; echo "$cron_line # restic-backup-managed") | crontab -
@@ -249,6 +265,7 @@ show_help() {
 
 选项:
   -h, -?, --help        显示此帮助信息
+  -n, --dry-run         演练模式：不实际写入快照，仅显示将备份的内容
   -i, --init [目标]     初始化指定的备份仓库
   -s, --show [目标]     查看快照
   -p, --prune [目标]    清理旧快照（保留最近3个 + 每月1日tag）
@@ -467,6 +484,9 @@ case "${1:-}" in
   prune_snapshots "${2:-}"
   exit 0
   ;;
+-n | --dry-run)
+  DRY_RUN=true
+  ;;
 -I | --install | -L | --install-login | -U | --uninstall-login | -u | --uninstall)
   case "${1:-}" in
   -I | --install)
@@ -511,6 +531,11 @@ fi
 # 默认排除项：跳过所有 .git 文件夹
 EXCLUDE_ARGS=(--exclude .git)
 
+# --dry-run：演练模式，restic 不实际写入快照
+DRY_RUN="${DRY_RUN:-false}"
+DRY_RUN_ARGS=()
+[[ "$DRY_RUN" == "true" ]] && DRY_RUN_ARGS=(--dry-run)
+
 # 构建仓库列表：本地 + 远程
 ALL_REPOS=()
 if [[ "$LOCAL_REPO_EXISTS" == "true" ]]; then
@@ -523,7 +548,8 @@ if [[ ${#ALL_REPOS[@]} -eq 0 ]]; then
   exit 1
 fi
 
-# 逐个仓库备份
+# 逐个仓库备份，单个仓库失败不中断其它仓库
+failed=0
 for repo in "${ALL_REPOS[@]}"; do
   echo "------------------------------------------------"
   echo "Repository: $repo"
@@ -531,11 +557,22 @@ for repo in "${ALL_REPOS[@]}"; do
   if ! restic -r "$repo" snapshots >/dev/null 2>&1; then
     echo "ERROR: Repository not initialized. Run '$(basename "$0") --init' first."
     restic -r "$repo" snapshots 2>&1 | tail -5
+    failed=1
     continue
   fi
 
-  restic backup -r "$repo" "${TAG_ARGS[@]}" "${EXCLUDE_ARGS[@]}" "${BACKUP_SOURCES[@]}"
+  # restic 退出码 3 = 部分源文件不可读，备份已生成快照，视为成功
+  if restic backup -r "$repo" "${DRY_RUN_ARGS[@]}" "${TAG_ARGS[@]}" "${EXCLUDE_ARGS[@]}" "${BACKUP_SOURCES[@]}"; then
+    :
+  elif [[ $? -eq 3 ]]; then
+    echo "WARNING: Some source files could not be read (exit code 3), snapshot saved."
+  else
+    echo "ERROR: Backup failed for repository: $repo"
+    failed=1
+  fi
 done
+
+[[ "$failed" -eq 0 ]] || exit 1
 
 echo "------------------------------------------------"
 echo "Backup complete!"
