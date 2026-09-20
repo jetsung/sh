@@ -36,6 +36,7 @@
 ./rclone.sh  |  安装 rclone 命令行工具
 ./relaydrop.sh  |  文件传输中继服务
 ./restic.sh  |  安装 Restic 备份工具
+./resvg.sh  |  高性能 SVG 渲染器，可将 SVG 转换为 PNG 等位图
 ./rimage.sh  |  受 squoosh 启发的命令行图像压缩优化工具
 ./ripgrep.sh  |  极速递归搜索文件内容的正则工具，遵循 gitignore 规则
 ./rtk.sh  |  降低 LLM token 消耗的 CLI 代理工具

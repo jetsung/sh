@@ -58,6 +58,7 @@ done
 | [**rclone**](./rclone.sh) | [https://fx4.cn/rclone](https://fx4.cn/rclone) | 安装 rclone 命令行工具 |
 | [**relaydrop**](./relaydrop.sh) | [https://fx4.cn/relaydrop](https://fx4.cn/relaydrop) | 文件传输中继服务 |
 | [**restic**](./restic.sh) | [https://fx4.cn/restic](https://fx4.cn/restic) | 安装 Restic 备份工具 |
+| [**resvg**](./resvg.sh) | [https://fx4.cn/resvg](https://fx4.cn/resvg) | 高性能 SVG 渲染器，可将 SVG 转换为 PNG 等位图 |
 | [**rimage**](./rimage.sh) | [https://fx4.cn/rimage](https://fx4.cn/rimage) | 受 squoosh 启发的命令行图像压缩优化工具 |
 | [**ripgrep**](./ripgrep.sh) | [https://fx4.cn/rg](https://fx4.cn/rg) | 极速递归搜索文件内容的正则工具，遵循 gitignore 规则 |
 | [**rtk**](./rtk.sh) | [https://fx4.cn/rtk](https://fx4.cn/rtk) | 降低 LLM token 消耗的 CLI 代理工具 |
