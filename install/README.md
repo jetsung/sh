@@ -33,6 +33,7 @@ done
 | [**chromium**](./chromium.sh) | [https://fx4.cn/chromium](https://fx4.cn/chromium) | Ungoogled Chromium |
 | [**croc**](./croc.sh) | [https://fx4.cn/croc](https://fx4.cn/croc) | 文件传输工具 |
 | [**delta**](./delta.sh) | [https://fx4.cn/delta](https://fx4.cn/delta) | 增强 git diff 的彩色显示工具 |
+| [**deveco**](./deveco.sh) | [https://fx4.cn/deveco](https://fx4.cn/deveco) | DevEco Code for Linux，AtomGit 上的 AI 编程智能体终端工具 |
 | [**difftastic**](./difftastic.sh) | [https://fx4.cn/difft](https://fx4.cn/difft) | 能理解语法的结构化 diff 工具 |
 | [**direnv**](./direnv.sh) | [https://fx4.cn/direnv](https://fx4.cn/direnv) | Shell 环境变量管理工具 |
 | [**dust**](./dust.sh) | [https://fx4.cn/dust](https://fx4.cn/dust) | 用 Rust 编写的更直观的磁盘占用分析（du）工具 |
