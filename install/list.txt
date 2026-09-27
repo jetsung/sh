@@ -11,6 +11,7 @@
 ./chromium.sh  |  Ungoogled Chromium
 ./croc.sh  |  文件传输工具
 ./delta.sh  |  增强 git diff 的彩色显示工具
+./deveco.sh  |  DevEco Code for Linux，AtomGit 上的 AI 编程智能体终端工具
 ./difftastic.sh  |  能理解语法的结构化 diff 工具
 ./direnv.sh  |  Shell 环境变量管理工具
 ./dust.sh  |  用 Rust 编写的更直观的磁盘占用分析（du）工具

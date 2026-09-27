@@ -1,13 +1,17 @@
 ---
 name: add-installer-script
-description: 为本仓库 install/ 目录添加新的命令行工具安装脚本。当用户说"添加/新增/生成 安装脚本"、"把 XX 加到 install"、"为 https://github.com/owner/repo 写个安装脚本"时使用。会先通过 GitHub API 探测最新 release 中匹配当前平台的资产、判断其压缩类型，再生成符合本项目统一模板的 .sh 脚本。
+description: 为本仓库 install/ 目录添加新的命令行工具安装脚本。当用户说"添加/新增/生成 安装脚本"、"把 XX 加到 install"、"为 https://github.com/owner/repo 写个安装脚本"时使用。会先通过 GitHub / AtomGit API 探测最新 release 中匹配当前平台的资产、判断其压缩类型，再生成符合本项目统一模板的 .sh 脚本。
 ---
 
 为 `install/` 目录生成新的工具安装脚本。核心工具是 `scripts/create-script.sh`。
 
 ## 关键约定
 
-用户只给一个项目地址（如 `https://github.com/rtk-ai/rtk`）时：
+用户只给一个项目地址（如 `https://github.com/rtk-ai/rtk` 或 `https://atomgit.com/jetsung/deveco-linux`）时：
+
+- **支持的平台**：GitHub 与 **AtomGit（atomgit.com）**。输入 `https://atomgit.com/<owner>/<repo>` 即走 AtomGit release 流程；`owner/repo` 形式默认按 GitHub 处理
+- **AtomGit 特点**：AtomGit 本身是中国站点，**生成的脚本不需要 CDN 加速**（模板中不注入 CDN_URL / check_in_china 逻辑）；其 release API 返回的 assets 里混有源码包（`type=="source"`），**只挑 `type=="attach"` 的二进制附件**；API 详细说明与返回值 schema 见 [references/atomgit-api.md](references/atomgit-api.md)
+- **AtomGit 无 latest 端点**：`create-script.sh` 不自动探测 AtomGit（见下方「AtomGit 仓库的生成方式」），AI 需按 references/atomgit-api.md 的接口手动 `curl` 探测，再把下载地址与平台信息讲给用户确认
 
 - **文件名**默认取仓库名 → `rtk.sh`
 - **可执行文件名**默认同仓库名；若仓库名与实际命令名不同（如 `shellcheck-rs/shellcheck` 装出来的命令可能带前缀），用 `--bin-name` 指定
@@ -58,6 +62,26 @@ bash .agents/skills/add-installer-script/scripts/create-script.sh <owner/repo> \
 ```
 
 > 示例：探测到 fd 的仓库描述 `A simple, fast and user-friendly alternative to 'find'`，AI 总结为中文 `简单快速的 find 替代工具`。
+
+### AtomGit 仓库的生成方式
+
+`create-script.sh` 目前只自动探测 GitHub；**AtomGit 仓库（如 `https://atomgit.com/jetsung/deveco-linux`）不走 `--detect-only`，由 AI 手动探测 + 以直接下载地址方式生成**：
+
+1. **探测**：按 [references/atomgit-api.md](references/atomgit-api.md) 请求 release API，从 assets 中挑 `type=="attach"` 且匹配当前平台的二进制附件；同时取仓库描述原文供 AI 总结中文
+2. **生成**：把下载地址作为**直接下载地址**输入（绕过 GitHub 探测）：
+
+   ```bash
+   bash .agents/skills/add-installer-script/scripts/create-script.sh \
+       "https://gitcode.com/<owner>/<repo>/releases/download/<tag>/<file>.tar.xz" \
+       --tool-name deveco --source "https://atomgit.com/<owner>/<repo>" \
+       --description "AI 总结的一句中文" --install
+   ```
+
+   注意：`--source` 必须显式指定为 AtomGit 仓库地址（直接下载地址输入时 Source 默认留空）
+3. **手动调整生成的脚本**：直接下载地址模式生成的脚本会把地址硬编码进 `resolve_block_url`（固定 URL 模式）。AtomGit 是国内站，**需手动删掉模板中的 CDN 逻辑**——移除 `CDN_URL` 行与 `check_in_china` / `check_remove_https` / `do_remove_https` 函数，下载处直接 `curl "$DOWNLOAD_URL"`；并把 `get_download_url` 改写为 AtomGit release API（`https://atomgit.com/api/v5/repos/<owner>/<repo>/releases?per_page=1`，jq 过滤 `.assets[] | select(.type == "attach")`，详见 references/atomgit-api.md），使脚本后续可自动跟随最新 release
+4. **验证**：`bash -n` + `shellcheck`，再实际执行一次确认安装成功
+
+实测样本：`install/deveco.sh`（AtomGit 仓库 `jetsung/deveco-linux`，nightly release 资产 `deveco-linux-x64-<tag>.tar.xz`，顶层裸二进制 `deveco`）。
 
 ### 第 3 步：验证后落地
 
@@ -144,6 +168,8 @@ create-script.sh <INPUT> [选项]
 
 <INPUT>  ① GitHub 仓库：https://github.com/owner/repo 或 owner/repo
          ② 直接下载地址：https://example.com/tool.tar.gz
+            （AtomGit 仓库也走②：先按 references/atomgit-api.md 手动探测，
+             再以 release 附件下载地址为 INPUT，--source 指向 AtomGit 仓库）
 
   --tool-name NAME     工具名 / 文件名（默认从仓库名或 URL 推断）
   --bin-name NAME      安装后的可执行文件名（默认同工具名）
@@ -185,7 +211,8 @@ create-script.sh <INPUT> [选项]
 
 ## 注意事项
 
-1. **GitHub API 有速率限制**（未认证 60 次/小时）。报"无法获取 release 信息"时先怀疑限流，不要反复重试。
+1. **GitHub API 有速率限制**（未认证 60 次/小时）。报"无法获取 release 信息"时先怀疑限流，不要反复重试。AtomGit API 无公开限流数据，但同样不要无脑重试。
 2. **仓库无 Linux 预编译包**时探测必然失败——这类工具（如需自行 `cargo install` / `go install` 的项目）不适合本模板，应告知用户。
 3. 探测到的资产文件名与实际命令名不一致时（如资产叫 `protoc-*.zip` 但解压后是 `bin/protoc`），依赖"自动定位"兜底；若定位不准，用 `--bin-name` 明确指定。
 4. 落地后**不要擅自补写** `install/README.md` 的短链行或 `install/list.txt` 条目，这两个文件由仓库维护者自行维护；但短链本身（fx4.cn）应通过 shortener skill 创建，并回填脚本头部 `# URL:`（见上文「短链约定」）。
+5. **AtomGit 仓库**：`create-script.sh` 不支持自动探测，按上文「AtomGit 仓库的生成方式」手动处理；API 细节与返回值 schema 见 [references/atomgit-api.md](references/atomgit-api.md)。
