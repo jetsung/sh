@@ -6,9 +6,8 @@
 # Source: https://github.com/GitoxideLabs/gitoxide
 # URL: https://fx4.cn/gix
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
-# CreatedAt: 2026-09-14
-# UpdatedAt: 2026-09-14
+# Version: 0.1.1
+# UpdatedAt: 2026-09-28
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -65,16 +64,21 @@ do_remove_https() {
 
 ########################## 以上为通用函数 #########################
 
-# 从 GitHub releases 中按正则挑选安装包地址
+# gitoxide 是 monorepo，releases/latest 会被 gix-* 子 crate 发布污染（assets 为空），
+# 必须遍历 releases 列表筛选 tag 形如 v0.59.0 的主发布
 get_download_url() {
     local repo="$1" os_re="$2" arch_re="$3"
     local repo_api_url
-    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${repo}/releases/latest")
+    repo_api_url=$(do_remove_https "${CDN_URL}https://api.github.com/repos/${repo}/releases?per_page=100")
     curl -fsSL "$repo_api_url" | jq -r --arg os "$os_re" --arg arch "$arch_re" '
-        .assets[]?
-        | select(.name | test("(?i)\\.(sha256|sha512|asc|sig|pem|json|txt|yaml|yml|deb|rpm|apk)$") | not)
-        | select(.name | test($os; "i") and test($arch; "i"))
-        | .browser_download_url
+        ([ .[] | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) | select(.assets | length > 0) ] | .[0] // empty)
+        | [ .assets[]?
+            | select(.name | test("(?i)\\.(sha256|sha512|asc|sig|pem|json|txt|yaml|yml|deb|rpm|apk)$") | not)
+            | select(.name | test($os; "i") and test($arch; "i"))
+            | {name: .name, url: .browser_download_url}
+          ]
+        | sort_by(if .name | test("gnu"; "i") then 0 elif .name | test("musl"; "i") then 1 else 2 end)
+        | .[0].url // empty
     ' | head -n 1
 }
 
@@ -83,7 +87,7 @@ download_exact() {
     TMP_DIR=$(mktemp -d /tmp/gix.XXXXXX)
     # shellcheck disable=SC2329
     cleanup() {
-        rm -rf -- "$TMP_DIR"
+        rm -rf -- "${TMP_DIR:-}"
     }
     trap cleanup EXIT
 
@@ -97,6 +101,13 @@ download_exact() {
     fi
     echo "下载地址: $_download_url"
 
+    # 根据 URL 后缀决定本地文件名，兼容 .zip 与 .tar.gz
+    case "$_download_url" in
+        *.zip) download_file="package.zip" ;;
+        *.tgz) download_file="package.tgz" ;;
+        *)     download_file="package.tar.gz" ;;
+    esac
+
     if ! curl -fL --retry 3 -o "$download_file" "$_download_url"; then
         echo "Error: Failed to download $_download_url"
         popd >/dev/null
@@ -105,30 +116,48 @@ download_exact() {
 
     mkdir -p extract
 
-    if ! tar -xzf "$download_file" -C extract; then
-        echo "Error: Extraction failed"
-        popd >/dev/null
-        exit 1
-    fi
+    case "$download_file" in
+        *.zip)
+            if ! unzip -q "$download_file" -d extract; then
+                echo "Error: Extraction failed (unzip)"
+                popd >/dev/null
+                exit 1
+            fi
+            ;;
+        *)
+            if ! tar -xzf "$download_file" -C extract; then
+                echo "Error: Extraction failed (tar)"
+                popd >/dev/null
+                exit 1
+            fi
+            ;;
+    esac
 
     # 自动定位可执行文件：兼容「包内含顶层目录」与「包内直接是二进制」两种结构
+    # gitoxide 发布包内二进制为 gix / ein，可能直接在根或 extract 子目录
     local -a _bins=(gix ein)
     local _bin
     for _bin in "${_bins[@]}"; do
         local _src=""
         if [[ -f "$_bin" ]]; then
             _src="$_bin"
+        elif [[ -f "extract/$_bin" ]]; then
+            _src="extract/$_bin"
         else
             _src=$(find extract -type f -name "$_bin" 2>/dev/null | head -n 1)
         fi
+        # 兜底：按可执行权限查找（防止二进制被重命名或带后缀）
         if [[ -z "$_src" ]]; then
-            echo "Error: 安装包中未找到可执行文件 ${_bin}，包内文件列表如下："
+            _src=$(find extract -type f -perm -u+x 2>/dev/null | grep -E "/${_bin}(\.exe)?$" | head -n 1)
+        fi
+        if [[ -z "$_src" ]]; then
+            echo "Warning: 安装包中未找到可执行文件 ${_bin}，跳过（包内文件列表如下）："
             find extract -type f 2>/dev/null | head -n 40
-            popd >/dev/null
-            exit 1
+            continue
         fi
 
         sudo_exec install -m 0755 "$_src" "/usr/local/bin/${_bin}"
+        echo "已安装: ${_bin} -> /usr/local/bin/${_bin}"
     done
 
     popd >/dev/null
