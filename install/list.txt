@@ -19,6 +19,7 @@
 ./fd.sh  |  简单快速的 find 替代工具
 ./flutter.sh  |  安装 Flutter SDK
 ./frp.sh  |  网络穿透工具
+./fzf.sh  |  交互式命令行模糊查找器
 ./gitlab-runner.sh  |  GitLab Runner
 ./gix.sh  |  纯 Rust 实现的轻量快速 Git 工具集
 ./goreleaser.sh  |  Go语言程序构建工具
