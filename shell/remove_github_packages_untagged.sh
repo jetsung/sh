@@ -2,13 +2,13 @@
 
 #============================================================
 # File: remove_github_packages_untagged.sh
-# Description: 删除 GitHub Packages 悬空的镜像标签
+# Description: 删除 GitHub Packages 镜像版本（默认仅 untagged，--all 含 tagged）
 # URL: https://fx4.cn/
 # OpenGist: https://gist.asfd.cn/jetsung/githubci/raw/HEAD/remove_github_packages_untagged.sh
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.1.0
+# Version: 0.2.0
 # CreatedAt: 2025-08-18
-# UpdatedAt: 2025-08-18
+# UpdatedAt: 2025-09-29
 #============================================================
 
 
@@ -21,15 +21,20 @@ fi
 # 配置
 GITHUB_TOKEN="${GITHUB_TOKEN:?GITHUB_TOKEN is required}"
 
-# 归一化参数：支持
-#   https://github.com/<org>/<repo>/pkgs/container/<pkg>
-#   https://github.com/<org>/<repo>[.git]
-#   ghcr.io/<org>/<repo>
-#   git@github.com:<org>/<repo>[.git]
-#   <org>/<repo> | <org> <repo>
-# 个人账号：ORG_NAME 传 "-"，此时使用 "users/"
-arg1="${1:?ORG_NAME or package identifier is required}"
-arg2="${2:-}"
+# 用法: remove_github_packages_untagged.sh [--all|-a] <org>/<repo> | <org> <repo>
+#   --all / -a: 删除全部版本（含 tagged），默认仅删 untagged
+# 参数归一化: 支持
+DELETE_ALL=0
+declare -a pos_args=()
+for _a in "$@"; do
+  case "$_a" in
+    --all|-a) DELETE_ALL=1 ;;
+    *) pos_args+=("$_a") ;;
+  esac
+done
+
+arg1="${pos_args[0]:?ORG_NAME or package identifier is required}"
+arg2="${pos_args[1]:-}"
 
 case "$arg1" in
   https://github.com/*/pkgs/container/* | http://github.com/*/pkgs/container/* )
@@ -107,8 +112,13 @@ while true; do
     version_id=$(_jq '.id')
     tag_count=$(_jq '.metadata.container.tags | length')
 
-    if [[ "$tag_count" -eq 0 ]]; then
-      echo "Deleting untagged version: $version_id"
+    if [[ "$DELETE_ALL" -eq 1 || "$tag_count" -eq 0 ]]; then
+      if [[ "$tag_count" -gt 0 ]]; then
+        tags=$(_jq '.metadata.container.tags | join(", ")')
+        echo "Deleting tagged version: $version_id (tags: $tags)"
+      else
+        echo "Deleting untagged version: $version_id"
+      fi
       http_code=$(curl -s -o /dev/null -w "%{http_code}" \
         -X DELETE \
         -H "Authorization: token $GITHUB_TOKEN" \
@@ -134,4 +144,4 @@ while true; do
   fi
 done
 
-echo "Done. Total untagged versions deleted: $total_deleted"
+echo "Done. Total $([ "$DELETE_ALL" -eq 1 ] && echo 'all' || echo 'untagged') versions deleted: $total_deleted"
