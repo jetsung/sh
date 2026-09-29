@@ -58,7 +58,7 @@ shortener-cli list --all
 shortener-cli list --page <page> --psize <psize> --format <format>
 $ page: echo "1"
 $ psize: echo "20"
-$ format: printf -- "list\ntable\njson"
+$ format: printf -- "list\ntable\ncompact"
 
 % shortener-cli, shortener
 # 更新短链接的原始 URL
