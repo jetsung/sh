@@ -1,9 +1,11 @@
 # CheatSheet's for Navi
 
-## 使用
+## 导入
 ```bash
 ```bash
+navi repo add https://git.asfd.cn/jetsung/sh.git
 ```
 ```
+
 ```
 ```
