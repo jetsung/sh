@@ -1,0 +1,14 @@
+dns.google
+one.one.one.one
+dns.quad9.net
+dns.alidns.com
+family-filter-dns.cleanbrowsing.org
+adult-filter-dns.cleanbrowsing.org
+security-filter-dns.cleanbrowsing.org
+family.cloudflare-dns.com
+security.cloudflare-dns.com
+1dot1dot1dot1.cloudflare-dns.com
+dns9.quad9.net
+dns.adguard.com
+dot.sb
+dns.sb
