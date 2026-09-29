@@ -15,7 +15,9 @@
 ├── pwsh       # 自己编写的 PowerShell 脚本
 ├── python     # 自己编写的 Python 脚本
 ├── shell      # 自己编写的 Shell 脚本
-└── softs      # 自己编写的一些提取软件版本号和下载地址的脚本 
+└── softs      # 自己编写的一些提取软件版本号和下载地址的脚本
+├── cheats     # navi 速查表（cheatsheet）
+├── dns        # DNS 服务器列表
 └── commit.sh  # 提交前执行生成新的 list.txt
 └── fetch.sh   # 从云端更新脚本至本地
 ```
