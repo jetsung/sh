@@ -1,0 +1,83 @@
+% shortener-cli, shortener
+# 初始化配置文件（使用默认值）
+shortener-cli init
+
+% shortener-cli, shortener
+# 初始化配置文件（指定 URL 与密钥）
+shortener-cli init --url <url> --key <key>
+$ url: echo "https://fx4.cn"
+$ key: echo "JETSUNG_TOKEN_SHORTENER"
+
+% shortener-cli, shortener
+# 查看环境变量与配置
+shortener-cli env
+
+% shortener-cli, shortener
+# 查看版本信息
+shortener-cli version
+
+% shortener-cli, shortener
+# 生成 Argon2id 密码哈希（用于 [admin] password_hash）
+shortener-cli hash-password --password <password>
+
+% shortener-cli, shortener
+# 创建短链接（自动生成 code）
+shortener-cli create <original_url>
+$ original_url: echo "https://"
+
+% shortener-cli, shortener
+# 创建短链接（指定 code 与描述）
+shortener-cli create --code <code> --desc <desc> <original_url>
+$ original_url: echo "https://"
+
+% shortener-cli, shortener
+# 查看短链接详情
+shortener-cli get <code>
+$ code: shortener-cli list -a --format list | awk '/^code:/ {print $2}' | sort -u
+
+% shortener-cli, shortener
+# 按原始 URL 查找短链接
+shortener-cli find --original-url <original_url>
+$ original_url: echo "https://"
+
+% shortener-cli, shortener
+# 按原始 URL 查找所有短链接（含已删除）
+shortener-cli find --all --original-url <original_url>
+$ original_url: echo "https://"
+
+% shortener-cli, shortener
+# 列出短链接（默认）
+shortener-cli list
+
+% shortener-cli, shortener
+# 列出全部短链接（含已删除）
+shortener-cli list --all
+
+% shortener-cli, shortener
+# 列出短链接（分页 + 指定格式）
+shortener-cli list --page <page> --psize <psize> --format <format>
+$ page: echo "1"
+$ psize: echo "20"
+$ format: printf -- "list\ntable\njson"
+
+% shortener-cli, shortener
+# 更新短链接的原始 URL
+shortener-cli update <code> --ourl <original_url>
+$ code: shortener-cli list -a --format list | awk '/^code:/ {print $2}' | sort -u
+$ original_url: echo "https://"
+
+% shortener-cli, shortener
+# 更新短链接的描述
+shortener-cli update <code> --desc <desc>
+$ code: shortener-cli list -a --format list | awk '/^code:/ {print $2}' | sort -u
+
+% shortener-cli, shortener
+# 更新短链接的状态
+shortener-cli update <code> --status <status>
+$ code: shortener-cli list -a --format list | awk '/^code:/ {print $2}' | sort -u
+$ status: printf -- "active\ninactive\ndeleted"
+
+% shortener-cli, shortener
+# 删除短链接
+shortener-cli delete <code>
+$ code: shortener-cli list -a --format list | awk '/^code:/ {print $2}' | sort -u

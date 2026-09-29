@@ -1,0 +1,53 @@
+% docker, mtrans
+# 触发远程流水线把源镜像复制到目标注册表
+docker mtrans sync <repo>
+$ repo: docker images --format '{{.Repository}}' | sort -u
+
+% docker, mtrans
+# 从目标注册表拉回并重命名为源镜像名
+docker mtrans pull <repo>
+$ repo: docker images --format '{{.Repository}}' | sort -u
+
+% docker, mtrans
+# sync + pull 两步一气呵成
+docker mtrans spull <repo>
+$ repo: docker images --format '{{.Repository}}' | sort -u
+
+% docker, mtrans
+# 按 Compose 文件批量复制/拉回
+docker mtrans compose <action>
+$ action: printf "sync\npull\nspull"
+
+% docker, mtrans
+# 打印登录凭据加密串（auth_passphrase 加密）
+docker mtrans secret <registry>
+$ registry: docker mtrans import 2>/dev/null | awk -F'\t' '{print $1}' | sort -u
+
+% docker, mtrans
+# TUI 设置加密口令 auth_passphrase
+docker mtrans passphrase
+
+% docker, mtrans
+# 同步已登录注册表到 [registries]
+docker mtrans import
+
+% docker, mtrans
+# TUI 选择目标注册表
+docker mtrans registry
+
+% docker, mtrans
+# TUI 向导：口令/注册表/org/repo/mode/[ci]
+docker mtrans config
+
+% docker, mtrans
+# 输出 docker-mtrans.yml 工作流 YAML 模板到文件
+docker mtrans ci <file>
+$ file: echo "docker-mtrans.yml"
+
+% docker, mtrans
+# 查看版本信息
+docker mtrans version
+
+% docker, mtrans
+# 查看完整帮助（详细用法）
+docker mtrans man
