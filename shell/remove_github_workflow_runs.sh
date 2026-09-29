@@ -18,12 +18,30 @@ else
     set -euo pipefail
 fi
 
-if [[ "${1:-}" == */* ]]; then
-  ORG_NAME="${1%%/*}"
-  REPO_NAME="${1#*/}"
+arg1="${1:?ORG_NAME or repo identifier is required}"
+
+# 归一化为 <org>/<repo>：支持 https://github.com/<org>/<repo>[.git] 与 <org>/<repo>
+case "$arg1" in
+  https://github.com/* | http://github.com/* | git://github.com/* )
+    repo="${arg1#*://github.com/}"
+    ;;
+  git@github.com:* )
+    repo="${arg1#git@github.com:}"
+    ;;
+  *)
+    repo="$arg1"
+    ;;
+esac
+repo="${repo%.git}"
+repo="${repo#/}"
+repo="${repo%/}"
+
+if [[ "$repo" == */* ]]; then
+  ORG_NAME="${repo%%/*}"
+  REPO_NAME="${repo#*/}"
 else
-  ORG_NAME=${1:?ORG_NAME is required}
-  REPO_NAME=${2:?REPO_NAME is required}
+  ORG_NAME="${repo}"
+  REPO_NAME="${2:?REPO_NAME is required}"
 fi
 
 repo="$ORG_NAME/$REPO_NAME"
