@@ -5,8 +5,6 @@ shortener-cli init
 % shortener-cli, shortener
 # 初始化配置文件（指定 URL 与密钥）
 shortener-cli init --url <url> --key <key>
-$ url: echo "https://fx4.cn"
-$ key: echo "JETSUNG_TOKEN_SHORTENER"
 
 % shortener-cli, shortener
 # 查看环境变量与配置
@@ -64,7 +62,6 @@ $ format: printf -- "list\ntable\ncompact"
 # 更新短链接的原始 URL
 shortener-cli update <code> --ourl <original_url>
 $ code: shortener-cli list -a --format list | awk '/^code:/ {print $2}' | sort -u
-$ original_url: echo "https://"
 
 % shortener-cli, shortener
 # 更新短链接的描述
