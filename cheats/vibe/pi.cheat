@@ -2,4 +2,4 @@
 
 # Git Commit
 pi --model <provider_model> <skill>
-% provider_model: pi --list-models | awk '{print $1"/"$2}'
+$ provider_model: pi --list-models | awk 'NR > 1 {print $1"/"$2}'
