@@ -1,0 +1,5 @@
+% vibe, pi
+
+# Git Commit
+pi --model <provider_model> <skill>
+% provider_model: pi --list-models | awk '{print $1"/"$2}'
