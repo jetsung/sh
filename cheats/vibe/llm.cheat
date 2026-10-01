@@ -1,4 +1,5 @@
 % vibe, llm
+
 # Get Models
 CHANNEL="<channel>"
 
@@ -22,3 +23,27 @@ curl -fsSL "${BASEURL}/models" \
     -H "Authorization: Bearer $APIKEY" | \
     jq -r ".data[].id"
 
+# Test Model
+CHANNEL="<channel>"
+MODEL="<model>"
+
+CHANNEL_UPPER=$(echo "$CHANNEL" | tr '[:lower:]' '[:upper:]')
+BASEURL_VAR="${CHANNEL_UPPER}_BASE_URL"
+APIKEY_VAR="${CHANNEL_UPPER}_API_KEY"
+BASEURL="${!BASEURL_VAR}"
+APIKEY="${!APIKEY_VAR}"
+
+if [[ -z "$BASEURL" || -z "$APIKEY" ]]; then
+    echo "错误: 未找到环境变量 $BASEURL_VAR 或 $APIKEY_VAR" >&2
+    exit 1
+fi
+
+curl -s "${BASEURL%%/v1}"/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $APIKEY" \
+  -d '{
+    "model": "'$MODEL'",
+    "messages": [
+      {"role": "user", "content": "你好，请用一句话介绍你自己。"}
+    ]
+  }' | jq -r
