@@ -21,12 +21,10 @@ shortener-cli hash-password --password <password>
 % shortener-cli, shortener
 # 创建短链接（自动生成 code）
 shortener-cli create <original_url>
-$ original_url: echo "https://"
 
 % shortener-cli, shortener
 # 创建短链接（指定 code 与描述）
 shortener-cli create --code <code> --desc <desc> <original_url>
-$ original_url: echo "https://"
 
 % shortener-cli, shortener
 # 查看短链接详情
@@ -36,12 +34,10 @@ $ code: shortener-cli list -a --format list | awk '/^code:/ {print $2}' | sort -
 % shortener-cli, shortener
 # 按原始 URL 查找短链接
 shortener-cli find --original-url <original_url>
-$ original_url: echo "https://"
 
 % shortener-cli, shortener
 # 按原始 URL 查找所有短链接（含已删除）
 shortener-cli find --all --original-url <original_url>
-$ original_url: echo "https://"
 
 % shortener-cli, shortener
 # 列出短链接（默认）
