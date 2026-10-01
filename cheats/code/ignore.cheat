@@ -1,3 +1,4 @@
-% ignore
-# 忽略文件
+% git, ignore
+
+# Ignore file
 echo '<file>' | tee -a .git/info/exclude
