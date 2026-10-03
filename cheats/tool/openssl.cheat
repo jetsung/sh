@@ -1,0 +1,14 @@
+# openssl
+
+% Show key
+openssl pkey -in <key_path> -noout -text
+
+% Show cert
+openssl x509 -in <cert_path> -noout -text
+
+% Show cert dates
+openssl x509 -in <cert_path> -noout -dates
+
+% Show cert subjectAltName
+openssl x509 -in <cert_path> -noout -ext subjectAltName
+
