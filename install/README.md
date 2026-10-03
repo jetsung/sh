@@ -51,6 +51,7 @@ done
 | [**lsd**](./lsd.sh) | [https://fx4.cn/lsd](https://fx4.cn/lsd) | 下一代 ls 命令：彩色、带图标、更现代的目录列表工具 |
 | [**m3u8-downloader**](./m3u8-downloader.sh) | [https://fx4.cn/m3u8-downloader](https://fx4.cn/m3u8-downloader) | m3u8 下载器 (m3u8-downloader) |
 | [**mtrans**](./mtrans.sh) | [https://fx4.cn/mtrans](https://fx4.cn/mtrans) | Docker 镜像复制工具，可将源镜像同步到目标 registry 并拉取到本地 |
+| [**navi**](./navi.sh) | [https://fx4.cn/navi](https://fx4.cn/navi) | 命令行交互式速查表工具 |
 | [**nvim**](./nvim.sh) | [https://fx4.cn/nvim](https://fx4.cn/nvim) | Neovim 编辑器 |
 | [**obscura**](./obscura.sh) | [https://fx4.cn/obscura](https://fx4.cn/obscura) | 无头浏览器 (obscura) |
 | [**oxipng**](./oxipng.sh) | [https://fx4.cn/oxipng](https://fx4.cn/oxipng) | 多线程 Rust 编写的 PNG 压缩优化工具 |
