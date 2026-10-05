@@ -5,7 +5,7 @@
 # Description: 一键下发 GitHub CI 脚手架（docker / 原生发布 / 文档）到目标项目
 # URL: https://fx4.cn/githubci
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.2.0
+# Version: 0.3.0
 # CreatedAt: 2026-07-11
 # UpdatedAt: 2026-09-12
 #============================================================
@@ -31,7 +31,9 @@ DOCKER_ENABLED=""       # 是否下发 docker 资源（默认不下发；--docke
 
 usage() {
     cat <<'EOF'
-Usage: setup.sh -l <language> [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e] [-R] [-f] [-h]
+Usage: setup.sh [-l <language>] [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e] [-R] [-f] [-h]
+
+  不带任何参数运行时，进入交互模式：通过 shell + readline 逐项选择/输入。
 
   -l, --language <lang>   目标语言（必填），如 rust
   -a, --project <value>   项目归属（组织/项目名），支持三种形态：
@@ -77,8 +79,150 @@ EOF
 }
 
 #------------------------------------------------------------
+# 交互模式（未带任何参数时启用，shell + readline 逐项选择）
+#------------------------------------------------------------
+
+# 交互模式颜色（仅终端可用时启用，管道/CI 下自动退化为无色）
+if [[ -t 1 ]] && command -v tput >/dev/null 2>&1; then
+    C_RESET="$(tput sgr0)"
+    C_TITLE="$(tput bold; tput setaf 6)"    # 青色加粗：标题
+    C_PROMPT="$(tput bold; tput setaf 2)"   # 绿色加粗：提示语
+    C_VALUE="$(tput bold; tput setaf 3)"    # 黄色加粗：值/默认值
+    C_HINT="$(tput setaf 5)"                # 紫色：括号提示
+    C_WARN="$(tput bold; tput setaf 1)"     # 红色加粗：警告
+    C_OK="$(tput bold; tput setaf 2)"       # 绿色加粗：✓ 启用
+    C_SKIP="$(tput setaf 1)"                # 红色：✗ 跳过
+else
+    C_RESET="" C_TITLE="" C_PROMPT="" C_VALUE="" C_HINT="" C_WARN="" C_OK="" C_SKIP=""
+fi
+
+# prompt_yes_no <提示语> [默认值 y/n]：交互终端询问 y/n；非交互终端直接返回默认值
+prompt_yes_no() {
+    local msg="$1"
+    local def="${2:-n}"
+    local answer
+    if [[ ! -t 0 || ! -t 1 ]]; then
+        [[ "$def" == "y" ]]
+        return
+    fi
+    local hint="[y/N]"
+    [[ "$def" == "y" ]] && hint="[Y/n]"
+    read -r -p "${C_PROMPT}${msg} ${C_RESET}${C_HINT}${hint}${C_RESET} " answer
+    answer="${answer:-$def}"
+    case "$answer" in
+        y|Y|yes|YES) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# prompt_value <提示语> [默认值]：读取一行输入；有默认值时用 readline 预填到输入框
+# （read -e -i），可直接编辑修改，直接回车采用
+prompt_value() {
+    local msg="$1"
+    local def="${2:-}"
+    local answer
+    while true; do
+        if [[ -n "$def" ]]; then
+            read -e -r -i "$def" -p "${C_PROMPT}${msg}${C_RESET}: " answer
+            answer="${answer:-$def}"
+        else
+            read -e -r -p "${C_PROMPT}${msg}${C_RESET}: " answer
+        fi
+        if [[ -n "$answer" ]]; then
+            printf '%s\n' "$answer"
+            return 0
+        fi
+        echo "${C_WARN}输入不能为空，请重新输入。${C_RESET}" >&2
+    done
+}
+
+interactive_mode() {
+    echo "${C_TITLE}=== 交互模式：未检测到任何参数，逐项选择（Ctrl+C 退出）===${C_RESET}"
+
+    # 1. 语言：按当前目录特征文件自动检测（Cargo.toml→rust, go.mod→go,
+    #    pyproject.toml→python, package.json→node）；未检测到则手动输入
+    local detected_lang=""
+    if [[ -f "Cargo.toml" ]]; then
+        detected_lang="rust"
+    elif [[ -f "go.mod" ]]; then
+        detected_lang="go"
+    elif [[ -f "pyproject.toml" ]]; then
+        detected_lang="python"
+    elif [[ -f "package.json" ]]; then
+        detected_lang="nodejs"
+    fi
+
+    if [[ -n "$detected_lang" ]]; then
+        # 检测结果仅作为默认值填入输入提示，回车确认或手动改写
+        LANG_NAME="$(prompt_value "检测到项目语言，回车确认或输入其他语言" "$detected_lang")"
+    else
+        LANG_NAME="$(prompt_value "未检测到特征文件，请输入语言（如 rust）")"
+    fi
+    echo "${C_PROMPT}已选择语言: ${C_VALUE}${LANG_NAME}${C_RESET}"
+
+    # 2. 项目归属：默认 父目录名/当前目录名（ORG/REPO 形态，父目录为 org，
+    #    当前目录为 repo），预填输入框，可直接修改，回车确认
+    local default_project="$(basename "$(dirname "$PWD")")/$(basename "$PWD")"
+    read -e -r -i "$default_project" -p "${C_PROMPT}项目归属 ORG/REPO、myorg 或 /myrepo${C_RESET}: " PROJECT
+    PROJECT="${PROJECT:-$default_project}"
+    echo "${C_PROMPT}项目归属: ${C_VALUE}${PROJECT:-（未设置）}${C_RESET}"
+
+    # 3. 各开关（询问后回显选择结果：✓ 绿色启用 / ✗ 红色跳过）
+    local flag_on="${C_OK}✓ 启用${C_RESET}"
+    local flag_off="${C_SKIP}✗ 跳过${C_RESET}"
+
+    if prompt_yes_no "下发 docker 资源? (-R)" "n"; then
+        DOCKER_ENABLED=1
+        echo "${C_PROMPT}  docker 资源: ${flag_on}"
+    else
+        echo "${C_PROMPT}  docker 资源: ${flag_off}"
+    fi
+    if prompt_yes_no "下发文档工作流? (-o)" "n"; then
+        DOCS_ENABLED=1
+        echo "${C_PROMPT}  文档工作流: ${flag_on}"
+    else
+        echo "${C_PROMPT}  文档工作流: ${flag_off}"
+    fi
+    if prompt_yes_no "下发语言原生发布工作流? (-r)" "n"; then
+        RELEASE_ENABLED=1
+        echo "${C_PROMPT}  发布工作流: ${flag_on}"
+    else
+        echo "${C_PROMPT}  发布工作流: ${flag_off}"
+    fi
+    if prompt_yes_no "额外下发 Linux 预发布工作流? (-L)" "n"; then
+        RELEASE_LINUX_ENABLED=1
+        echo "${C_PROMPT}  Linux 预发布: ${flag_on}"
+    else
+        echo "${C_PROMPT}  Linux 预发布: ${flag_off}"
+    fi
+    if prompt_yes_no "下发并更新 README.md（依赖 docker）? (-e)" "n"; then
+        if [[ "$DOCKER_ENABLED" -eq 1 ]]; then
+            README_ENABLED=1
+            echo "${C_PROMPT}  README 更新: ${flag_on}"
+        else
+            echo "${C_PROMPT}  README 更新: ${flag_off} ${C_WARN}(未启用 --docker，已跳过)${C_RESET}"
+        fi
+    else
+        echo "${C_PROMPT}  README 更新: ${flag_off}"
+    fi
+
+    echo "${C_TITLE}--- 交互选择完成 ---${C_RESET}"
+}
+
+#------------------------------------------------------------
 # 参数解析
 #------------------------------------------------------------
+if [[ $# -eq 0 ]]; then
+    # 未带任何参数：进入交互模式（要求交互终端；非交互环境给出提示）
+    if [[ -t 0 && -t 1 ]]; then
+        interactive_mode
+    else
+        echo "错误: 未带参数运行且当前非交互终端（CI / 管道），无法进入交互模式；请显式传参，至少提供 -l <language>。" >&2
+        usage >&2
+        exit 1
+    fi
+fi
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -l|--language)
@@ -459,43 +603,30 @@ if [[ "$DOCS_ENABLED" -eq 1 ]]; then
         fi
     fi
 
-    # 3.3 若提供了 --domain，在目标项目生成 docs/CNAME（GitHub Pages 自定义域名）
+    # 3.3 若提供了 --domain，用 gh CLI 将域名写入仓库变量 PAGES_DOMAIN
+    # （docs.yml 的 gh-pages 部署读取 vars.PAGES_DOMAIN 作为 cname，域名在项目设置的环境变量中维护）
     if [[ -n "$DOCS_DOMAIN" ]]; then
-        cname_dest="docs/CNAME"
-        cname_answer="y"
-        if [[ -f "$cname_dest" ]]; then
-            cname_answer="y"
-            if [[ -t 0 && -t 1 && "$FORCE_OVERWRITE" != "1" && -z "${CI:-}" && -z "${FORCE:-}" ]]; then
-                if read -r -t 30 -p "文件已存在: $cname_dest ，是否覆盖? [y/N] " cname_answer; then
-                    cname_answer="${cname_answer:-n}"
-                else
-                    cname_answer="y"
-                fi
+        if command -v gh >/dev/null 2>&1; then
+            if gh variable set PAGES_DOMAIN --body "$DOCS_DOMAIN" 2>&1; then
+                echo "已设置仓库变量 PAGES_DOMAIN=${DOCS_DOMAIN}"
+            else
+                echo "警告: gh variable set 失败（未登录或非仓库目录?），请手动执行: gh variable set PAGES_DOMAIN --body \"${DOCS_DOMAIN}\"" >&2
             fi
-            case "$cname_answer" in
-                y|Y|yes|YES) ;;
-                *)
-                    echo "跳过: $cname_dest"
-                    cname_answer="skip"
-                    ;;
-            esac
-        fi
-        if [[ "$cname_answer" != "skip" ]]; then
-            mkdir -p "$(dirname "$cname_dest")"
-            printf '%s\n' "$DOCS_DOMAIN" > "$cname_dest"
-            echo "已写入: $cname_dest (${DOCS_DOMAIN})"
+        else
+            echo "提示: 未安装 gh CLI，请手动设置仓库变量:" >&2
+            echo "  gh variable set PAGES_DOMAIN --body \"${DOCS_DOMAIN}\"" >&2
         fi
     fi
 
     # 4.2 确保 Zensical 构建产物 site/ 被 git 忽略
-    # 不存在则创建；已存在但无 site/ 行则追加；已有则跳过，避免重复
+    # 不存在则创建；已存在但无 /site/ 行则追加；已有则跳过，避免重复
     gitignore_dest=".gitignore"
     if [[ ! -f "$gitignore_dest" ]]; then
-        printf '%s\n' "site/" > "$gitignore_dest"
-        echo "已写入: $gitignore_dest (site/)"
-    elif ! grep -q '^site/$' "$gitignore_dest"; then
-        printf '%s\n' "site/" >> "$gitignore_dest"
-        echo "已追加 site/ 到 $gitignore_dest"
+        printf '%s\n' "/site/" > "$gitignore_dest"
+        echo "已写入: $gitignore_dest (/site/)"
+    elif ! grep -q '^/site/$' "$gitignore_dest"; then
+        printf '%s\n' "/site/" >> "$gitignore_dest"
+        echo "已追加 /site/ 到 $gitignore_dest"
     fi
 fi
 
