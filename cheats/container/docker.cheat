@@ -51,7 +51,10 @@ docker network create <network_name>
 $ image_id: docker images --- --headers 1 --column 3
 $ container_id: docker ps --- --headers 1 --column 1
 
+#  Print networks IP address
+docker network inspect <network_name> --format '{{range .Containers}}{{.IPv4Address}}{{"\n"}}{{end}}' | grep '<ip_range>'
 
+$ network_name: docker network ls --format '{{.Name}}' | grep -vE '(^(_default|bridge|none|host)$|_default$)'
 
 % docker-compose
 
