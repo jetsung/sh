@@ -12,3 +12,10 @@ openssl x509 -in <cert_path> -noout -dates
 % Show cert subjectAltName
 openssl x509 -in <cert_path> -noout -ext subjectAltName
 
+% Show cert algorithm
+cert_path=<cert_path>
+if [ ! -f "$cert_path" ]; then
+    echo "error: file $cert_path no exist"
+    exit 1
+fi
+openssl x509 -in "$cert_path" -noout -text | grep -A 3 "Public Key"

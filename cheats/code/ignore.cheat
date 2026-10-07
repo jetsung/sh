@@ -2,3 +2,5 @@
 
 # Ignore file
 echo '<file>' | tee -a .git/info/exclude
+
+$ file: ls -1A
