@@ -1,7 +1,7 @@
 % vibe, llm
 
 # Get models 
-
+CHANNEL="<channel>"
 CHANNEL_UPPER=$(echo "$CHANNEL" | tr '[:lower:]' '[:upper:]')
 BASEURL_VAR="${CHANNEL_UPPER}_BASE_URL"
 APIKEY_VAR="${CHANNEL_UPPER}_API_KEY"
@@ -20,9 +20,9 @@ echo
 
 curl -fsSL "${BASEURL}/models" \
     -H "Authorization: Bearer $APIKEY" | \
-    jq -r ".data[].id"
+    jq -r ".data[].id" | sort -hr
 
-$ channel: printenv | grep '_API_' | awk -F'_API_' '{print tolower($1)}'
+$ channel: printenv | grep '_API_' | awk -F'_API_' '{print tolower($1)}' | sort -hr
 
 # Test model
 CHANNEL="<channel>"
