@@ -1,21 +1,31 @@
-# openssl
+% openssl, cert
 
-% Show key
+# 显示私钥详情（不输出密钥内容）
 openssl pkey -in <key_path> -noout -text
 
-% Show cert
+# 显示证书详情
 openssl x509 -in <cert_path> -noout -text
 
-% Show cert dates
+# 显示证书有效期
 openssl x509 -in <cert_path> -noout -dates
 
-% Show cert subjectAltName
+# 显示证书扩展字段：主题备用名称 (SAN)
 openssl x509 -in <cert_path> -noout -ext subjectAltName
 
-% Show cert algorithm
+# 显示证书算法信息
 cert_path=<cert_path>
 if [ ! -f "$cert_path" ]; then
     echo "error: file $cert_path no exist"
     exit 1
 fi
 openssl x509 -in "$cert_path" -noout -text | grep -A 3 "Public Key"
+
+# 查看证书指纹
+cert_path=<cert_path>
+hash=<hash>
+if [ ! -f "$cert_path" ]; then
+    echo "error: file $cert_path no exist"
+    exit 1
+fi
+openssl x509 -in "$cert_path" -fingerprint -$hash -noout
+$ hash: echo -e 'sha256\nsha1'
