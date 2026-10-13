@@ -2,6 +2,7 @@
 
 # Get models 
 CHANNEL="<channel>"
+FORMAT="<format>"
 CHANNEL_UPPER=$(echo "$CHANNEL" | tr '[:lower:]' '[:upper:]')
 BASEURL_VAR="${CHANNEL_UPPER}_BASE_URL"
 APIKEY_VAR="${CHANNEL_UPPER}_API_KEY"
@@ -9,20 +10,32 @@ BASEURL="${!BASEURL_VAR}"
 APIKEY="${!APIKEY_VAR}"
 
 if [[ -z "$BASEURL" || -z "$APIKEY" ]]; then
-    echo "错误: 未找到环境变量 $BASEURL_VAR 或 $APIKEY_VAR" >&2
+    echo "错误：未找到环境变量 $BASEURL_VAR 或 $APIKEY_VAR" >&2
     exit 1
 fi
 
 echo "CHANNEL: $CHANNEL"
 echo "BASEURL: $BASEURL"
-echo "APIKEY: ${APIKEY:0:8}..." # 仅显示前8位用于调试
+echo "APIKEY: ${APIKEY:0:8}..." # 仅显示前 8 位用于调试
 echo
 
-curl -fsSL "${BASEURL}/models" \
-    -H "Authorization: Bearer $APIKEY" | \
-    jq -r ".data[].id" | sort -hr
+if [[ "$FORMAT" = "id" ]]; then
+  curl -fsSL "${BASEURL}/models" \
+      -H "Authorization: Bearer $APIKEY" | \
+      jq -r '.data[].id' | sort -u
+elif [[ "$FORMAT" = "table" ]]; then
+  curl -fsSL "${BASEURL}/models" \
+      -H "Authorization: Bearer $APIKEY" | \
+      jq -r '.data[] | "\(.id)\t\(.display_name)\t\(.provider)\t\(.credits)\t\(.context_length)\t\(.max_output_tokens)\t\((.regions | join(",")))"' | \
+      column -t -s$'\t'
+else
+  curl -fsSL "${BASEURL}/models" \
+      -H "Authorization: Bearer $APIKEY" | \
+      jq '.'
+fi
 
 $ channel: printenv | grep '_API_' | awk -F'_API_' '{print tolower($1)}' | sort -hr
+$ format: echo -e 'id\ntable\njson'
 
 # Test model
 CHANNEL="<channel>"
