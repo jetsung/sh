@@ -4,8 +4,8 @@
 # Description: Restic 备份工具 - 支持本地/远程多仓库备份、自动触发（登录/关机/cron）、快照管理
 # URL: https://fx4.cn/resticbackup
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.7.0
-# UpdatedAt: 2026-09-07
+# Version: 0.7.1
+# UpdatedAt: 2026-10-14
 #============================================================
 
 # cron/systemd 环境的 PATH 不含 /usr/local/bin（restic 所在目录），显式补全
@@ -285,10 +285,10 @@ show_help() {
   $PASSWORD_FILE   restic 仓库密码
 
 Tag 规则:
-  每月 1 日备份自动添加 tag: monthly-YYYYMM
+  每月 1 日备份自动添加 tag: monthly, monthly-YYYYMM
 
 保留策略:
-  --prune 保留最近 3 个快照 + 所有带 monthly-* tag 的快照
+  --prune 保留最近 3 个快照 + 所有带 monthly 或 monthly-* tag 的快照
   (自动 --retry-lock 处理陈旧锁，单个仓库失败不影响其它仓库)
 
 仓库目标 [目标] 优先级:
@@ -423,9 +423,25 @@ prune_snapshots() {
       continue
     fi
 
-    echo "Keeping: last 3 snapshots + all monthly-* tagged snapshots"
+    # 动态获取仓库中所有 monthly 相关 tag（兼容历史 monthly-YYYYMM 和新 monthly tag）
+    # restic forget 的 --keep-tag 不支持通配符，必须指定具体 tag 名称
+    local keep_tag_args=(--keep-tag "monthly")
+    local monthly_tags
+    if command -v jq >/dev/null 2>&1; then
+      monthly_tags="$(restic -r "$repo" snapshots --json 2>/dev/null | jq -r '.[].tags[]? // empty' | grep -E '^monthly(-.+)?$' | sort -u || true)"
+    else
+      monthly_tags="$(restic -r "$repo" snapshots --json 2>/dev/null | grep -E -o '"monthly[-a-zA-Z0-9_]*"' | tr -d '"' | sort -u || true)"
+    fi
+
+    while IFS= read -r tag; do
+      if [[ -n "$tag" && "$tag" != "monthly" ]]; then
+        keep_tag_args+=(--keep-tag "$tag")
+      fi
+    done <<< "$monthly_tags"
+
+    echo "Keeping: last 3 snapshots + all monthly tagged snapshots"
     if ! restic -r "$repo" forget --retry-lock 10s \
-              --group-by '' --keep-last 3 --keep-tag "monthly-*" --prune; then
+              --group-by '' --keep-last 3 "${keep_tag_args[@]}" --prune; then
       echo "ERROR: Prune failed for repository: $repo"
       failed=1
     fi
@@ -518,14 +534,14 @@ esac
 echo "Running pre-backup cleanup..."
 clean_configs
 
-# 构建备份参数：每月1日打 tag
+# 构建备份参数：每月1日打 tag（添加通用 monthly 标签和具体月份标签）
 TODAY=$(date +%d)
 TAG_ARGS=()
 
 if [[ "$TODAY" == "01" ]]; then
   MONTH_TAG="monthly-$(date +%Y%m)"
-  TAG_ARGS=(--tag "$MONTH_TAG")
-  echo "Monthly backup detected, adding tag: $MONTH_TAG"
+  TAG_ARGS=(--tag "monthly" --tag "$MONTH_TAG")
+  echo "Monthly backup detected, adding tags: monthly, $MONTH_TAG"
 fi
 
 # 默认排除项：跳过所有 .git 文件夹
