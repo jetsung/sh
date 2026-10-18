@@ -5,9 +5,9 @@
 # Description: 一键下发 GitHub CI 脚手架（docker / 原生发布 / 文档）到目标项目
 # URL: https://fx4.cn/githubci
 # Author: Jetsung Chan <i@jetsung.com>
-# Version: 0.3.0
+# Version: 0.3.1
 # CreatedAt: 2026-07-11
-# UpdatedAt: 2026-09-12
+# UpdatedAt: 2026-10-18
 #============================================================
 
 if [[ -n "${DEBUG:-}" ]]; then
@@ -25,13 +25,14 @@ FORCE_OVERWRITE=0
 DOCS_ENABLED=""         # 是否显式传入了 --docs / -o 开关
 DOCS_DOMAIN=""          # --domain / -D 的域名值（必须非空）
 RELEASE_ENABLED=""      # 是否显式传入了 --release / -r 开关
+RELEASE_MATRIX_ENABLED="" # 是否使用架构矩阵模式（release-matrix.yml，-m / --release-matrix）
 RELEASE_LINUX_ENABLED=""  # 是否显式传入了 --release-linux / -L 开关（仅 Linux x86_64 预发布）
 README_ENABLED=""       # 是否显式传入了 --readme / -e 开关（默认不下发/更新 README.md）
 DOCKER_ENABLED=""       # 是否下发 docker 资源（默认不下发；--docker 显式启用）
 
 usage() {
     cat <<'EOF'
-Usage: setup.sh [-l <language>] [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e] [-R] [-f] [-h]
+Usage: setup.sh [-l <language>] [-a <project>] [-o] [-D <domain>] [-r] [-m] [-L] [-e] [-R] [-f] [-h]
 
   不带任何参数运行时，进入交互模式：通过 shell + readline 逐项选择/输入。
 
@@ -48,10 +49,13 @@ Usage: setup.sh [-l <language>] [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e]
                            构建依赖 zensical 在 docs.yml 中通过 pip 安装，无需 requirements.txt
   -D, --domain <domain>   自定义域名（必填值），配合 --docs 在目标项目生成
                            docs/CNAME 文件写入该域名（GitHub Pages 自定义域名）
-  -r, --release           开关：下发语言原生二进制发布工作流（.github/workflows/<lang>-release.yml）
+  -r, --release           开关：下发语言原生二进制发布工作流（.github/workflows/release.yml）
                            如 -l rust 则复制 rust/release.yml；配合 -a 的 REPO 名替换工作流内 APP 占位符
+  -m, --release-matrix    开关：下发架构矩阵并发发布工作流（如 rust 的 release-matrix.yml）
+                           Linux 拆分为 x86_64 与 aarch64 原生矩阵并发构建，减少构建时间。
+                           目标路径同样为 .github/workflows/release.yml，优先于普通 -r。
   -L, --release-linux     开关：额外下发 Linux x86_64 单平台单架构预发布工作流
-                           （.github/workflows/<lang>-release-linux-prerelease.yml），仅响应
+                           （.github/workflows/release-linux-prerelease.yml），仅响应
                            v*-preview* / v*-rc* / v*-alpha* / v*-beta* 标签，自动标记为 prerelease。
                            与 --release 相互独立，同时指定时两个工作流并存。
   -e, --readme            开关：下发并更新项目根 README.md（复制 docker/README.md 并内嵌
@@ -73,7 +77,8 @@ Usage: setup.sh [-l <language>] [-a <project>] [-o] [-D <domain>] [-r] [-L] [-e]
   bash setup.sh -l rust -a myorg/myrepo
   bash setup.sh -l rust --docs
   bash setup.sh -l rust --docs --domain example.com
-  bash setup.sh -l rust --release -a myorg/myrepo          # 纯 CLI，不发 docker/*
+  bash setup.sh -l rust --release -a myorg/myrepo          # 纯 CLI，标准单 Runner 交叉编译
+  bash setup.sh -l rust --release-matrix -a myorg/myrepo   # 纯 CLI，Linux 矩阵并发构建
   bash setup.sh -l rust -R -e --release -a myorg/myrepo   # 全量：含 docker、README、release
 EOF
 }
@@ -83,7 +88,7 @@ EOF
 #------------------------------------------------------------
 
 # 交互模式颜色（仅终端可用时启用，管道/CI 下自动退化为无色）
-if [[ -t 1 ]] && command -v tput >/dev/null 2>&1; then
+if [[ -t 1 ]] && command -v tput >/dev/null 2>&1 && tput sgr0 >/dev/null 2>&1; then
     C_RESET="$(tput sgr0)"
     C_TITLE="$(tput bold; tput setaf 6)"    # 青色加粗：标题
     C_PROMPT="$(tput bold; tput setaf 2)"   # 绿色加粗：提示语
@@ -185,7 +190,12 @@ interactive_mode() {
     fi
     if prompt_yes_no "下发语言原生发布工作流? (-r)" "n"; then
         RELEASE_ENABLED=1
-        echo "${C_PROMPT}  发布工作流: ${flag_on}"
+        if prompt_yes_no "  使用架构矩阵并发模式 (release-matrix.yml)? (-m)" "y"; then
+            RELEASE_MATRIX_ENABLED=1
+            echo "${C_PROMPT}  发布工作流: ${C_VALUE}✓ 启用 (矩阵并发 release-matrix.yml)${C_RESET}"
+        else
+            echo "${C_PROMPT}  发布工作流: ${C_VALUE}✓ 启用 (标准交叉编译 release.yml)${C_RESET}"
+        fi
     else
         echo "${C_PROMPT}  发布工作流: ${flag_off}"
     fi
@@ -239,6 +249,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         -r|--release)
             RELEASE_ENABLED=1
+            shift
+            ;;
+        -m|--release-matrix)
+            RELEASE_ENABLED=1
+            RELEASE_MATRIX_ENABLED=1
             shift
             ;;
         -L|--release-linux)
@@ -631,18 +646,22 @@ if [[ "$DOCS_ENABLED" -eq 1 ]]; then
 fi
 
 #------------------------------------------------------------
-# 原生二进制发布工作流下发（--release）
+# 原生二进制发布工作流下发（--release / --release-matrix）
 #------------------------------------------------------------
 
-# 4.0 --release 与 --release-linux 相互独立，各自下发对应文件到不同目标名
-# 避免互相覆盖；同时指定 -r -L 时两个工作流并存于 .github/workflows/
+# 4.0 --release / --release-matrix 与 --release-linux 相互独立，各自下发对应文件到不同目标名
+# 避免互相覆盖；同时指定 -r/-m 与 -L 时两个工作流并存于 .github/workflows/
 if [[ -n "$RELEASE_ENABLED" ]]; then
-    rel_src="${LANG_NAME}/release.yml"
+    if [[ -n "$RELEASE_MATRIX_ENABLED" ]]; then
+        rel_src="${LANG_NAME}/release-matrix.yml"
+    else
+        rel_src="${LANG_NAME}/release.yml"
+    fi
     rel_dest=".github/workflows/release.yml"
 
     # 4.1 源不存在（该语言无发布工作流）则警告并跳过，不中断其余脚手架
     if ! curl -fsSL -o /dev/null "${BASE_URL%/}/${rel_src}"; then
-        echo "警告: 语言 ${LANG_NAME} 暂无发布工作流（${rel_src}），已跳过 --release。" >&2
+        echo "警告: 语言 ${LANG_NAME} 暂无发布工作流（${rel_src}），已跳过发布工作流下发。" >&2
     else
         # 4.2 写入目标工作流（复用 maybe_write 的覆盖确认 / -f / CI 语义）
         maybe_write "$rel_dest" "$rel_src"

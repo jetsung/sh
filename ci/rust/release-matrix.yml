@@ -1,0 +1,293 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      # 仅匹配正式版标签 vX.Y.Z（如 v1.0.0、v10.20.30），排除预发布版本（如 v1.0.0-alpha、v1.0.0-rc1）
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+      - '!v[0-9]*.[0-9]*.[0-9]*-*'
+      # 支持 beta 版（如 v1.0.0-beta、v1.0.0-beta.1）
+      - 'v[0-9]*.[0-9]*.[0-9]*-beta*'
+      - 'v[0-9]*.[0-9]*.[0-9]*-rc*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: '要补发资产的已有 tag（如 v1.0.0），留空则使用当前分支/引用'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+# 同一 tag 重复推送不取消进行中的构建（发布 release 不可逆）
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RELEASE_DIR: dist
+
+jobs:
+  extract-version:
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.tag.outputs.TAG_NAME }}
+      version: ${{ steps.tag.outputs.VERSION }}
+    steps:
+      - name: Extract tag name
+        id: tag
+        run: |
+          TAG="${{ inputs.tag_name || github.ref }}"
+          TAG="${TAG#refs/tags/}"
+          # 校验 tag 格式（vX.Y.Z，可选 -beta[N] 后缀），
+          # 防止手动触发时留空用分支名当版本号建出错误 release
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-beta(\.[0-9]+)?)?$ ]]; then
+            echo "::error::tag '$TAG' 不符合 v[X.Y.Z]（或 v[X.Y.Z-beta[N]）格式，已中止"
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          echo "TAG_NAME=$TAG" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+  build-linux:
+    needs: [extract-version]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runs-on: ubuntu-24.04
+            arch: x86_64
+          - runs-on: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runs-on }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.extract-version.outputs.tag }}
+          submodules: true
+      - name: Update Rust
+        run: |
+          rustup update
+          rustc --version
+      - name: Cache cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-linux-${{ matrix.arch }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-linux-${{ matrix.arch }}-
+      - uses: jetsung/setup-zig@v1
+        with:
+          version: "0.16.0"
+      - name: Check zig version
+        run: |
+          zig version
+      - name: Install target for Linux
+        run: |
+          rustup target add ${{ matrix.arch }}-unknown-linux-gnu
+          rustup target add ${{ matrix.arch }}-unknown-linux-musl
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools musl-dev
+      - name: Install cargo-zigbuild
+        run: cargo install cargo-zigbuild
+      - name: Install cargo-deb and cargo-generate-rpm
+        run: |
+          cargo install cargo-deb
+          cargo install cargo-generate-rpm
+      - name: Update submodules
+        run: git submodule update --init --recursive
+      - name: Build for Linux
+        run: |
+          # gnu binaries -> deb/rpm
+          cargo-zigbuild zigbuild -p APP --release --target ${{ matrix.arch }}-unknown-linux-gnu
+          # musl static binaries -> tar.xz (for Alpine/docker-musl)
+          cargo-zigbuild zigbuild -p APP --release --target ${{ matrix.arch }}-unknown-linux-musl
+      - name: Package .deb, .rpm and musl tarball
+        run: |
+          mkdir -p "${{ env.RELEASE_DIR }}"
+          # .deb (gnu)
+          # --no-strip: the cross binary is built by cargo-zigbuild; the host
+          # `strip` cannot recognise aarch64/loongarch64 binaries, so skip it.
+          cargo deb --target ${{ matrix.arch }}-unknown-linux-gnu --no-build --no-strip
+          mv target/${{ matrix.arch }}-unknown-linux-gnu/debian/*.deb ${{ env.RELEASE_DIR }}/
+
+          # .rpm (gnu) — cargo-generate-rpm emits the .rpm under
+          # target/$arch-unknown-linux-gnu/generate-rpm/, so locate it with find
+          cargo generate-rpm --target ${{ matrix.arch }}-unknown-linux-gnu
+          mv target/${{ matrix.arch }}-unknown-linux-gnu/generate-rpm/*.rpm ${{ env.RELEASE_DIR }}/
+
+          # gnu tarball
+          tar -cJf "${{ env.RELEASE_DIR }}/APP-v${{ needs.extract-version.outputs.version }}-${{ matrix.arch }}-unknown-linux-gnu.tar.xz" -C target/${{ matrix.arch }}-unknown-linux-gnu/release APP
+
+          # musl static tarball (for Alpine / musl-based docker)
+          tar -cJf "${{ env.RELEASE_DIR }}/APP-v${{ needs.extract-version.outputs.version }}-${{ matrix.arch }}-unknown-linux-musl.tar.xz" -C target/${{ matrix.arch }}-unknown-linux-musl/release APP
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: packages-linux-${{ matrix.arch }}
+          path: ${{ env.RELEASE_DIR }}/*
+          retention-days: 1
+
+  build-macos:
+    needs: [extract-version]
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.extract-version.outputs.tag }}
+          submodules: true
+      - name: Update Rust
+        run: |
+          rustup update
+          rustc --version
+      - name: Cache cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-macos-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-macos-
+      - name: Install target for MacOS
+        run: |
+          for arch in x86_64 aarch64; do
+            rustup target add $arch-apple-darwin
+          done
+      - name: Update submodules
+        run: git submodule update --init --recursive
+      - name: Build for MacOS
+        run: |
+          for arch in x86_64 aarch64; do
+            cargo build -p APP --release --target $arch-apple-darwin
+          done
+      - name: Create release tarballs
+        run: |
+          mkdir -p "${{ env.RELEASE_DIR }}"
+          for arch in x86_64 aarch64; do
+            tar -cJf "${{ env.RELEASE_DIR }}/APP-v${{ needs.extract-version.outputs.version }}-$arch-apple-darwin.tar.xz" -C target/$arch-apple-darwin/release APP
+          done
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: packages-macos
+          path: ${{ env.RELEASE_DIR }}/*
+          retention-days: 1
+
+  build-windows:
+    needs: [extract-version]
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.extract-version.outputs.tag }}
+          submodules: true
+      - name: Update Rust
+        run: |
+          rustup update
+          rustc --version
+      - name: Cache cargo
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+            target
+          key: cargo-windows-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-windows-
+      - name: Install zip utility
+        run: choco install zip -y
+        shell: powershell
+      - name: Install target for Windows
+        shell: bash
+        run: |
+          for arch in x86_64 aarch64; do
+            rustup target add $arch-pc-windows-msvc
+          done
+      - name: Update submodules
+        shell: bash
+        run: git submodule update --init --recursive
+      - name: Build for Windows
+        shell: bash
+        run: |
+          for arch in x86_64 aarch64; do
+            cargo build -p APP --release --target $arch-pc-windows-msvc
+          done
+      - name: Create release zip files
+        shell: bash
+        run: |
+          mkdir -p "${{ env.RELEASE_DIR }}"
+          for arch in x86_64 aarch64; do
+            zip -j "${{ env.RELEASE_DIR }}/APP-v${{ needs.extract-version.outputs.version }}-$arch-pc-windows-msvc.zip" target/$arch-pc-windows-msvc/release/APP.exe
+          done
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: packages-windows
+          path: ${{ env.RELEASE_DIR }}/*
+          retention-days: 1
+
+  create-release:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: all-dist/
+          pattern: packages-*
+          merge-multiple: true
+      - name: Generate checksums
+        run: |
+          cd all-dist
+          sha256sum -- * | sort -k2 > SHA256SUMS.txt
+      - name: Create Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.extract-version.outputs.tag }}
+          files: all-dist/*
+          generate_release_notes: true
+          # beta 版在 GitHub 上标记为 prerelease
+          prerelease: ${{ contains(needs.extract-version.outputs.tag, '-beta') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-crates:
+    # beta 版本不发布到 crates.io
+    if: ${{ !contains(needs.extract-version.outputs.tag, '-beta') }}
+    needs: [extract-version, create-release]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check CARGO_REGISTRY_TOKEN
+        id: check-token
+        env:
+          TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "has_token=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_token=false" >> $GITHUB_OUTPUT
+            echo "::warning::CARGO_REGISTRY_TOKEN is not set, skipping crates.io publish"
+          fi
+      - uses: actions/checkout@v7
+        if: steps.check-token.outputs.has_token == 'true'
+        with:
+          ref: ${{ needs.extract-version.outputs.tag }}
+      - name: Update Rust
+        if: steps.check-token.outputs.has_token == 'true'
+        run: |
+          rustup update
+          rustc --version
+      - name: Publish to crates.io
+        if: steps.check-token.outputs.has_token == 'true'
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish -p APP
