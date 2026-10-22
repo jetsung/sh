@@ -128,7 +128,8 @@ require_desktop() {
   return 1
 }
 
-# 安装登录触发服务 (用户级)
+# 安装登录触发 (XDG autostart)：仅图形会话启动时由桌面会话执行，
+# SSH 登录不会触发；也不依赖 graphical-session.target（Debian + Xfce 下该 target 不激活）
 install_login() {
   # 登录服务面向桌面环境的普通用户，root 无图形会话，不得安装
   if [[ "$EUID" -eq 0 ]]; then
@@ -137,36 +138,48 @@ install_login() {
     return 1
   fi
   require_desktop || return 1
-  local service_dir="$HOME/.config/systemd/user"
-  mkdir -p "$service_dir"
+  local autostart_dir="$HOME/.config/autostart"
+  mkdir -p "$autostart_dir"
 
-  # 环境变量由脚本自身从 $CONFIG_DIR/env 读取，单元文件无需 EnvironmentFile
-  cat > "$service_dir/restic-backup-login.service" <<EOF
-[Unit]
-Description=Restic Backup on Login
-
-[Service]
-Type=oneshot
-ExecStart=$SCRIPT_PATH
-
-[Install]
-WantedBy=graphical-session.target
+  # 环境变量由脚本自身从 $CONFIG_DIR/env 读取，desktop 文件无需注入
+  cat > "$autostart_dir/restic-backup.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Restic Backup on Login
+Comment=Run restic backup at graphical login (XDG autostart, never triggered by SSH)
+Exec=$SCRIPT_PATH
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
 EOF
 
-  systemctl --user daemon-reload
-  systemctl --user enable restic-backup-login.service
-  echo "Login service installed and enabled."
+  # 清理历史遗留的 systemd 登录服务（旧版本安装）
+  if [[ -f "$HOME/.config/systemd/user/restic-backup-login.service" ]]; then
+    systemctl --user disable restic-backup-login.service 2>/dev/null || true
+    rm -f "$HOME/.config/systemd/user/restic-backup-login.service"
+    systemctl --user daemon-reload
+  fi
+  echo "Login autostart installed: $autostart_dir/restic-backup.desktop"
 }
 
-# 卸载登录触发服务（--install-login 的逆向操作）
+# 卸载登录触发（--install-login 的逆向操作）
 uninstall_login() {
-  if ! [[ -f "$HOME/.config/systemd/user/restic-backup-login.service" ]]; then
+  local removed=0
+  if [[ -f "$HOME/.config/autostart/restic-backup.desktop" ]]; then
+    rm -f "$HOME/.config/autostart/restic-backup.desktop"
+    removed=1
+  fi
+  # 清理历史遗留的 systemd 登录服务（旧版本安装）
+  if [[ -f "$HOME/.config/systemd/user/restic-backup-login.service" ]]; then
+    systemctl --user disable restic-backup-login.service 2>/dev/null || true
+    rm -f "$HOME/.config/systemd/user/restic-backup-login.service"
+    systemctl --user daemon-reload
+    removed=1
+  fi
+  if [[ "$removed" -eq 0 ]]; then
     echo "Login service not installed, nothing to do."
     return 0
   fi
-  systemctl --user disable restic-backup-login.service 2>/dev/null || true
-  rm -f "$HOME/.config/systemd/user/restic-backup-login.service"
-  systemctl --user daemon-reload
   echo "Login service uninstalled."
 }
 
