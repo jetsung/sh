@@ -10,7 +10,7 @@ description: 为本仓库 install/ 目录添加新的命令行工具安装脚本
 用户只给一个项目地址（如 `https://github.com/rtk-ai/rtk` 或 `https://atomgit.com/jetsung/deveco-linux`）时：
 
 - **支持的平台**：GitHub 与 **AtomGit（atomgit.com）**。输入 `https://atomgit.com/<owner>/<repo>` 即走 AtomGit release 流程；`owner/repo` 形式默认按 GitHub 处理
-- **AtomGit 特点**：AtomGit 本身是中国站点，**生成的脚本不需要 CDN 加速**（模板中不注入 CDN_URL / check_in_china 逻辑）；其 release API 返回的 assets 里混有源码包（`type=="source"`），**只挑 `type=="attach"` 的二进制附件**；API 详细说明与返回值 schema 见 [references/atomgit-api.md](references/atomgit-api.md)
+- **AtomGit 特点**：AtomGit 本身是中国站点，**生成的脚本不需要 CDN 加速**（模板中不注入 CDN_URL / check_in_china / cdn_join 逻辑）；其 release API 返回的 assets 里混有源码包（`type=="source"`），**只挑 `type=="attach"` 的二进制附件**；API 详细说明与返回值 schema 见 [references/atomgit-api.md](references/atomgit-api.md)
 - **AtomGit 无 latest 端点**：`create-script.sh` 不自动探测 AtomGit（见下方「AtomGit 仓库的生成方式」），AI 需按 references/atomgit-api.md 的接口手动 `curl` 探测，再把下载地址与平台信息讲给用户确认
 
 - **文件名**默认取仓库名 → `rtk.sh`
@@ -78,7 +78,7 @@ bash .agents/skills/add-installer-script/scripts/create-script.sh <owner/repo> \
    ```
 
    注意：`--source` 必须显式指定为 AtomGit 仓库地址（直接下载地址输入时 Source 默认留空）
-3. **手动调整生成的脚本**：直接下载地址模式生成的脚本会把地址硬编码进 `resolve_block_url`（固定 URL 模式）。AtomGit 是国内站，**需手动删掉模板中的 CDN 逻辑**——移除 `CDN_URL` 行与 `check_in_china` / `check_remove_https` / `do_remove_https` 函数，下载处直接 `curl "$DOWNLOAD_URL"`；并把 `get_download_url` 改写为 AtomGit release API（`https://atomgit.com/api/v5/repos/<owner>/<repo>/releases?per_page=1`，jq 过滤 `.assets[] | select(.type == "attach")`，详见 references/atomgit-api.md），使脚本后续可自动跟随最新 release
+3. **手动调整生成的脚本**：直接下载地址模式生成的脚本会把地址硬编码进 `resolve_block_url`（固定 URL 模式）。AtomGit 是国内站，**需手动删掉模板中的 CDN 逻辑**——移除 `CDN_URL` / `USE_CDN` 行与 `check_in_china` / `cdn_join` 函数，下载处直接 `curl "$DOWNLOAD_URL"`；并把 `get_download_url` 改写为 AtomGit release API（`https://atomgit.com/api/v5/repos/<owner>/<repo>/releases?per_page=1`，jq 过滤 `.assets[] | select(.type == "attach")`，详见 references/atomgit-api.md），使脚本后续可自动跟随最新 release
 4. **验证**：`bash -n` + `shellcheck`，再实际执行一次确认安装成功
 
 实测样本：`install/deveco.sh`（AtomGit 仓库 `jetsung/deveco-linux`，nightly release 资产 `deveco-linux-x64-<tag>.tar.xz`，顶层裸二进制 `deveco`）。
@@ -193,8 +193,8 @@ create-script.sh <INPUT> [选项]
 #   Source：源代码 / 官网 URL，默认从 GitHub 仓库推断（--source 可覆盖）；直接下载地址时留空
 #   URL 默认留空（`# URL:` 后不带值），需要时用 --url / 环境变量 URL 或手动回填
 # set -euo pipefail（DEBUG=1 时切 set -eux）
-# CDN_URL="${CDN:-https://fastfile.asfd.cn/}"
-# sudo_exec / check_is_command / check_in_china / check_remove_https / do_remove_https
+# CDN_URL="${CDN:-https://fastfile.asfd.cn}"  （USE_CDN 由 main 在中国网络时置位）
+# sudo_exec / check_is_command / check_in_china / cdn_join
 ########################## 以上为通用函数 #########################
 # get_download_url <repo> <os_re> <arch_re>   # 按正则挑 release 资产
 # download_exact                              # 下载 → 展开 → 定位 → install

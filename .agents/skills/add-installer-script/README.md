@@ -97,7 +97,7 @@ $ bash $S rtk-ai/rtk --detect-only
 
 ```bash
 # 头部注释块
-# 通用函数：sudo_exec / check_is_command / check_in_china / check_remove_https / do_remove_https
+# 通用函数：sudo_exec / check_is_command / check_in_china / cdn_join
 ########################## 以上为通用函数 #########################
 
 get_download_url() {   # 按 OS/ARCH 正则从 release assets 里挑包，跳过 .sha256/.asc 等

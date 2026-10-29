@@ -56,7 +56,9 @@ else
     set -euo pipefail
 fi
 
-CDN_URL="${CDN:-https://fastfile.asfd.cn/}"
+CDN_URL="${CDN:-https://fastfile.asfd.cn}"
+# 中国网络时由 main 置位，启用 CDN 下载
+USE_CDN=""
 
 USER_ID="$(id -u)"
 
@@ -82,23 +84,18 @@ check_in_china() {
     return 1 # 非中国网络
 }
 
-# 若为 https://xxx.xx 不以 / 结尾，则组合时去掉加速网址的 https://
-#   格式为 https://file.xxx.io/github.com/
-# 若为 https://xxx.xx/ 以 / 结尾，则组合时保留加速网址的 https://
-#   格式为 https://xxx.xx/https://github.com/
-check_remove_https() {
-    if [[ -n "$1" && "${1: -1}" != "/" ]]; then
-        echo 1
-    fi    
-}
-
-do_remove_https() {
+# 组合下载地址：启用 CDN 时以 "/" 连接前缀与原始完整 URL，
+# 格式为 https://<cdn>/https://github.com/...；NO_HTTPS=1 时去掉内层 https://
+# 无论 CDN 是否以 / 结尾，均先去掉尾部斜杠再拼接，保证归一化
+cdn_join() {
     local url="$1"
-    if [[ -n "$NO_HTTPS" ]]; then
-        # shellcheck disable=SC2001
-        echo "$url" | sed 's|https:/||2'
-
-    else 
+    if [[ -n "${USE_CDN:-}" ]]; then
+        if [[ -n "${NO_HTTPS:-}" ]]; then
+            echo "${CDN_URL%/}/${url#https://}"
+        else
+            echo "${CDN_URL%/}/${url}"
+        fi
+    else
         echo "$url"
     fi
 }

@@ -158,7 +158,7 @@ $ bash create-script.sh restic/restic --description "备份工具"
 sudo_exec()              ✅ 处理 root 权限
 check_is_command()       ✅ 检查命令
 check_in_china()         ✅ 中国网络检测
-do_remove_https()        ✅ CDN HTTPS 处理
+cdn_join()              ✅ CDN 地址归一化拼接
 get_download_url()       ✅ GitHub releases 地址获取
 ```
 
