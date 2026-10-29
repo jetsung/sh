@@ -34,7 +34,7 @@ else
       jq '.'
 fi
 
-$ channel: printenv | grep '_API_' | awk -F'_API_' '{print tolower($1)}' | sort -hr
+$ channel: printenv | grep '_API_' | awk -F'_API_' '{print tolower($1)}' | sort -ur
 $ format: echo -e 'id\ntable\njson'
 
 # Test model
