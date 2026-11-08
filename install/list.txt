@@ -55,4 +55,5 @@
 ./wush.sh  |  wush 网络穿透工具
 ./yq.sh  |  便携式命令行 YAML/JSON/XML/CSV/TOML 等多种格式处理工具
 ./zed.sh  |  Zed 编辑器
+./zola.sh  |  单二进制内置全部功能的快速静态网站生成器
 ./zoxide.sh  |  zoxide 智能 CD 命令行工具

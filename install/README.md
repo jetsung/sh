@@ -77,4 +77,5 @@ done
 | [**wush**](./wush.sh) | [https://fx4.cn/wush](https://fx4.cn/wush) | wush 网络穿透工具 |
 | [**yq**](./yq.sh) | [https://fx4.cn/yq](https://fx4.cn/yq) | 便携式命令行 YAML/JSON/XML/CSV/TOML 等多种格式处理工具 |
 | [**zed**](./zed.sh) | [https://fx4.cn/zed](https://fx4.cn/zed) | Zed 编辑器 |
+| [**zola**](./zola.sh) | [https://fx4.cn/zola](https://fx4.cn/zola) | 单二进制内置全部功能的快速静态网站生成器 |
 | [**zoxide**](./zoxide.sh) | [https://fx4.cn/zoxide](https://fx4.cn/zoxide) | zoxide 智能 CD 命令行工具 |
